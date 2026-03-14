@@ -3,6 +3,9 @@ pub mod rendering;
 pub mod world;
 pub mod input;
 pub mod time;
+pub mod farming;
+pub mod tools;
+pub mod inventory;
 
 use engine::Engine;
 use std::error::Error;

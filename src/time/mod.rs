@@ -14,12 +14,46 @@ pub enum TimePhase {
     Night,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Weather {
+    Sunny,
+    Cloudy,
+    Rainy,
+    Stormy,
+    Snowy,
+}
+
+impl Weather {
+    pub fn to_emoji(&self) -> &'static str {
+        match self {
+            Weather::Sunny => "☀️",
+            Weather::Cloudy => "☁️",
+            Weather::Rainy => "🌧",
+            Weather::Stormy => "⛈",
+            Weather::Snowy => "❄️",
+        }
+    }
+
+    pub fn is_rainy(&self) -> bool {
+        matches!(self, Weather::Rainy | Weather::Stormy)
+    }
+
+    pub fn is_snowy(&self) -> bool {
+        matches!(self, Weather::Snowy)
+    }
+
+    pub fn affects_farming(&self) -> bool {
+        !matches!(self, Weather::Snowy)
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct GameTime {
     pub day: u32,
     pub hour: u8,
     pub minute: u8,
     pub season: Season,
+    pub weather: Weather,
 }
 
 impl GameTime {
@@ -29,6 +63,7 @@ impl GameTime {
             hour: 6,
             minute: 0,
             season: Season::Spring,
+            weather: Weather::Sunny,
         }
     }
 
@@ -58,6 +93,37 @@ impl GameTime {
                         Season::Winter => Season::Spring,
                     };
                 }
+                // Roll new weather at start of each day
+                self.weather = Self::roll_weather(self.season);
+            }
+        }
+    }
+
+    fn roll_weather(season: Season) -> Weather {
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        let n: u32 = rng.gen_range(0..100);
+
+        match season {
+            Season::Spring => {
+                if n < 50 { Weather::Sunny }
+                else if n < 80 { Weather::Cloudy }
+                else { Weather::Rainy }
+            }
+            Season::Summer => {
+                if n < 60 { Weather::Sunny }
+                else if n < 90 { Weather::Cloudy }
+                else { Weather::Rainy }
+            }
+            Season::Autumn => {
+                if n < 30 { Weather::Sunny }
+                else if n < 70 { Weather::Cloudy }
+                else { Weather::Rainy }
+            }
+            Season::Winter => {
+                if n < 40 { Weather::Sunny }
+                else if n < 80 { Weather::Cloudy }
+                else { Weather::Snowy }
             }
         }
     }

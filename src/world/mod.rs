@@ -10,14 +10,24 @@ pub enum TerrainType {
     Farmhouse,
 }
 
-#[derive(Debug, Clone, Copy)]
+use crate::farming::Crop;
+
+#[derive(Debug, Clone)]
 pub struct Tile {
     pub terrain: TerrainType,
+    pub last_watered_day: Option<u32>,
+    pub crop: Option<Crop>,
+    pub watered: bool,
 }
 
 impl Tile {
     pub fn new(terrain: TerrainType) -> Self {
-        Self { terrain }
+        Self {
+            terrain,
+            last_watered_day: None,
+            crop: None,
+            watered: false,
+        }
     }
 
     pub fn is_walkable(&self) -> bool {
@@ -28,6 +38,10 @@ impl Tile {
     }
 
     pub fn to_emoji(&self) -> &'static str {
+        if let Some(crop) = &self.crop {
+            return crop.to_emoji();
+        }
+        
         match self.terrain {
             TerrainType::Grass => "🌿",
             TerrainType::Weeds => "🌾",
@@ -39,6 +53,7 @@ impl Tile {
             TerrainType::Farmhouse => "🏚",
         }
     }
+
     pub fn to_ascii(&self) -> char {
         match self.terrain {
             TerrainType::Grass => '.',
@@ -81,6 +96,14 @@ impl Map {
     pub fn get_tile(&self, x: usize, y: usize) -> Option<&Tile> {
         if x < self.width && y < self.height {
             Some(&self.tiles[y][x])
+        } else {
+            None
+        }
+    }
+
+    pub fn get_tile_mut(&mut self, x: usize, y: usize) -> Option<&mut Tile> {
+        if x < self.width && y < self.height {
+            Some(&mut self.tiles[y][x])
         } else {
             None
         }
@@ -169,16 +192,25 @@ impl World {
                     self.player.y = new_y;
                 }
             }
+            Ok(())
+        } else {
+            Ok(())
         }
-
-        Ok(())
     }
 
     pub fn map(&self) -> &Map {
         &self.map
     }
 
+    pub fn map_mut(&mut self) -> &mut Map {
+        &mut self.map
+    }
+
     pub fn player(&self) -> &Player {
         &self.player
+    }
+
+    pub fn player_mut(&mut self) -> &mut Player {
+        &mut self.player
     }
 }
