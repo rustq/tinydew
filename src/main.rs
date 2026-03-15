@@ -108,3 +108,47 @@ fn main() {
     disable_raw_mode().unwrap();
     stdout().execute(LeaveAlternateScreen).unwrap();
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn initial_farm_ui() {
+        let game = GameState::new();
+        let mut output = String::new();
+
+        output.push_str(&format!(
+            "{} Day {} {} {}\n\n",
+            game.season,
+            game.day,
+            game.get_weather_icon(),
+            game.format_time()
+        ));
+
+        let map = game.get_current_map_ref();
+        let (width, height) = game.get_map_size();
+
+        for y in 0..height {
+            for x in 0..width {
+                let tile = if x == game.player_x && y == game.player_y {
+                    "🧑‍🌾"
+                } else {
+                    map[y][x].to_emoji()
+                };
+                output.push_str(tile);
+            }
+            output.push('\n');
+        }
+
+        output.push('\n');
+        output.push_str(&format!("{}\n", game.message));
+        output.push('\n');
+        output.push_str("Arrow keys: Move | Esc: Quit\n");
+
+        println!("{}", output);
+        assert!(output.contains("Spring Day 1"));
+        assert!(output.contains("🧑‍🌾"));
+        assert!(output.contains("Welcome to Shelldew!"));
+    }
+}
