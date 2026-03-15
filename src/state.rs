@@ -1,0 +1,212 @@
+use crate::world::{
+    Direction, EAST_PATH_HEIGHT, EAST_PATH_WIDTH, FARM_HEIGHT, FARM_WIDTH, Map, TileType,
+    create_east_path_map, create_farm_map,
+};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Location {
+    Farm,
+    EastPath,
+}
+
+#[derive(Debug, Clone)]
+pub struct GameState {
+    pub location: Location,
+    pub farm_map: Map,
+    pub east_path_map: Map,
+    pub player_x: usize,
+    pub player_y: usize,
+    pub direction: Direction,
+    pub message: String,
+    pub day: u32,
+    pub hour: u32,
+    pub minute: u32,
+    pub season: String,
+    pub weather: String,
+}
+
+impl GameState {
+    pub fn new() -> Self {
+        let mut farm_map = create_farm_map();
+        let (player_x, player_y) = find_player_start(&farm_map);
+
+        let mut east_path_map = create_east_path_map();
+
+        if player_x < FARM_WIDTH && player_y < FARM_HEIGHT {
+            farm_map[player_y][player_x] = TileType::Grass;
+        }
+
+        Self {
+            location: Location::Farm,
+            farm_map,
+            east_path_map,
+            player_x,
+            player_y,
+            direction: Direction::Down,
+            message: String::from("Welcome to Shelldew!"),
+            day: 1,
+            hour: 6,
+            minute: 0,
+            season: String::from("Spring"),
+            weather: String::from("Sunny"),
+        }
+    }
+
+    pub fn get_current_map_ref(&self) -> &Map {
+        match self.location {
+            Location::Farm => &self.farm_map,
+            Location::EastPath => &self.east_path_map,
+        }
+    }
+
+    pub fn get_current_map(&mut self) -> &mut Map {
+        match self.location {
+            Location::Farm => &mut self.farm_map,
+            Location::EastPath => &mut self.east_path_map,
+        }
+    }
+
+    pub fn get_map_size(&self) -> (usize, usize) {
+        match self.location {
+            Location::Farm => (FARM_WIDTH, FARM_HEIGHT),
+            Location::EastPath => (EAST_PATH_WIDTH, EAST_PATH_HEIGHT),
+        }
+    }
+
+    pub fn tile_in_front(&self) -> Option<(usize, usize)> {
+        let (dx, dy) = self.direction.delta();
+        let (width, height) = self.get_map_size();
+
+        let new_x = self.player_x as i32 + dx;
+        let new_y = self.player_y as i32 + dy;
+
+        if new_x >= 0 && new_x < width as i32 && new_y >= 0 && new_y < height as i32 {
+            Some((new_x as usize, new_y as usize))
+        } else {
+            None
+        }
+    }
+
+    pub fn can_move_to(&self, x: usize, y: usize) -> bool {
+        let (width, height) = self.get_map_size();
+        if x >= width || y >= height {
+            return false;
+        }
+
+        let map = self.get_current_map_ref();
+        map[y][x].is_walkable()
+    }
+
+    pub fn get_tile_at(&self, x: usize, y: usize) -> Option<TileType> {
+        let (width, height) = self.get_map_size();
+        if x >= width || y >= height {
+            return None;
+        }
+        let map = self.get_current_map_ref();
+        Some(map[y][x])
+    }
+
+    pub fn move_player(&mut self, direction: Direction) -> bool {
+        self.direction = direction;
+
+        let (dx, dy) = direction.delta();
+        let new_x = self.player_x as i32 + dx;
+        let new_y = self.player_y as i32 + dy;
+
+        if new_x < 0 || new_y < 0 {
+            return false;
+        }
+
+        let new_x = new_x as usize;
+        let new_y = new_y as usize;
+
+        if self.can_move_to(new_x, new_y) {
+            let target_tile = self.get_tile_at(new_x, new_y);
+
+            if let Some(tile) = target_tile {
+                if tile.is_transition() {
+                    self.handle_transition(&tile);
+                } else {
+                    self.player_x = new_x;
+                    self.player_y = new_y;
+                    self.advance_time();
+                }
+            }
+            true
+        } else {
+            self.message = String::from("Cannot move there!");
+            false
+        }
+    }
+
+    fn handle_transition(&mut self, tile: &TileType) {
+        match (self.location, tile) {
+            (Location::Farm, TileType::PathEast) => {
+                self.location = Location::EastPath;
+                self.player_x = 1;
+                self.player_y = 2;
+                self.direction = Direction::Right;
+                self.message = String::from("Welcome to East Path!");
+            }
+            (Location::EastPath, TileType::PathFarm) => {
+                self.location = Location::Farm;
+                self.player_x = 7;
+                self.player_y = 5;
+                self.direction = Direction::Left;
+                self.message = String::from("Back at the farm!");
+            }
+            _ => {}
+        }
+        self.advance_time();
+    }
+
+    pub fn advance_time(&mut self) {
+        self.minute += 5;
+        if self.minute >= 60 {
+            self.minute = 0;
+            self.hour += 1;
+        }
+        if self.hour >= 24 {
+            self.hour = 0;
+            self.day += 1;
+        }
+    }
+
+    pub fn is_night(&self) -> bool {
+        self.hour >= 20 || self.hour < 6
+    }
+
+    pub fn get_weather_icon(&self) -> &'static str {
+        if self.is_night() {
+            "🌙"
+        } else {
+            match self.weather.as_str() {
+                "Sunny" => "☀️",
+                "Rain" => "🌧",
+                "Cloudy" => "☁️",
+                _ => "☀️",
+            }
+        }
+    }
+
+    pub fn format_time(&self) -> String {
+        format!("{:02}:{:02}", self.hour, self.minute)
+    }
+}
+
+fn find_player_start(map: &Map) -> (usize, usize) {
+    for y in 0..map.len() {
+        for x in 0..map[y].len() {
+            if map[y][x] == TileType::Player {
+                return (x, y);
+            }
+        }
+    }
+    (0, 0)
+}
+
+impl Default for GameState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
