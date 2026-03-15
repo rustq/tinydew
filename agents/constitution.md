@@ -53,3 +53,58 @@ Before marking any todo complete:
 - Major disputes (tooling, branching strategy, escalation paths) should be resolved in consultation with maintainers and codified here once consensus is reached.
 
 Maintainers review this document quarterly to ensure it reflects actual practice. Agents are empowered—and expected—to propose improvements whenever gaps appear.
+
+---
+
+## Verification Reference
+
+All verification commands must pass before marking any task complete.
+
+### Standard Verification Commands
+
+```bash
+# Build the project
+cargo build
+
+# Run Clippy linter
+cargo clippy --all-targets --all-features
+
+# Run all tests
+cargo test
+
+# Check code formatting
+cargo fmt --check
+```
+
+### Makefile Shortcuts
+
+The project includes a Makefile for common operations:
+
+```bash
+make build        # cargo build
+make test         # cargo test
+make lint         # cargo clippy --all-targets --all-features
+make lint-fix     # cargo clippy --fix --allow-dirty
+make fmt          # cargo fmt
+make fmt-check    # cargo fmt --check
+make run          # cargo run
+```
+
+### CI Pipeline
+
+The project runs CI checks on all pushes to main/develop and pull requests. The CI pipeline includes:
+- Format check (cargo fmt --check)
+- Clippy lints (cargo clippy --all-targets --all-features -D warnings)
+- Tests (cargo test --all-features)
+- Release build (cargo build --release)
+- Nightly build (cargo test --all-features + cargo clippy --all-targets --all-features -D warnings)
+
+### Verification Checklist
+
+Before marking any todo complete, ensure:
+1. `cargo build` succeeds without errors
+2. `cargo clippy --all-targets --all-features` passes with zero warnings
+3. `cargo test` passes all tests
+4. `cargo fmt --check` passes (code is formatted)
+5. New features have corresponding tests
+6. Documentation is updated if APIs change

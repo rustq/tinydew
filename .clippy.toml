@@ -1,0 +1,10 @@
+msrv = "1.87"
+too-many-arguments-threshold = 8
+type-complexity-threshold = 500
+single-char-binding-names-threshold = 4
+too-large-for-stack = 200
+enum-variant-name-threshold = 3
+literal-representation-threshold = 16384
+trivial-copy-size-limit = 128
+pass-by-value-size-limit = 256
+avoid-breaking-exported-api = true
