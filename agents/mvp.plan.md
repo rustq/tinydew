@@ -92,14 +92,14 @@ n- NPC town systems
 
 ### A1. Farm map + tile schema
 
-- Implement exact 8×8 farm boundary and house layout from spec.
+- Implement exact 8×8 farm boundary and house layout from spec. Map data has no Player tile; player position is `(player_x, player_y)` only (e.g. start at (3, 3)).
 - Add passability rules:
   - blocked: 🌳
   - walkable: 🌿 ▪️ 🌱 mature crops
 
 ### A2. East Path map
 
-- Implement fixed dead-end map with transition back tile (⬅️).
+- Implement fixed dead-end map with transition tiles (PathEast / PathFarm). Path tiles may render as 🌿 for terminal alignment. Map data has no Player tile; player position is set on transition (e.g. (1, 2) when entering East Path).
 - Disable farming actions in East Path.
 
 ### A3. Movement controls
@@ -306,6 +306,7 @@ Acceptance:
 - **Input complexity in terminal**: isolate input mode/state machine and keep menu modes explicit.
 - **State drift between maps**: keep single authoritative `GameState` and immutable transition functions.
 - **Spec/UI mismatch**: include a spec checklist during final acceptance pass.
+- **Terminal display (macOS/raw mode)**: use CRLF for line endings; player drawn from state only (no Player in map data); use 🏠 for house and optionally render path tiles as 🌿 so the grid aligns.
 
 ---
 

@@ -8,15 +8,17 @@ Source:
 Implement Farm + East Path maps and arrow-key movement with collision + area transitions.
 
 ## Todo
-- [ ] Create Farm map using MVP 8x8 layout and boundary rules.
-- [ ] Create East Path dead-end map with return transition tile.
-- [ ] Implement passability rules (tree blocked, grass/soil/crops walkable).
-- [ ] Implement Arrow-key movement only for MVP mode.
-- [ ] Track facing direction for “tile in front” interactions.
-- [ ] Add Farm ↔ East Path transition handling.
+- [x] Create Farm map using MVP 8x8 layout and boundary rules (no Player tile in map; player from state).
+- [x] Create East Path dead-end map with return transition tile (no Player tile in map).
+- [x] Implement passability rules (tree blocked, grass/soil/crops walkable).
+- [x] Implement Arrow-key movement only for MVP mode.
+- [x] Track facing direction for “tile in front” interactions.
+- [x] Add Farm ↔ East Path transition handling (player position set on transition).
+- [x] Terminal display: CRLF line endings; path tiles may render as 🌿; house 🏠; player drawn only from (player_x, player_y).
 
 ## Acceptance
-- [ ] Player cannot move through boundary trees.
-- [ ] Player can traverse valid walkable tiles.
-- [ ] Transition to East Path works from Farm exit tile.
-- [ ] Return transition works from East Path back tile.
+- [x] Player cannot move through boundary trees.
+- [x] Player can traverse valid walkable tiles.
+- [x] Transition to East Path works from Farm exit tile.
+- [x] Return transition works from East Path back tile.
+- [x] Map renders as aligned grid; single player (no Player tile in map data).

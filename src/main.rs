@@ -4,6 +4,7 @@ mod world;
 use crate::state::GameState;
 use crate::world::Direction;
 use crossterm::{
+    cursor::MoveTo,
     ExecutableCommand,
     event::{self, Event, KeyCode, KeyEventKind},
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
@@ -13,32 +14,35 @@ use std::io::{Write, stdout};
 fn render(game: &GameState) {
     let mut stdout = stdout();
 
-    stdout.execute(crossterm::cursor::SavePosition).unwrap();
     stdout
         .execute(crossterm::terminal::Clear(
             crossterm::terminal::ClearType::All,
         ))
         .unwrap();
+    stdout.execute(MoveTo(0, 0)).unwrap();
 
     print_header(&mut stdout, game);
     print_map(&mut stdout, game);
     print_message(&mut stdout, game);
 
-    stdout.execute(crossterm::cursor::RestorePosition).unwrap();
     stdout.flush().unwrap();
 }
 
+/// CRLF so the terminal returns to column 0 each line (avoids staircase in raw mode).
+const EOL: &str = "\r\n";
+
 fn print_header<W: Write>(w: &mut W, game: &GameState) {
-    writeln!(
+    write!(
         w,
-        "🌸 {} Day {} {} {}",
+        "🌸 {} Day {} {} {}{}",
         game.season,
         game.day,
         game.get_weather_icon(),
-        game.format_time()
+        game.format_time(),
+        EOL
     )
     .unwrap();
-    writeln!(w).unwrap();
+    write!(w, "{}", EOL).unwrap();
 }
 
 fn print_map<W: Write>(w: &mut W, game: &GameState) {
@@ -48,21 +52,21 @@ fn print_map<W: Write>(w: &mut W, game: &GameState) {
     for y in 0..height {
         for x in 0..width {
             let tile = if x == game.player_x && y == game.player_y {
-                "🧑‍🌾"
+                "🧑"
             } else {
                 map[y][x].to_emoji()
             };
             write!(w, "{}", tile).unwrap();
         }
-        writeln!(w).unwrap();
+        write!(w, "{}", EOL).unwrap();
     }
 }
 
 fn print_message<W: Write>(w: &mut W, game: &GameState) {
-    writeln!(w).unwrap();
-    writeln!(w, "{}", game.message).unwrap();
-    writeln!(w).unwrap();
-    writeln!(w, "Arrow keys: Move | Esc: Quit").unwrap();
+    write!(w, "{}", EOL).unwrap();
+    write!(w, "{}{}", game.message, EOL).unwrap();
+    write!(w, "{}", EOL).unwrap();
+    write!(w, "Arrow keys: Move | Esc: Quit{}", EOL).unwrap();
 }
 
 fn handle_input(game: &mut GameState) -> bool {
@@ -132,7 +136,7 @@ mod tests {
         for y in 0..height {
             for x in 0..width {
                 let tile = if x == game.player_x && y == game.player_y {
-                    "🧑‍🌾"
+                    "🧑"
                 } else {
                     map[y][x].to_emoji()
                 };
@@ -148,7 +152,7 @@ mod tests {
 
         println!("{}", output);
         assert!(output.contains("Spring Day 1"));
-        assert!(output.contains("🧑‍🌾"));
+        assert!(output.contains("🧑"));
         assert!(output.contains("Welcome to Shelldew!"));
     }
 }

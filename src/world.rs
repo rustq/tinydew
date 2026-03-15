@@ -76,10 +76,10 @@ impl TileType {
                     "🌱"
                 }
             }
-            TileType::House => "🏚",
-            TileType::PathEast => "➡️",
-            TileType::PathFarm => "⬅️",
-            TileType::Player => "🧑‍🌾",
+            TileType::House => "🏠",
+            TileType::PathEast => "🌿",
+            TileType::PathFarm => "🌿",
+            TileType::Player => "🧑",
             TileType::Mushroom => "🍄",
         }
     }
@@ -129,7 +129,7 @@ pub fn create_farm_map() -> Map {
             TileType::Boundary,
             TileType::Grass,
             TileType::Grass,
-            TileType::Player,
+            TileType::Grass,
             TileType::Grass,
             TileType::Grass,
             TileType::Grass,
@@ -208,7 +208,7 @@ pub fn create_east_path_map() -> Map {
         ],
         vec![
             TileType::PathFarm,
-            TileType::Player,
+            TileType::Grass,
             TileType::Grass,
             TileType::Grass,
             TileType::Grass,

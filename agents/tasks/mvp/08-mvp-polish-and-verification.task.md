@@ -12,6 +12,7 @@ Finalize MVP with tests, documentation consistency, and green verification gates
 - [ ] Add integration tests for end-to-end gameplay loops.
 - [ ] Validate controls match MVP spec (arrows + C/P/W/H/T).
 - [ ] Validate UI layout expectation (header + map + message rail).
+- [x] Terminal display: CRLF for raw mode; player from state only (no Player in map); path tiles as 🌿, house 🏠 (see spec §4 Terminal display).
 - [ ] Run and pass:
   - [ ] `cargo build`
   - [ ] `cargo clippy --all-targets --all-features`

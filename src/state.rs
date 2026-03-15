@@ -32,9 +32,6 @@ impl GameState {
 
         let mut east_path_map = create_east_path_map();
 
-        if player_x < FARM_WIDTH && player_y < FARM_HEIGHT {
-            farm_map[player_y][player_x] = TileType::Grass;
-        }
 
         Self {
             location: Location::Farm,
@@ -195,14 +192,7 @@ impl GameState {
 }
 
 fn find_player_start(map: &Map) -> (usize, usize) {
-    for y in 0..map.len() {
-        for x in 0..map[y].len() {
-            if map[y][x] == TileType::Player {
-                return (x, y);
-            }
-        }
-    }
-    (0, 0)
+    (3, 3)
 }
 
 impl Default for GameState {

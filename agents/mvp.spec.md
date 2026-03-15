@@ -44,33 +44,36 @@ Future expansions may include:
 
 ## 3.1 Farm Map
 
-The farm is an 8×8 tile grid.
+The farm is an 8×8 tile grid. The player is not stored in the map data; they are drawn at the current position `(player_x, player_y)` from game state. Map cells use Grass (or PathEast at the exit) where the player can stand. Default player start is (3, 3).
 
-Example starting map:
+Example starting map (🧑 at start):
 
 🌳🌳🌳🌳🌳🌳🌳🌳\
 🌳🌿🌿🌿🌿🌿🌿🌳\
-🌳🌿🏚🌿🌿🌿🌿🌳\
-🌳🌿🌿🧑‍🌾🌿🌿🌿🌳\
+🌳🌿🏠🌿🌿🌿🌿🌳\
+🌳🌿🌿🌿🧑🌿🌿🌳\
 🌳🌿🌿🌿🌿🌿🌿🌳\
-🌳🌿🌿🌿🌿🌿🌿➡️\
+🌳🌿🌿🌿🌿🌿🌿🌿\
 🌳🌿🌿🌿🌿🌿🌿🌳\
 🌳🌳🌳🌳🌳🌳🌳🌳
+
+(The exit to East Path is bottom-right; transition tile may display as 🌿 for grid alignment.)
 
 ------------------------------------------------------------------------
 
 ## 3.2 Tile Types
 
- Emoji Meaning
- ---------- -------------------
- 🌳 Boundary tree
- 🌿 Grass / weeds
- ▪️ Cleared soil
- 🌱 Growing crop
- 🥕🍓🥦🌺 Mature crops
- 🧑‍🌾 Player
- 🏚 Farm house
- ➡️ Path to East area
+ Emoji/Symbol  Meaning
+ ------------- -------------------
+ 🌳            Boundary tree
+ 🌿            Grass / weeds (path transition tiles may also display as 🌿)
+ ▪️            Cleared soil
+ 🌱            Growing crop
+ 🥕🍓🥦🌺     Mature crops
+ 🧑            Player (drawn from state; not a map tile)
+ 🏠            Farm house
+ (PathEast)    Path to East area — logic only; display as 🌿 for alignment
+ (PathFarm)   Path back to Farm (East Path only) — logic only; display as 🌿
 
 ------------------------------------------------------------------------
 
@@ -95,12 +98,18 @@ Displays:
 
 🌳🌳🌳🌳🌳🌳🌳🌳\
 🌳🌿🌿🌿🌿🌿🌿🌳\
-🌳🌿🏚🌿🌿🌿🌿🌳\
-🌳🌿▪️🧑‍🌾▪️🌿🌿🌳\
+🌳🌿🏠🌿🌿🌿🌿🌳\
+🌳🌿▪️🧑▪️🌿🌿🌳\
 🌳🌿🌱🌱🍓🌿🌿🌳\
-🌳🌿▪️▪️▪️🌿🌿➡️\
+🌳🌿▪️▪️▪️🌿🌿🌿\
 🌳🌿🌿🌿🌿🌿🌿🌳\
 🌳🌳🌳🌳🌳🌳🌳🌳
+
+## Terminal display (macOS / raw mode)
+
+- Use CRLF (`\r\n`) for line endings so each line starts at column 0 and the map does not render as a staircase.
+- Player is drawn only from `(player_x, player_y)`; map data does not contain a Player tile.
+- Use single-width or consistent-width tiles: 🏠 for house; path transition tiles may be displayed as 🌿 so the grid aligns with 🌳.
 
 The UI intentionally does not show:
 
@@ -299,9 +308,11 @@ A small foraging dead-end area connected to the farm.
 
 ## Map
 
+East Path is a dead-end; the player is drawn at `(player_x, player_y)`. Entry from farm places player at (1, 2). Path back to farm is leftmost cell (PathFarm); it may display as 🌿.
+
 🌳🌳🌳🌳🌳🌳🌳🌳🌳🌳🌳\
 🌳🌿🌿🌿🌿🌿🌿🌿🌿🌿🌳\
-⬅️🧑‍🌾🌿🌿🌿🌿🌿🌿🌿🍄🌳\
+🌿🧑🌿🌿🌿🌿🌿🌿🌿🍄🌳\
 🌳🌳🌳🌳🌳🌳🌳🌳🌳🌳🌳
 
 ------------------------------------------------------------------------
