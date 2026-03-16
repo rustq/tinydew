@@ -64,19 +64,52 @@ fn print_map<W: Write>(w: &mut W, game: &GameState) {
 
 fn print_message<W: Write>(w: &mut W, game: &GameState) {
     write!(w, "{}", EOL).unwrap();
-    write!(w, "{}{}", game.message, EOL).unwrap();
+    if game.in_shop() {
+        print_shop_menu(w, game);
+    } else {
+        write!(w, "{}{}", game.message, EOL).unwrap();
+        write!(w, "{}", EOL).unwrap();
+        write!(
+            w,
+            "Arrow keys: Move | C: Clear | P: Plant | W: Water | H: Harvest | T: Trade | Esc: Quit{}",
+            EOL
+        )
+        .unwrap();
+    }
+}
+
+fn print_shop_menu<W: Write>(w: &mut W, game: &GameState) {
+    let title = match game.shop_state {
+        state::ShopState::BuyMenu => "Shop",
+        state::ShopState::SellMenu => "Sell",
+        _ => "Menu",
+    };
+
+    write!(w, "💰 ${}{}", game.money, EOL).unwrap();
     write!(w, "{}", EOL).unwrap();
-    write!(
-        w,
-        "Arrow keys: Move | C: Clear | P: Plant | W: Water | H: Harvest | T: Trade | Esc: Quit{}",
-        EOL
-    )
-    .unwrap();
+    write!(w, "{}{}", title, EOL).unwrap();
+
+    let items = game.get_shop_menu_items();
+    for (i, item) in items.iter().enumerate() {
+        let prefix = if i == game.shop_cursor {
+            "[√]"
+        } else {
+            "[ ]"
+        };
+        write!(w, "{} {}{}", prefix, item, EOL).unwrap();
+    }
+
+    write!(w, "{}", EOL).unwrap();
+    write!(w, "↑↓: Move | Enter: Confirm | Esc: Back{}", EOL).unwrap();
 }
 
 fn handle_input(game: &mut GameState) -> bool {
     if let Event::Key(key) = event::read().unwrap() {
         if key.kind == KeyEventKind::Press {
+            if game.in_shop() {
+                return game.shop_handle_input(key.code);
+            }
+
             match key.code {
                 KeyCode::Up => {
                     game.move_player(Direction::Up);

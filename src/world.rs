@@ -93,6 +93,33 @@ impl CropType {
             CropType::Rhubarb => "Rhubarb",
         }
     }
+
+    pub fn seed_price(&self) -> u32 {
+        match self {
+            CropType::Carrot => 10,
+            CropType::Strawberry => 20,
+            CropType::Cauliflower => 30,
+            CropType::Rhubarb => 40,
+        }
+    }
+
+    pub fn produce_price(&self) -> u32 {
+        match self {
+            CropType::Carrot => 20,
+            CropType::Strawberry => 40,
+            CropType::Cauliflower => 60,
+            CropType::Rhubarb => 80,
+        }
+    }
+
+    pub fn all() -> [CropType; 4] {
+        [
+            CropType::Carrot,
+            CropType::Strawberry,
+            CropType::Cauliflower,
+            CropType::Rhubarb,
+        ]
+    }
 }
 
 impl TileType {

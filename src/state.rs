@@ -2,6 +2,7 @@ use crate::world::{
     CropState, CropType, Direction, EAST_PATH_HEIGHT, EAST_PATH_WIDTH, FARM_HEIGHT, FARM_WIDTH,
     Map, TileType, create_east_path_map, create_farm_map,
 };
+use crossterm::event::KeyCode;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -67,6 +68,13 @@ impl Default for Inventory {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ShopState {
+    None,
+    BuyMenu,
+    SellMenu,
+}
+
 #[derive(Debug, Clone)]
 pub struct GameState {
     pub location: Location,
@@ -83,6 +91,9 @@ pub struct GameState {
     pub weather: String,
     pub inventory: Inventory,
     pub selected_seed: CropType,
+    pub money: u32,
+    pub shop_state: ShopState,
+    pub shop_cursor: usize,
 }
 
 impl GameState {
@@ -107,6 +118,9 @@ impl GameState {
             weather: String::from("Sunny"),
             inventory: Inventory::new(),
             selected_seed: CropType::Carrot,
+            money: 500,
+            shop_state: ShopState::None,
+            shop_cursor: 0,
         }
     }
 
@@ -219,6 +233,8 @@ impl GameState {
     }
 
     pub fn advance_time(&mut self) {
+        let was_night = self.hour >= 20;
+
         self.minute += 5;
         if self.minute >= 60 {
             self.minute = 0;
@@ -228,6 +244,42 @@ impl GameState {
             self.hour = 0;
             self.day += 1;
         }
+
+        if was_night && self.hour >= 6 {
+            self.start_new_day();
+        }
+    }
+
+    pub fn start_new_day(&mut self) {
+        self.roll_weather();
+
+        for y in 0..FARM_HEIGHT {
+            for x in 0..FARM_WIDTH {
+                if let TileType::Crop(crop, state) = &mut self.farm_map[y][x] {
+                    if state.watered_today {
+                        state.days_grown += 1;
+                    }
+                    state.watered_today = false;
+                }
+            }
+        }
+
+        self.message = String::from("Good morning! A new day begins.");
+    }
+
+    fn roll_weather(&mut self) {
+        use std::time::SystemTime;
+        let seed = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos() as u64;
+
+        let weather_idx = ((seed + self.day as u64) % 3) as usize;
+        self.weather = match weather_idx {
+            0 => String::from("Sunny"),
+            1 => String::from("Rain"),
+            _ => String::from("Cloudy"),
+        };
     }
 
     pub fn is_night(&self) -> bool {
@@ -354,8 +406,132 @@ impl GameState {
     }
 
     pub fn trade_action(&mut self) {
-        self.message = String::from("Trade menu coming soon!");
+        if self.shop_state == ShopState::None {
+            self.shop_state = ShopState::BuyMenu;
+            self.shop_cursor = 0;
+            self.message = String::from("Shop opened!");
+        } else {
+            self.close_shop();
+        }
         self.advance_time();
+    }
+
+    pub fn close_shop(&mut self) {
+        self.shop_state = ShopState::None;
+        self.shop_cursor = 0;
+        self.message = String::from("Shop closed.");
+    }
+
+    pub fn in_shop(&self) -> bool {
+        self.shop_state != ShopState::None
+    }
+
+    pub fn get_shop_menu_items(&self) -> Vec<String> {
+        match self.shop_state {
+            ShopState::BuyMenu => {
+                let mut items = Vec::new();
+                for crop in CropType::all() {
+                    let price = crop.seed_price();
+                    items.push(format!("Buy 🫙 {} (${})", crop.seed_name(), price));
+                }
+                items.push(String::from("Sell Crops"));
+                items.push(String::from("Exit"));
+                items
+            }
+            ShopState::SellMenu => {
+                let mut items = Vec::new();
+                for crop in CropType::all() {
+                    let count = self.inventory.get_produce(crop);
+                    if count > 0 {
+                        let price = crop.produce_price();
+                        items.push(format!(
+                            "Sell {} {} (${})",
+                            crop.produce_emoji(),
+                            crop.seed_name(),
+                            price * count
+                        ));
+                    }
+                }
+                if items.is_empty() {
+                    items.push(String::from("(No crops to sell)"));
+                }
+                items.push(String::from("Back"));
+                items
+            }
+            ShopState::None => vec![],
+        }
+    }
+
+    pub fn shop_handle_input(&mut self, key_code: KeyCode) -> bool {
+        let menu_items = self.get_shop_menu_items();
+        let menu_len = menu_items.len();
+
+        match key_code {
+            KeyCode::Up => {
+                if self.shop_cursor > 0 {
+                    self.shop_cursor -= 1;
+                }
+            }
+            KeyCode::Down => {
+                if self.shop_cursor < menu_len - 1 {
+                    self.shop_cursor += 1;
+                }
+            }
+            KeyCode::Enter => {
+                self.handle_shop_selection();
+            }
+            KeyCode::Esc => {
+                self.close_shop();
+            }
+            _ => {}
+        }
+        true
+    }
+
+    fn handle_shop_selection(&mut self) {
+        match self.shop_state {
+            ShopState::BuyMenu => {
+                let crop_options = CropType::all();
+                if self.shop_cursor < 4 {
+                    let crop = crop_options[self.shop_cursor];
+                    let price = crop.seed_price();
+                    if self.money >= price {
+                        self.money -= price;
+                        self.inventory.add_seeds(crop, 1);
+                        self.message = format!("Bought 🫙 {}!", crop.seed_name());
+                    } else {
+                        self.message = String::from("Not enough money!");
+                    }
+                } else if self.shop_cursor == 4 {
+                    self.shop_state = ShopState::SellMenu;
+                    self.shop_cursor = 0;
+                    self.message = String::from("Sell menu opened.");
+                } else {
+                    self.close_shop();
+                }
+            }
+            ShopState::SellMenu => {
+                let crops_with_produce: Vec<CropType> = CropType::all()
+                    .iter()
+                    .filter(|c| self.inventory.get_produce(**c) > 0)
+                    .copied()
+                    .collect();
+
+                if self.shop_cursor < crops_with_produce.len() {
+                    let crop = crops_with_produce[self.shop_cursor];
+                    if self.inventory.sell_produce(crop) {
+                        let price = crop.produce_price();
+                        self.money += price;
+                        self.message = format!("Sold {} for ${}!", crop.produce_emoji(), price);
+                    }
+                } else {
+                    self.shop_state = ShopState::BuyMenu;
+                    self.shop_cursor = 0;
+                    self.message = String::from("Back to buy menu.");
+                }
+            }
+            ShopState::None => {}
+        }
     }
 }
 
