@@ -1,6 +1,6 @@
 use crate::world::{
     CropState, CropType, Direction, EAST_PATH_HEIGHT, EAST_PATH_WIDTH, FARM_HEIGHT, FARM_WIDTH,
-    Map, TileType, create_east_path_map, create_farm_map,
+    ForageType, Map, TileType, create_east_path_map, create_farm_map,
 };
 use crossterm::event::KeyCode;
 use std::collections::HashMap;
@@ -15,6 +15,7 @@ pub enum Location {
 pub struct Inventory {
     pub seeds: HashMap<CropType, u32>,
     pub produce: HashMap<CropType, u32>,
+    pub forage: HashMap<ForageType, u32>,
 }
 
 impl Inventory {
@@ -22,6 +23,7 @@ impl Inventory {
         Self {
             seeds: HashMap::new(),
             produce: HashMap::new(),
+            forage: HashMap::new(),
         }
     }
 
@@ -59,6 +61,14 @@ impl Inventory {
         } else {
             false
         }
+    }
+
+    pub fn add_forage(&mut self, forage: ForageType) {
+        *self.forage.entry(forage).or_insert(0) += 1;
+    }
+
+    pub fn get_forage(&self, forage: ForageType) -> u32 {
+        *self.forage.get(&forage).unwrap_or(&0)
     }
 }
 
@@ -264,7 +274,52 @@ impl GameState {
             }
         }
 
+        self.spawn_east_path_mushrooms();
+
         self.message = String::from("Good morning! A new day begins.");
+    }
+
+    fn spawn_east_path_mushrooms(&mut self) {
+        use std::time::SystemTime;
+        let seed = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos() as u64;
+        let random = (seed + self.day as u64) % 3;
+        let mushroom_count = random as usize;
+
+        let mut valid_positions: Vec<(usize, usize)> = Vec::new();
+
+        for y in 0..EAST_PATH_HEIGHT {
+            for x in 0..EAST_PATH_WIDTH {
+                if let Some(TileType::Grass) = self.east_path_map.get(y).and_then(|row| row.get(x))
+                {
+                    if !(x == self.player_x
+                        && y == self.player_y
+                        && self.location == Location::EastPath)
+                    {
+                        valid_positions.push((x, y));
+                    }
+                }
+            }
+        }
+
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        let mut hasher = DefaultHasher::new();
+        self.day.hash(&mut hasher);
+        seed.hash(&mut hasher);
+        let mut rng_state = hasher.finish();
+
+        for _ in 0..mushroom_count {
+            if valid_positions.is_empty() {
+                break;
+            }
+            let idx = (rng_state % valid_positions.len() as u64) as usize;
+            let (mx, my) = valid_positions.remove(idx);
+            self.east_path_map[my][mx] = TileType::Mushroom;
+            rng_state = rng_state.wrapping_mul(1103515245).wrapping_add(12345);
+        }
     }
 
     fn roll_weather(&mut self) {
@@ -396,6 +451,17 @@ impl GameState {
                     self.advance_time();
                 } else {
                     self.message = String::from("Not ready yet! (Needs more time)");
+                }
+            } else if let Some(TileType::Mushroom) = tile {
+                if self.location == Location::EastPath {
+                    if let Some(map_row) = self.east_path_map.get_mut(y) {
+                        map_row[x] = TileType::Grass;
+                    }
+                    self.inventory.add_forage(ForageType::Mushroom);
+                    self.message = String::from("Harvest Done! (Got 🍄)");
+                    self.advance_time();
+                } else {
+                    self.message = String::from("Cannot harvest mushrooms here!");
                 }
             } else {
                 self.message = String::from("Nothing to harvest!");

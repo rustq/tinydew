@@ -66,6 +66,19 @@ pub enum CropType {
     Rhubarb,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ForageType {
+    Mushroom,
+}
+
+impl ForageType {
+    pub fn emoji(&self) -> &'static str {
+        match self {
+            ForageType::Mushroom => "🍄",
+        }
+    }
+}
+
 impl CropType {
     pub fn growth_days(&self) -> u8 {
         match self {
