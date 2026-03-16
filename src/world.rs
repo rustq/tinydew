@@ -24,7 +24,7 @@ pub enum TileType {
     Boundary,
     Grass,
     Soil,
-    Crop(CropType, u8),
+    Crop(CropType, CropState),
     House,
     PathEast,
     PathFarm,
@@ -33,11 +33,66 @@ pub enum TileType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CropState {
+    pub days_grown: u8,
+    pub watered_today: bool,
+}
+
+impl CropState {
+    pub fn new() -> Self {
+        Self {
+            days_grown: 0,
+            watered_today: false,
+        }
+    }
+
+    pub fn is_mature(&self, crop_type: CropType) -> bool {
+        let days_needed = crop_type.growth_days();
+        self.days_grown >= days_needed
+    }
+}
+
+impl Default for CropState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CropType {
     Carrot,
     Strawberry,
     Cauliflower,
     Rhubarb,
+}
+
+impl CropType {
+    pub fn growth_days(&self) -> u8 {
+        match self {
+            CropType::Carrot => 4,
+            CropType::Strawberry => 8,
+            CropType::Cauliflower => 12,
+            CropType::Rhubarb => 16,
+        }
+    }
+
+    pub fn produce_emoji(&self) -> &'static str {
+        match self {
+            CropType::Carrot => "🥕",
+            CropType::Strawberry => "🍓",
+            CropType::Cauliflower => "🥦",
+            CropType::Rhubarb => "🌺",
+        }
+    }
+
+    pub fn seed_name(&self) -> &'static str {
+        match self {
+            CropType::Carrot => "Carrot",
+            CropType::Strawberry => "Strawberry",
+            CropType::Cauliflower => "Cauliflower",
+            CropType::Rhubarb => "Rhubarb",
+        }
+    }
 }
 
 impl TileType {
@@ -64,14 +119,9 @@ impl TileType {
             TileType::Boundary => "🌳",
             TileType::Grass => "🌿",
             TileType::Soil => "▪️",
-            TileType::Crop(crop, stage) => {
-                if *stage > 0 {
-                    match crop {
-                        CropType::Carrot => "🥕",
-                        CropType::Strawberry => "🍓",
-                        CropType::Cauliflower => "🥦",
-                        CropType::Rhubarb => "🌺",
-                    }
+            TileType::Crop(crop, state) => {
+                if state.is_mature(*crop) {
+                    crop.produce_emoji()
                 } else {
                     "🌱"
                 }
