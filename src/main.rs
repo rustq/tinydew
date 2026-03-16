@@ -1,5 +1,6 @@
 #![allow(clippy::needless_range_loop)]
 
+mod mcp;
 mod state;
 mod world;
 
