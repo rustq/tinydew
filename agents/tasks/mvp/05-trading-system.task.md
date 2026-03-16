@@ -27,3 +27,8 @@ Implement `T` shop flow for buying seeds and selling crops.
 - Keyboard navigation with ↑↓ and Enter
 - Esc to close/back from shop
 - Money starts at $500
+
+## Validation Snapshot
+- Verified Sell menu contains harvested carrot entry: `Sell 🥕 Carrot ($20)`.
+- Confirmed transaction updates wallet from `$500` to `$520` after selling one carrot.
+- Confirmed produce depletion behavior: Sell list changes to `(No crops to sell)` after sale.

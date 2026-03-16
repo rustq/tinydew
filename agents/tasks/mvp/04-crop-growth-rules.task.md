@@ -28,3 +28,7 @@ Implement Spring crop catalog and growth lifecycle with watering dependency.
 - `watered_today` is reset to false at the start of each new day
 - Growth days: Carrot=4, Strawberry=8, Cauliflower=12, Rhubarb=16
 - Rendering: 🌱 for growing, crop emoji for mature
+
+## Validation Snapshot
+- Demonstrated in CLI flow: crop shown as `🌱` while growing, then mature `🥕` on Day 5 morning after required watering cadence.
+- Verified mature harvest succeeds with message: `Harvest Done! (Got 🥕)`.
