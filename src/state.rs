@@ -5,6 +5,13 @@ use crate::world::{
 use crossterm::event::KeyCode;
 use std::collections::HashMap;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HomeState {
+    None,
+    Alert,
+    Income,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Location {
     Farm,
@@ -78,6 +85,13 @@ impl Default for Inventory {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct DailyIncome {
+    pub money_earned: u32,
+    pub crops_sold: HashMap<CropType, u32>,
+    pub forage_sold: HashMap<ForageType, u32>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ShopState {
     None,
@@ -104,6 +118,9 @@ pub struct GameState {
     pub money: u32,
     pub shop_state: ShopState,
     pub shop_cursor: usize,
+    pub home_state: HomeState,
+    pub home_cursor: usize,
+    pub current_income: DailyIncome,
 }
 
 impl GameState {
@@ -131,6 +148,9 @@ impl GameState {
             money: 500,
             shop_state: ShopState::None,
             shop_cursor: 0,
+            home_state: HomeState::None,
+            home_cursor: 0,
+            current_income: DailyIncome::default(),
         }
     }
 
@@ -492,6 +512,30 @@ impl GameState {
         self.shop_state != ShopState::None
     }
 
+    pub fn in_home(&self) -> bool {
+        self.home_state != HomeState::None
+    }
+
+    pub fn check_home_alert(&mut self) {
+        if self.home_state == HomeState::None && self.hour == 2 && self.location == Location::Farm {
+            self.home_state = HomeState::Alert;
+            self.home_cursor = 0;
+            self.message = String::from("It's late. You should rest.");
+        }
+    }
+
+    pub fn record_income(&mut self, amount: u32) {
+        self.current_income.money_earned += amount;
+    }
+
+    pub fn record_crop_sold(&mut self, crop: CropType, count: u32) {
+        *self.current_income.crops_sold.entry(crop).or_insert(0) += count;
+    }
+
+    pub fn record_forage_sold(&mut self, forage: ForageType, count: u32) {
+        *self.current_income.forage_sold.entry(forage).or_insert(0) += count;
+    }
+
     pub fn get_shop_menu_items(&self) -> Vec<String> {
         match self.shop_state {
             ShopState::BuyMenu => {
@@ -588,6 +632,8 @@ impl GameState {
                     if self.inventory.sell_produce(crop) {
                         let price = crop.produce_price();
                         self.money += price;
+                        self.record_income(price);
+                        self.record_crop_sold(crop, 1);
                         self.message = format!("Sold {} for ${}!", crop.produce_emoji(), price);
                     }
                 } else {
@@ -598,6 +644,64 @@ impl GameState {
             }
             ShopState::None => {}
         }
+    }
+
+    pub fn get_home_menu_items(&self) -> Vec<String> {
+        match self.home_state {
+            HomeState::Alert => vec![String::from("Sleep")],
+            HomeState::Income => vec![String::from("Continue")],
+            HomeState::None => vec![],
+        }
+    }
+
+    pub fn home_handle_input(&mut self, key_code: KeyCode) -> bool {
+        let menu_items = self.get_home_menu_items();
+        let menu_len = menu_items.len();
+
+        match key_code {
+            KeyCode::Up => {
+                if self.home_cursor > 0 {
+                    self.home_cursor -= 1;
+                }
+            }
+            KeyCode::Down => {
+                if self.home_cursor < menu_len - 1 {
+                    self.home_cursor += 1;
+                }
+            }
+            KeyCode::Enter => {
+                self.handle_home_selection();
+            }
+            _ => {}
+        }
+        true
+    }
+
+    fn handle_home_selection(&mut self) {
+        match self.home_state {
+            HomeState::Alert => {
+                if self.home_cursor == 0 {
+                    self.perform_sleep();
+                }
+            }
+            HomeState::Income => {
+                self.close_home();
+            }
+            HomeState::None => {}
+        }
+    }
+
+    fn perform_sleep(&mut self) {
+        self.home_state = HomeState::Income;
+        self.home_cursor = 0;
+        self.message = String::from("Sleeping... (Income calculated)");
+    }
+
+    pub fn close_home(&mut self) {
+        self.current_income = DailyIncome::default();
+        self.home_state = HomeState::None;
+        self.home_cursor = 0;
+        self.message = String::from("Good morning! Ready for another day.");
     }
 }
 

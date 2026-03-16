@@ -64,7 +64,9 @@ fn print_map<W: Write>(w: &mut W, game: &GameState) {
 
 fn print_message<W: Write>(w: &mut W, game: &GameState) {
     write!(w, "{}", EOL).unwrap();
-    if game.in_shop() {
+    if game.in_home() {
+        print_home_menu(w, game);
+    } else if game.in_shop() {
         print_shop_menu(w, game);
     } else {
         write!(w, "{}{}", game.message, EOL).unwrap();
@@ -103,9 +105,78 @@ fn print_shop_menu<W: Write>(w: &mut W, game: &GameState) {
     write!(w, "↑↓: Move | Enter: Confirm | Esc: Back{}", EOL).unwrap();
 }
 
+fn print_home_menu<W: Write>(w: &mut W, game: &GameState) {
+    match game.home_state {
+        state::HomeState::Alert => {
+            write!(w, "Home{}", EOL).unwrap();
+            write!(w, "{}", EOL).unwrap();
+
+            let items = game.get_home_menu_items();
+            for (i, item) in items.iter().enumerate() {
+                let prefix = if i == game.home_cursor {
+                    "[√]"
+                } else {
+                    "[ ]"
+                };
+                write!(w, "{} {}{}", prefix, item, EOL).unwrap();
+            }
+
+            write!(w, "{}", EOL).unwrap();
+            write!(w, "Enter: Confirm{}", EOL).unwrap();
+        }
+        state::HomeState::Income => {
+            write!(w, "Income this day{}", EOL).unwrap();
+            write!(w, "{}", EOL).unwrap();
+
+            if game.current_income.money_earned > 0 {
+                write!(w, "💰 * {}{}", game.current_income.money_earned, EOL).unwrap();
+            }
+
+            for (crop, count) in &game.current_income.crops_sold {
+                if *count > 0 {
+                    write!(w, "{} * {}{}", crop.produce_emoji(), count, EOL).unwrap();
+                }
+            }
+
+            for (forage, count) in &game.current_income.forage_sold {
+                if *count > 0 {
+                    write!(w, "{} * {}{}", forage.emoji(), count, EOL).unwrap();
+                }
+            }
+
+            if game.current_income.money_earned == 0
+                && game.current_income.crops_sold.is_empty()
+                && game.current_income.forage_sold.is_empty()
+            {
+                write!(w, "(No income today){}", EOL).unwrap();
+            }
+
+            write!(w, "{}", EOL).unwrap();
+
+            let items = game.get_home_menu_items();
+            for (i, item) in items.iter().enumerate() {
+                let prefix = if i == game.home_cursor {
+                    "[√]"
+                } else {
+                    "[ ]"
+                };
+                write!(w, "{} {}{}", prefix, item, EOL).unwrap();
+            }
+
+            write!(w, "{}", EOL).unwrap();
+            write!(w, "Enter: Continue{}", EOL).unwrap();
+        }
+        state::HomeState::None => {}
+    }
+}
+
 fn handle_input(game: &mut GameState) -> bool {
     if let Event::Key(key) = event::read().unwrap() {
         if key.kind == KeyEventKind::Press {
+            if game.in_home() {
+                return game.home_handle_input(key.code);
+            }
+
             if game.in_shop() {
                 return game.shop_handle_input(key.code);
             }
@@ -159,6 +230,7 @@ fn main() {
         if !handle_input(&mut game) {
             break;
         }
+        game.check_home_alert();
         render(&game);
     }
 
@@ -207,5 +279,66 @@ mod tests {
         assert!(output.contains("Spring Day 1"));
         assert!(output.contains("🧑"));
         assert!(output.contains("Welcome to Shelldew!"));
+    }
+
+    #[test]
+    fn home_alert_triggers_at_2am() {
+        let mut game = GameState::new();
+        game.hour = 1;
+        game.minute = 55;
+        game.location = state::Location::Farm;
+
+        game.check_home_alert();
+        assert_eq!(game.home_state, state::HomeState::None);
+
+        game.hour = 2;
+        game.check_home_alert();
+        assert_eq!(game.home_state, state::HomeState::Alert);
+    }
+
+    #[test]
+    fn home_alert_not_in_east_path() {
+        let mut game = GameState::new();
+        game.hour = 2;
+        game.location = state::Location::EastPath;
+
+        game.check_home_alert();
+        assert_eq!(game.home_state, state::HomeState::None);
+    }
+
+    #[test]
+    fn sleep_transitions_to_income() {
+        let mut game = GameState::new();
+        game.home_state = state::HomeState::Alert;
+        game.home_cursor = 0;
+
+        game.home_handle_input(crossterm::event::KeyCode::Enter);
+        assert_eq!(game.home_state, state::HomeState::Income);
+    }
+
+    #[test]
+    fn income_tracks_earnings() {
+        let mut game = GameState::new();
+
+        game.record_income(100);
+        assert_eq!(game.current_income.money_earned, 100);
+
+        game.record_crop_sold(crate::world::CropType::Carrot, 2);
+        assert_eq!(
+            game.current_income
+                .crops_sold
+                .get(&crate::world::CropType::Carrot),
+            Some(&2)
+        );
+    }
+
+    #[test]
+    fn close_home_resets_income() {
+        let mut game = GameState::new();
+        game.current_income.money_earned = 500;
+
+        game.close_home();
+        assert_eq!(game.current_income.money_earned, 0);
+        assert_eq!(game.home_state, state::HomeState::None);
     }
 }
