@@ -4,8 +4,8 @@ mod world;
 use crate::state::GameState;
 use crate::world::Direction;
 use crossterm::{
-    cursor::MoveTo,
     ExecutableCommand,
+    cursor::MoveTo,
     event::{self, Event, KeyCode, KeyEventKind},
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
@@ -66,7 +66,12 @@ fn print_message<W: Write>(w: &mut W, game: &GameState) {
     write!(w, "{}", EOL).unwrap();
     write!(w, "{}{}", game.message, EOL).unwrap();
     write!(w, "{}", EOL).unwrap();
-    write!(w, "Arrow keys: Move | Esc: Quit{}", EOL).unwrap();
+    write!(
+        w,
+        "Arrow keys: Move | C: Clear | P: Plant | W: Water | H: Harvest | T: Trade | Esc: Quit{}",
+        EOL
+    )
+    .unwrap();
 }
 
 fn handle_input(game: &mut GameState) -> bool {
@@ -87,6 +92,21 @@ fn handle_input(game: &mut GameState) -> bool {
                 }
                 KeyCode::Esc => {
                     return false;
+                }
+                KeyCode::Char('c') | KeyCode::Char('C') => {
+                    game.clear_action();
+                }
+                KeyCode::Char('p') | KeyCode::Char('P') => {
+                    game.plant_action();
+                }
+                KeyCode::Char('w') | KeyCode::Char('W') => {
+                    game.water_action();
+                }
+                KeyCode::Char('h') | KeyCode::Char('H') => {
+                    game.harvest_action();
+                }
+                KeyCode::Char('t') | KeyCode::Char('T') => {
+                    game.trade_action();
                 }
                 _ => {}
             }
@@ -148,7 +168,7 @@ mod tests {
         output.push('\n');
         output.push_str(&format!("{}\n", game.message));
         output.push('\n');
-        output.push_str("Arrow keys: Move | Esc: Quit\n");
+        output.push_str("Arrow keys: Move | C: Clear | P: Plant | W: Water | H: Harvest | T: Trade | Esc: Quit\n");
 
         println!("{}", output);
         assert!(output.contains("Spring Day 1"));

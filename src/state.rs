@@ -32,7 +32,6 @@ impl GameState {
 
         let mut east_path_map = create_east_path_map();
 
-
         Self {
             location: Location::Farm,
             farm_map,
@@ -188,6 +187,93 @@ impl GameState {
 
     pub fn format_time(&self) -> String {
         format!("{:02}:{:02}", self.hour, self.minute)
+    }
+
+    pub fn clear_action(&mut self) {
+        if self.location != Location::Farm {
+            self.message = String::from("Cannot clear here!");
+            return;
+        }
+
+        if let Some((x, y)) = self.tile_in_front() {
+            let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Grass) = tile {
+                self.farm_map[y][x] = TileType::Soil;
+                self.message = String::from("Clear Done!");
+                self.advance_time();
+            } else {
+                self.message = String::from("Nothing to clear!");
+            }
+        } else {
+            self.message = String::from("Nothing in front!");
+        }
+    }
+
+    pub fn plant_action(&mut self) {
+        if self.location != Location::Farm {
+            self.message = String::from("Cannot plant here!");
+            return;
+        }
+
+        if let Some((x, y)) = self.tile_in_front() {
+            let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Soil) = tile {
+                self.farm_map[y][x] = TileType::Crop(crate::world::CropType::Carrot, 0);
+                self.message = String::from("Plant Done!");
+                self.advance_time();
+            } else {
+                self.message = String::from("Cannot plant there!");
+            }
+        } else {
+            self.message = String::from("Nothing in front!");
+        }
+    }
+
+    pub fn water_action(&mut self) {
+        if self.location != Location::Farm {
+            self.message = String::from("Cannot water here!");
+            return;
+        }
+
+        if let Some((x, y)) = self.tile_in_front() {
+            let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Crop(_, _)) = tile {
+                self.message = String::from("Water Done!");
+                self.advance_time();
+            } else {
+                self.message = String::from("Nothing to water!");
+            }
+        } else {
+            self.message = String::from("Nothing in front!");
+        }
+    }
+
+    pub fn harvest_action(&mut self) {
+        if let Some((x, y)) = self.tile_in_front() {
+            let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Crop(_, stage)) = tile {
+                if stage > 0 {
+                    if self.location == Location::Farm {
+                        self.farm_map[y][x] = TileType::Soil;
+                    } else {
+                        self.east_path_map[y][x] = TileType::Grass;
+                    }
+                    self.message = String::from("Harvest Done!");
+                    self.advance_time();
+                } else {
+                    self.message = String::from("Not ready yet!");
+                }
+            } else {
+                self.message = String::from("Nothing to harvest!");
+            }
+        } else {
+            self.message = String::from("Nothing in front!");
+        }
+    }
+
+    pub fn trade_action(&mut self) {
+        self.message = String::from("Trade menu coming soon!");
+        self.advance_time();
     }
 }
 
