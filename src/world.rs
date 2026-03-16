@@ -20,6 +20,7 @@ impl Direction {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum TileType {
     Boundary,
     Grass,
@@ -154,7 +155,7 @@ impl TileType {
         matches!(self, TileType::PathEast | TileType::PathFarm)
     }
 
-    pub fn to_emoji(&self) -> &'static str {
+    pub fn emoji(&self) -> &'static str {
         match self {
             TileType::Boundary => "🌳",
             TileType::Grass => "🌿",
@@ -177,7 +178,7 @@ impl TileType {
 
 impl fmt::Display for TileType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.to_emoji())
+        write!(f, "{}", self.emoji())
     }
 }
 

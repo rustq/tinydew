@@ -25,6 +25,7 @@ pub struct Inventory {
     pub forage: HashMap<ForageType, u32>,
 }
 
+#[allow(dead_code)]
 impl Inventory {
     pub fn new() -> Self {
         Self {
@@ -123,12 +124,13 @@ pub struct GameState {
     pub current_income: DailyIncome,
 }
 
+#[allow(dead_code)]
 impl GameState {
     pub fn new() -> Self {
-        let mut farm_map = create_farm_map();
+        let farm_map = create_farm_map();
         let (player_x, player_y) = find_player_start(&farm_map);
 
-        let mut east_path_map = create_east_path_map();
+        let east_path_map = create_east_path_map();
 
         Self {
             location: Location::Farm,
@@ -285,7 +287,7 @@ impl GameState {
 
         for y in 0..FARM_HEIGHT {
             for x in 0..FARM_WIDTH {
-                if let TileType::Crop(crop, state) = &mut self.farm_map[y][x] {
+                if let TileType::Crop(_crop, state) = &mut self.farm_map[y][x] {
                     if state.watered_today {
                         state.days_grown += 1;
                     }
@@ -705,7 +707,7 @@ impl GameState {
     }
 }
 
-fn find_player_start(map: &Map) -> (usize, usize) {
+fn find_player_start(_map: &Map) -> (usize, usize) {
     (3, 3)
 }
 
