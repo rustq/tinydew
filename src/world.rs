@@ -214,7 +214,13 @@ pub fn create_farm_map() -> Map {
             TileType::Grass,
             TileType::Grass,
             TileType::Grass,
-            TileType::Crop(CropType::Rhubarb, CropState::new()),
+            TileType::Crop(
+                CropType::Rhubarb,
+                CropState {
+                    days_grown: 16,
+                    watered_today: false,
+                },
+            ),
             TileType::Boundary,
         ],
         vec![
