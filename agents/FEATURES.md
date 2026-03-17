@@ -92,7 +92,7 @@ Supports directional forms for adjacent-tile actions, including:
 
 - `print` returns full textual game snapshot including:
   - day/time/location/money
-  - player position and facing
+  - player position
   - inventory summary
   - rendered map with emojis
   - latest message/event

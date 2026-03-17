@@ -224,7 +224,6 @@ fn advance_to_morning(state: &mut GameState) {
     state.location = Location::Farm;
     state.player_x = 3;
     state.player_y = 3;
-    state.direction = Direction::Down;
 
     state.start_new_day();
 
@@ -241,7 +240,6 @@ fn generate_text_snapshot(state: &GameState) -> String {
         String::new(),
         "--- Player ---".to_string(),
         format!("Position: ({}, {})", state.player_x, state.player_y),
-        format!("Direction: {:?}", state.direction),
         String::new(),
         "--- Inventory ---".to_string(),
     ];
@@ -1165,24 +1163,6 @@ mod tests {
             state.player_y, 3,
             "After sleep, player_y should be 3 (home-front). Got: {}",
             state.player_y
-        );
-    }
-
-    #[test]
-    fn test_sleep_resets_direction_to_down() {
-        let mut state = GameState::new();
-        state.day = 1;
-        state.hour = 20;
-        state.minute = 0;
-        state.direction = Direction::Right;
-
-        execute_command(&mut state, ParsedCommand::Sleep);
-
-        assert_eq!(
-            state.direction,
-            Direction::Down,
-            "After sleep, direction should be Down. Got: {:?}",
-            state.direction
         );
     }
 
