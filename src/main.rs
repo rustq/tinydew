@@ -2,6 +2,7 @@
 #![allow(dead_code, unused_imports)]
 
 mod mcp;
+mod savegame;
 mod state;
 mod world;
 

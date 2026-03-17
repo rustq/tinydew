@@ -3,22 +3,23 @@ use crate::world::{
     ForageType, Map, TileType, create_east_path_map, create_farm_map,
 };
 use crossterm::event::KeyCode;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum HomeState {
     None,
     Alert,
     Income,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Location {
     Farm,
     EastPath,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Inventory {
     pub seeds: HashMap<CropType, u32>,
     pub produce: HashMap<CropType, u32>,
@@ -86,21 +87,21 @@ impl Default for Inventory {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DailyIncome {
     pub money_earned: u32,
     pub crops_sold: HashMap<CropType, u32>,
     pub forage_sold: HashMap<ForageType, u32>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ShopState {
     None,
     BuyMenu,
     SellMenu,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameState {
     pub location: Location,
     pub farm_map: Map,

@@ -20,7 +20,7 @@ impl Direction {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub enum TileType {
     Boundary,
@@ -34,7 +34,7 @@ pub enum TileType {
     Mushroom,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CropState {
     pub days_grown: u8,
     pub watered_today: bool,

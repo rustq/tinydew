@@ -1,4 +1,5 @@
 use crate::mcp::errors::{ErrorCode, McpError};
+use crate::savegame;
 use crate::state::{GameState, Location};
 use crate::world::{CropState, CropType, Direction};
 use serde::{Deserialize, Serialize};
@@ -50,6 +51,8 @@ pub enum ParsedCommand {
     Sell(CropType, u32),
     Sleep,
     Print,
+    Save,
+    Load,
 }
 
 pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
@@ -132,8 +135,10 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
         }
         "sleep" => Ok(ParsedCommand::Sleep),
         "print" => Ok(ParsedCommand::Print),
+        "save" => Ok(ParsedCommand::Save),
+        "load" => Ok(ParsedCommand::Load),
         _ => Err(McpError::invalid_command(format!(
-            "unknown command '{}'. Valid commands: move:up|down|left|right, clear[:<dir>], plant:<crop>[:<dir>], water[:<dir>], harvest[:<dir>], buy:<item>[:<qty>], sell:<item>[:<qty>], sleep, print",
+            "unknown command '{}'. Valid commands: move:up|down|left|right, clear[:<dir>], plant:<crop>[:<dir>], water[:<dir>], harvest[:<dir>], buy:<item>[:<qty>], sell:<item>[:<qty>], sleep, print, save, load",
             cmd
         ))),
     }
@@ -417,6 +422,28 @@ pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResu
                 .with_events(vec![])
                 .with_snapshot(snapshot)
         }
+        ParsedCommand::Save => match savegame::save_game(state) {
+            Ok(path) => {
+                let msg = format!("Game saved to {:?}", path);
+                CommandResult::new(msg)
+                    .with_events(vec!["Saved".to_string()])
+                    .with_state_delta(serde_json::json!({
+                        "saved": true,
+                        "path": path.to_string_lossy()
+                    }))
+            }
+            Err(e) => CommandResult::new(format!("Save failed: {}", e)).with_events(vec![]),
+        },
+        ParsedCommand::Load => match savegame::load_game() {
+            Ok(loaded_state) => {
+                *state = loaded_state;
+                let msg = "Game loaded successfully!".to_string();
+                CommandResult::new(msg)
+                    .with_events(vec!["Loaded".to_string()])
+                    .with_state_delta(capture_state_snapshot(state))
+            }
+            Err(e) => CommandResult::new(format!("Load failed: {}", e)).with_events(vec![]),
+        },
     }
 }
 
@@ -677,6 +704,18 @@ mod tests {
     fn test_parse_print() {
         let result = parse_command("print");
         assert!(matches!(result, Ok(ParsedCommand::Print)));
+    }
+
+    #[test]
+    fn test_parse_save() {
+        let result = parse_command("save");
+        assert!(matches!(result, Ok(ParsedCommand::Save)));
+    }
+
+    #[test]
+    fn test_parse_load() {
+        let result = parse_command("load");
+        assert!(matches!(result, Ok(ParsedCommand::Load)));
     }
 
     #[test]
