@@ -151,7 +151,7 @@ impl Clone for Session {
     fn clone(&self) -> Self {
         Self {
             id: self.id.clone(),
-            game_state: GameState::new(),
+            game_state: self.game_state.clone(),
             created_at: self.created_at,
             last_accessed: self.last_accessed,
             closed: self.closed,
