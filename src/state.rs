@@ -310,6 +310,14 @@ impl GameState {
             }
         }
 
+        for y in 0..FARM_HEIGHT {
+            for x in 0..FARM_WIDTH {
+                if let TileType::Soil = self.farm_map[y][x] {
+                    self.farm_map[y][x] = TileType::Grass;
+                }
+            }
+        }
+
         self.spawn_east_path_mushrooms();
 
         self.message = String::from("Good morning! A new day begins.");
@@ -925,5 +933,46 @@ mod tests {
         let result = state.move_player(Direction::Right);
         assert!(result);
         assert_eq!(state.location, Location::EastPath);
+    }
+
+    #[test]
+    fn test_cleared_soil_reverts_to_grass_next_day() {
+        let mut state = GameState::new();
+        state.farm_map[3][3] = TileType::Soil;
+
+        assert_eq!(state.farm_map[3][3], TileType::Soil);
+
+        state.start_new_day();
+
+        assert_eq!(state.farm_map[3][3], TileType::Grass);
+    }
+
+    #[test]
+    fn test_cleared_with_crop_remains_crop() {
+        let mut state = GameState::new();
+        state.farm_map[3][3] = TileType::Crop(CropType::Carrot, CropState::new());
+
+        state.start_new_day();
+
+        assert!(matches!(
+            state.farm_map[3][3],
+            TileType::Crop(CropType::Carrot, _)
+        ));
+    }
+
+    #[test]
+    fn test_harvested_soil_reverts_to_grass_next_day() {
+        let mut state = GameState::new();
+        let mature_state = CropState {
+            days_grown: 10,
+            watered_today: false,
+        };
+        state.farm_map[3][3] = TileType::Crop(CropType::Carrot, mature_state);
+
+        state.farm_map[3][3] = TileType::Soil;
+
+        state.start_new_day();
+
+        assert_eq!(state.farm_map[3][3], TileType::Grass);
     }
 }
