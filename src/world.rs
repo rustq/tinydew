@@ -160,7 +160,7 @@ impl TileType {
         match self {
             TileType::Boundary => "🌳",
             TileType::Grass => "🌿",
-            TileType::Soil => "▪️",
+            TileType::Soil => "🍃",
             TileType::Crop(crop, state) => {
                 if state.is_mature(*crop) {
                     crop.produce_emoji()
