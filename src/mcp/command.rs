@@ -1,6 +1,6 @@
 use crate::mcp::errors::{ErrorCode, McpError};
 use crate::state::GameState;
-use crate::world::{CropType, Direction};
+use crate::world::{CropState, CropType, Direction};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -267,11 +267,18 @@ pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResu
             CommandResult::new(state.message.clone()).with_events(vec!["Cleared tile".to_string()])
         }
         ParsedCommand::Plant(crop) => {
+            let original_message = state.message.clone();
             state.selected_seed = crop;
             state.plant_action();
 
+            let events = if state.message.contains("Done") || original_message != state.message {
+                vec![format!("Planted {}", crop.seed_name())]
+            } else {
+                vec![]
+            };
+
             CommandResult::new(state.message.clone())
-                .with_events(vec![format!("Planted {}", crop.seed_name())])
+                .with_events(events)
                 .with_state_delta(serde_json::json!({
                     "selected_seed": crop.seed_name()
                 }))
@@ -750,5 +757,295 @@ mod tests {
         state.inventory.produce.insert(CropType::Carrot, 5);
         let result = execute_command(&mut state, ParsedCommand::Sell(CropType::Carrot, 3));
         assert!(!result.message.is_empty());
+    }
+
+    #[test]
+    fn test_mcp_command_batch_water_sleep_cycle_without_buying() {
+        use crate::mcp::handler::{handle_command, handle_end_session, handle_start_session};
+        use crate::mcp::tools::{
+            CommandInput, EndSessionInput, GetMapInput, GetStateInput, StartSessionInput,
+        };
+
+        let start_input = StartSessionInput {
+            seed: Some(42),
+            mode: Some("test".to_string()),
+        };
+        let start_response = handle_start_session(start_input);
+        assert!(start_response.ok);
+        let session_id = serde_json::from_value::<crate::mcp::tools::StartSessionOutput>(
+            start_response.result.unwrap(),
+        )
+        .unwrap()
+        .session_id;
+
+        // Try to plant without buying seeds first - should fail because no soil
+        let cmd_plant = CommandInput {
+            session_id: session_id.clone(),
+            command: "plant:carrot".to_string(),
+        };
+        let plant_resp = handle_command(cmd_plant);
+
+        // Should fail because no soil (player starts on grass)
+        let result = plant_resp.result.as_ref().unwrap();
+        let message = result.get("message").unwrap().as_str().unwrap();
+        assert!(
+            message.contains("Cannot plant there!") || message.contains("No Carrot seeds"),
+            "Got: {}",
+            message
+        );
+
+        // Clean up
+        let _ = handle_end_session(EndSessionInput { session_id });
+    }
+
+    #[test]
+    fn test_command_batch_crop_growth() {
+        use crate::mcp::handler::{handle_command_batch, handle_end_session, handle_start_session};
+        use crate::mcp::tools::{
+            CommandBatchInput, EndSessionInput, GetMapInput, StartSessionInput,
+        };
+
+        let start_input = StartSessionInput {
+            seed: Some(42),
+            mode: Some("test".to_string()),
+        };
+        let start_response = handle_start_session(start_input);
+        let session_id = serde_json::from_value::<crate::mcp::tools::StartSessionOutput>(
+            start_response.result.unwrap(),
+        )
+        .unwrap()
+        .session_id;
+
+        // First prepare: move, clear, buy seeds, plant
+        let batch_prepare = CommandBatchInput {
+            session_id: session_id.clone(),
+            commands: vec![
+                "move:down".to_string(),
+                "clear".to_string(),
+                "buy:carrot:5".to_string(),
+                "plant:carrot".to_string(),
+            ],
+            stop_on_error: true,
+        };
+        let _ = handle_command_batch(batch_prepare);
+
+        // Then water + sleep for 4 days
+        let batch_grow = CommandBatchInput {
+            session_id: session_id.clone(),
+            commands: vec![
+                "water".to_string(),
+                "sleep".to_string(),
+                "water".to_string(),
+                "sleep".to_string(),
+                "water".to_string(),
+                "sleep".to_string(),
+                "water".to_string(),
+                "sleep".to_string(),
+            ],
+            stop_on_error: true,
+        };
+        let grow_resp = handle_command_batch(batch_grow);
+        assert!(grow_resp.ok);
+
+        // Check final crop state
+        let map_input = GetMapInput {
+            session_id: session_id.clone(),
+            include_entities: Some(true),
+        };
+        let map_response = crate::mcp::handler::handle_get_map(map_input);
+        let map_result = map_response.result.unwrap();
+        let tiles = map_result.get("tiles").unwrap().as_array().unwrap();
+
+        let mut crop_info = String::new();
+        let mut found_mature = false;
+        for row in tiles {
+            for tile in row.as_array().unwrap() {
+                let tile_str = tile.as_str().unwrap();
+                crop_info = tile_str.to_string();
+                if tile_str.contains("Crop") && tile_str.contains("mature") {
+                    found_mature = true;
+                }
+            }
+        }
+
+        assert!(
+            found_mature,
+            "Expected mature crop after batch water+sleep cycles. Crop: {}",
+            crop_info
+        );
+
+        let _ = handle_end_session(EndSessionInput { session_id });
+    }
+
+    #[test]
+    fn test_water_and_sleep_crop_growth() {
+        use crate::world::TileType;
+
+        let mut state = GameState::new();
+        state.hour = 6;
+        state.minute = 0;
+        state.player_x = 3;
+        state.player_y = 3;
+        state.direction = Direction::Down;
+
+        state.farm_map[4][3] = TileType::Crop(CropType::Carrot, CropState::new());
+
+        if let TileType::Crop(_, crop_state) = state.farm_map[4][3] {
+            assert_eq!(crop_state.days_grown, 0);
+            assert!(!crop_state.watered_today);
+        }
+
+        state.water_action();
+
+        if let TileType::Crop(_, crop_state) = state.farm_map[4][3] {
+            assert!(
+                crop_state.watered_today,
+                "Crop should be watered after water_action"
+            );
+        }
+
+        execute_command(&mut state, ParsedCommand::Sleep);
+
+        if let TileType::Crop(_crop, crop_state) = state.farm_map[4][3] {
+            assert_eq!(
+                crop_state.days_grown, 1,
+                "Crop should have grown to 1 day after sleep, got {}",
+                crop_state.days_grown
+            );
+            assert!(
+                !crop_state.watered_today,
+                "watered_today should be reset after sleep"
+            );
+        }
+
+        for day in 1..4 {
+            state.water_action();
+            execute_command(&mut state, ParsedCommand::Sleep);
+
+            if let TileType::Crop(_crop, crop_state) = state.farm_map[4][3] {
+                assert_eq!(
+                    crop_state.days_grown,
+                    day + 1,
+                    "After day {} sleep, days_grown should be {}, got {}",
+                    day + 1,
+                    day + 1,
+                    crop_state.days_grown
+                );
+            }
+        }
+
+        if let TileType::Crop(crop, crop_state) = state.farm_map[4][3] {
+            assert!(
+                crop_state.is_mature(crop),
+                "Carrot should be mature after 4 days of growth, days_grown={}",
+                crop_state.days_grown
+            );
+        }
+    }
+
+    #[test]
+    fn test_mcp_command_batch_water_sleep_cycle() {
+        use crate::mcp::handler::{handle_command, handle_end_session, handle_start_session};
+        use crate::mcp::tools::{
+            CommandInput, EndSessionInput, GetMapInput, GetStateInput, StartSessionInput,
+        };
+
+        let start_input = StartSessionInput {
+            seed: Some(42),
+            mode: Some("test".to_string()),
+        };
+        let start_response = handle_start_session(start_input);
+        assert!(start_response.ok);
+        let session_id = serde_json::from_value::<crate::mcp::tools::StartSessionOutput>(
+            start_response.result.unwrap(),
+        )
+        .unwrap()
+        .session_id;
+
+        let cmd_place = CommandInput {
+            session_id: session_id.clone(),
+            command: "move:down".to_string(),
+        };
+        let _ = handle_command(cmd_place);
+
+        let cmd_clear = CommandInput {
+            session_id: session_id.clone(),
+            command: "clear".to_string(),
+        };
+        let _ = handle_command(cmd_clear);
+
+        let cmd_buy = CommandInput {
+            session_id: session_id.clone(),
+            command: "buy:carrot:5".to_string(),
+        };
+        let _ = handle_command(cmd_buy);
+
+        let cmd_plant = CommandInput {
+            session_id: session_id.clone(),
+            command: "plant:carrot".to_string(),
+        };
+        let _ = handle_command(cmd_plant);
+
+        let cmd_water = CommandInput {
+            session_id: session_id.clone(),
+            command: "water".to_string(),
+        };
+        let _ = handle_command(cmd_water);
+
+        let cmd_sleep = CommandInput {
+            session_id: session_id.clone(),
+            command: "sleep".to_string(),
+        };
+        let sleep_response = handle_command(cmd_sleep);
+        assert!(sleep_response.ok);
+
+        let state_input = GetStateInput {
+            session_id: session_id.clone(),
+        };
+        let state_response = crate::mcp::handler::handle_get_state(state_input);
+        let state = state_response.result.unwrap();
+        assert_eq!(state.get("day").unwrap().as_u64().unwrap(), 2);
+
+        for _ in 0..3 {
+            let cmd_water = CommandInput {
+                session_id: session_id.clone(),
+                command: "water".to_string(),
+            };
+            let _ = handle_command(cmd_water);
+
+            let cmd_sleep = CommandInput {
+                session_id: session_id.clone(),
+                command: "sleep".to_string(),
+            };
+            let _ = handle_command(cmd_sleep);
+        }
+
+        let map_input = GetMapInput {
+            session_id: session_id.clone(),
+            include_entities: Some(true),
+        };
+        let map_response = crate::mcp::handler::handle_get_map(map_input);
+        let map_result = map_response.result.unwrap();
+        let tiles = map_result.get("tiles").unwrap().as_array().unwrap();
+
+        let mut found_crop = false;
+        let mut crop_info = String::new();
+        for row in tiles {
+            for tile in row.as_array().unwrap() {
+                let tile_str = tile.as_str().unwrap();
+                if tile_str.contains("Crop") {
+                    crop_info = tile_str.to_string();
+                    if tile_str.contains("mature") {
+                        found_crop = true;
+                    }
+                }
+            }
+        }
+
+        assert!(
+            found_crop,
+            "Expected to find a mature crop after water+sleep cycles. Crop info: {}",
+            crop_info
+        );
     }
 }
