@@ -141,9 +141,9 @@ impl TileType {
     pub fn is_walkable(&self) -> bool {
         match self {
             TileType::Boundary => false,
+            TileType::Crop(_, _) => false,
             TileType::Grass
             | TileType::Soil
-            | TileType::Crop(_, _)
             | TileType::House
             | TileType::PathEast
             | TileType::PathFarm

@@ -847,3 +847,83 @@ impl Default for GameState {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_crop_tile_is_not_walkable() {
+        let crop_seedling = TileType::Crop(CropType::Carrot, CropState::new());
+        assert!(!crop_seedling.is_walkable());
+
+        let mature_state = CropState {
+            days_grown: 10,
+            watered_today: false,
+        };
+        let crop_mature = TileType::Crop(CropType::Carrot, mature_state);
+        assert!(!crop_mature.is_walkable());
+    }
+
+    #[test]
+    fn test_non_crop_tiles_are_walkable() {
+        assert!(TileType::Grass.is_walkable());
+        assert!(TileType::Soil.is_walkable());
+        assert!(TileType::PathEast.is_walkable());
+        assert!(TileType::PathFarm.is_walkable());
+        assert!(TileType::House.is_walkable());
+        assert!(TileType::Mushroom.is_walkable());
+        assert!(!TileType::Boundary.is_walkable());
+    }
+
+    #[test]
+    fn test_move_blocked_by_crop() {
+        let mut state = GameState::new();
+        state.player_x = 3;
+        state.player_y = 3;
+        state.farm_map[4][3] = TileType::Crop(CropType::Carrot, CropState::new());
+
+        let result = state.move_player(Direction::Down);
+        assert!(!result);
+        assert_eq!(state.player_x, 3);
+        assert_eq!(state.player_y, 3);
+        assert!(state.message.contains("Cannot move there"));
+    }
+
+    #[test]
+    fn test_move_allowed_on_non_crop_tiles() {
+        let mut state = GameState::new();
+        state.player_x = 3;
+        state.player_y = 3;
+
+        state.farm_map[3][4] = TileType::Grass;
+        let result = state.move_player(Direction::Right);
+        assert!(result);
+        assert_eq!(state.player_x, 4);
+        assert_eq!(state.player_y, 3);
+    }
+
+    #[test]
+    fn test_move_blocked_by_boundary() {
+        let mut state = GameState::new();
+        state.player_x = 0;
+        state.player_y = 1;
+
+        let result = state.move_player(Direction::Left);
+        assert!(!result);
+        assert_eq!(state.player_x, 0);
+    }
+
+    #[test]
+    fn test_transition_still_works() {
+        let mut state = GameState::new();
+        state.location = Location::Farm;
+        state.player_x = 6;
+        state.player_y = 5;
+        state.farm_map[5][7] = TileType::PathEast;
+
+        let result = state.move_player(Direction::Right);
+        assert!(result);
+        assert_eq!(state.location, Location::EastPath);
+    }
+}
