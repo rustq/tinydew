@@ -171,6 +171,18 @@ fn capture_state_snapshot(state: &GameState) -> serde_json::Value {
     })
 }
 
+fn advance_to_morning(state: &mut GameState) {
+    state.day += 1;
+    state.hour = 6;
+    state.minute = 0;
+
+    state.start_new_day();
+
+    state.home_state = crate::state::HomeState::None;
+    state.current_income = crate::state::DailyIncome::default();
+    state.message = String::from("Good morning! Ready for another day.");
+}
+
 fn generate_text_snapshot(state: &GameState) -> String {
     let mut lines = vec![
         format!("=== Shelldew Day {} {} ===", state.day, state.format_time()),
@@ -320,13 +332,7 @@ pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResu
                 }))
         }
         ParsedCommand::Sleep => {
-            if state.in_home() {
-                state.close_home();
-                state.message = String::from("Good morning! Ready for another day.");
-            } else {
-                state.home_state = crate::state::HomeState::Alert;
-                state.message = String::from("Sleeping... (Income calculated)");
-            }
+            advance_to_morning(state);
 
             CommandResult::new(state.message.clone())
                 .with_events(vec!["Slept".to_string()])
@@ -620,6 +626,114 @@ mod tests {
         let result = execute_command(&mut state, ParsedCommand::Sleep);
         assert!(!result.message.is_empty());
         assert!(result.state_delta.is_some());
+    }
+
+    #[test]
+    fn test_sleep_advances_day_and_time() {
+        let mut state = GameState::new();
+        state.day = 1;
+        state.hour = 22;
+        state.minute = 30;
+
+        let original_day = state.day;
+        let original_time = state.format_time();
+
+        execute_command(&mut state, ParsedCommand::Sleep);
+
+        assert!(
+            state.day > original_day || state.format_time() != original_time,
+            "Sleep should advance day or time. Before: Day {} {}, After: Day {} {}",
+            original_day,
+            original_time,
+            state.day,
+            state.format_time()
+        );
+    }
+
+    #[test]
+    fn test_sleep_transitions_to_next_morning() {
+        let mut state = GameState::new();
+        state.day = 1;
+        state.hour = 20;
+        state.minute = 0;
+
+        execute_command(&mut state, ParsedCommand::Sleep);
+
+        assert_eq!(
+            state.day,
+            2,
+            "After sleep, day should be exactly 2. Got: Day {} {}",
+            state.day,
+            state.format_time()
+        );
+        assert!(
+            state.hour >= 6 && state.hour < 12,
+            "After sleep, time should be morning (6-12). Got: Day {} {}",
+            state.day,
+            state.format_time()
+        );
+    }
+
+    #[test]
+    fn test_sleep_at_daytime_increments_day() {
+        let mut state = GameState::new();
+        state.day = 1;
+        state.hour = 14;
+        state.minute = 30;
+
+        execute_command(&mut state, ParsedCommand::Sleep);
+
+        assert_eq!(
+            state.day,
+            2,
+            "Sleep at daytime (14:30) should increment day. Got: Day {} {}",
+            state.day,
+            state.format_time()
+        );
+        assert_eq!(
+            state.hour, 6,
+            "After sleep, hour should be 6. Got: {}",
+            state.hour
+        );
+    }
+
+    #[test]
+    fn test_sleep_at_morning_increments_day() {
+        let mut state = GameState::new();
+        state.day = 1;
+        state.hour = 6;
+        state.minute = 0;
+
+        execute_command(&mut state, ParsedCommand::Sleep);
+
+        assert_eq!(
+            state.day,
+            2,
+            "Sleep at morning (6:00) should increment day. Got: Day {} {}",
+            state.day,
+            state.format_time()
+        );
+    }
+
+    #[test]
+    fn test_post_sleep_state_is_playable() {
+        let mut state = GameState::new();
+        state.day = 1;
+        state.hour = 20;
+        state.minute = 0;
+
+        execute_command(&mut state, ParsedCommand::Sleep);
+
+        assert_eq!(
+            state.home_state,
+            crate::state::HomeState::None,
+            "After sleep, home_state should be None (playable)"
+        );
+        assert!(
+            state.message.contains("morning") || state.message.contains("day"),
+            "Morning message expected. Got: {}",
+            state.message
+        );
     }
 
     #[test]
