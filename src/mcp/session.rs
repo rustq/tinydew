@@ -273,6 +273,56 @@ impl SessionManager {
             Err(McpError::session_not_found(session_id))
         }
     }
+
+    pub fn cleanup_idle_sessions(&self) -> usize {
+        let now = chrono::Utc::now();
+        let timeout = chrono::Duration::minutes(self.idle_timeout_minutes as i64);
+
+        let mut sessions = match self.sessions.write() {
+            Ok(s) => s,
+            Err(_) => return 0,
+        };
+
+        let idle_session_ids: Vec<String> = sessions
+            .iter()
+            .filter_map(|(id, session)| {
+                let session = session.read().ok()?;
+                if session.closed {
+                    Some(id.clone())
+                } else if now.signed_duration_since(session.last_accessed) > timeout {
+                    Some(id.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        for id in &idle_session_ids {
+            sessions.remove(id);
+        }
+
+        idle_session_ids.len()
+    }
+
+    pub fn get_active_session_count(&self) -> usize {
+        let sessions = match self.sessions.read() {
+            Ok(s) => s,
+            Err(_) => return 0,
+        };
+        sessions
+            .values()
+            .filter_map(|s| s.read().ok())
+            .filter(|s| !s.closed)
+            .count()
+    }
+
+    pub fn get_max_sessions(&self) -> usize {
+        self.max_sessions
+    }
+
+    pub fn get_idle_timeout_minutes(&self) -> u64 {
+        self.idle_timeout_minutes
+    }
 }
 
 impl Default for SessionManager {

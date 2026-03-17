@@ -52,6 +52,22 @@ impl ToolResponse {
     }
 }
 
+fn validate_session_id(session_id: &str) -> Result<(), McpError> {
+    if session_id.is_empty() {
+        return Err(McpError::validation_error(
+            "session_id cannot be empty",
+            vec!["Provide a valid session ID"],
+        ));
+    }
+    if session_id.len() > 256 {
+        return Err(McpError::validation_error(
+            "session_id too long",
+            vec!["Session ID must be 256 characters or less"],
+        ));
+    }
+    Ok(())
+}
+
 pub fn handle_start_session(input: StartSessionInput) -> ToolResponse {
     let manager = get_session_manager();
     let manager = match manager.read() {
@@ -76,6 +92,10 @@ pub fn handle_start_session(input: StartSessionInput) -> ToolResponse {
 }
 
 pub fn handle_end_session(input: EndSessionInput) -> ToolResponse {
+    if let Err(e) = validate_session_id(&input.session_id) {
+        return ToolResponse::from_mcp_error(e);
+    }
+
     let manager = get_session_manager();
     let manager = match manager.write() {
         Ok(m) => m,
@@ -93,6 +113,10 @@ pub fn handle_end_session(input: EndSessionInput) -> ToolResponse {
 }
 
 pub fn handle_get_state(input: GetStateInput) -> ToolResponse {
+    if let Err(e) = validate_session_id(&input.session_id) {
+        return ToolResponse::from_mcp_error(e);
+    }
+
     let manager = get_session_manager();
     let manager = match manager.read() {
         Ok(m) => m,
@@ -120,6 +144,10 @@ pub fn handle_get_state(input: GetStateInput) -> ToolResponse {
 }
 
 pub fn handle_get_map(input: GetMapInput) -> ToolResponse {
+    if let Err(e) = validate_session_id(&input.session_id) {
+        return ToolResponse::from_mcp_error(e);
+    }
+
     let manager = get_session_manager();
     let manager = match manager.read() {
         Ok(m) => m,
@@ -150,6 +178,10 @@ pub fn handle_get_map(input: GetMapInput) -> ToolResponse {
 }
 
 pub fn handle_get_stats(input: GetStatsInput) -> ToolResponse {
+    if let Err(e) = validate_session_id(&input.session_id) {
+        return ToolResponse::from_mcp_error(e);
+    }
+
     let manager = get_session_manager();
     let manager = match manager.read() {
         Ok(m) => m,
@@ -178,6 +210,10 @@ pub fn handle_get_stats(input: GetStatsInput) -> ToolResponse {
 }
 
 pub fn handle_command(input: CommandInput) -> ToolResponse {
+    if let Err(e) = validate_session_id(&input.session_id) {
+        return ToolResponse::from_mcp_error(e);
+    }
+
     let manager = get_session_manager();
     let manager = match manager.read() {
         Ok(m) => m,
@@ -225,6 +261,10 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
             ErrorCode::ValidationError,
             "commands array cannot be empty".to_string(),
         );
+    }
+
+    if let Err(e) = validate_session_id(&input.session_id) {
+        return ToolResponse::from_mcp_error(e);
     }
 
     let manager = get_session_manager();
@@ -318,6 +358,10 @@ pub fn handle_resource_read(uri: &str) -> ToolResponse {
     };
 
     let (session_id, resource_type) = parsed;
+
+    if let Err(e) = validate_session_id(&session_id) {
+        return ToolResponse::from_mcp_error(e);
+    }
 
     let manager_lock = get_session_manager();
     let manager = match manager_lock.read() {
