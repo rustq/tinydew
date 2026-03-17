@@ -1,5 +1,5 @@
 use crate::mcp::errors::{ErrorCode, McpError};
-use crate::state::GameState;
+use crate::state::{GameState, Location};
 use crate::world::{CropState, CropType, Direction};
 use serde::{Deserialize, Serialize};
 
@@ -42,10 +42,10 @@ impl CommandResult {
 #[derive(Debug, Clone)]
 pub enum ParsedCommand {
     Move(Direction),
-    Clear,
-    Plant(CropType),
-    Water,
-    Harvest,
+    Clear(Option<Direction>),
+    Plant(CropType, Option<Direction>),
+    Water(Option<Direction>),
+    Harvest(Option<Direction>),
     Buy(CropType, u32),
     Sell(CropType, u32),
     Sleep,
@@ -80,19 +80,46 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
             };
             Ok(ParsedCommand::Move(dir))
         }
-        "clear" => Ok(ParsedCommand::Clear),
+        "clear" => {
+            let direction = arg.map(parse_direction).transpose()?;
+            Ok(ParsedCommand::Clear(direction))
+        }
         "plant" => {
-            let crop_str = arg.ok_or_else(|| {
-                McpError::validation_error(
+            let (crop_str, dir_str) = if let Some(arg) = arg {
+                let parts: Vec<&str> = arg.rsplitn(2, ':').collect();
+                if parts.len() == 2 {
+                    let dir = parse_direction(parts[0]);
+                    if dir.is_ok() {
+                        (parts[1], Some(parts[0]))
+                    } else {
+                        (arg, None)
+                    }
+                } else {
+                    (arg, None)
+                }
+            } else {
+                ("", None)
+            };
+            let crop_str = if crop_str.is_empty() {
+                return Err(McpError::validation_error(
                     "plant requires crop type",
                     CropType::all().iter().map(|c| c.seed_name()).collect(),
-                )
-            })?;
+                ));
+            } else {
+                crop_str
+            };
             let crop = parse_crop(crop_str)?;
-            Ok(ParsedCommand::Plant(crop))
+            let direction = dir_str.map(parse_direction).transpose()?;
+            Ok(ParsedCommand::Plant(crop, direction))
         }
-        "water" => Ok(ParsedCommand::Water),
-        "harvest" => Ok(ParsedCommand::Harvest),
+        "water" => {
+            let direction = arg.map(parse_direction).transpose()?;
+            Ok(ParsedCommand::Water(direction))
+        }
+        "harvest" => {
+            let direction = arg.map(parse_direction).transpose()?;
+            Ok(ParsedCommand::Harvest(direction))
+        }
         "buy" => {
             let (item_str, qty) = parse_item_with_qty(arg.unwrap_or(""))?;
             let crop = parse_crop(item_str)?;
@@ -106,7 +133,7 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
         "sleep" => Ok(ParsedCommand::Sleep),
         "print" => Ok(ParsedCommand::Print),
         _ => Err(McpError::invalid_command(format!(
-            "unknown command '{}'. Valid commands: move:up|down|left|right, clear, plant:<crop>, water, harvest, buy:<item>[:<qty>], sell:<item>[:<qty>], sleep, print",
+            "unknown command '{}'. Valid commands: move:up|down|left|right, clear[:<dir>], plant:<crop>[:<dir>], water[:<dir>], harvest[:<dir>], buy:<item>[:<qty>], sell:<item>[:<qty>], sleep, print",
             cmd
         ))),
     }
@@ -121,6 +148,19 @@ fn parse_crop(s: &str) -> Result<CropType, McpError> {
         _ => Err(McpError::validation_error(
             format!("invalid crop '{}'", s),
             vec!["carrot", "strawberry", "cauliflower", "rhubarb"],
+        )),
+    }
+}
+
+fn parse_direction(s: &str) -> Result<Direction, McpError> {
+    match s {
+        "up" => Ok(Direction::Up),
+        "down" => Ok(Direction::Down),
+        "left" => Ok(Direction::Left),
+        "right" => Ok(Direction::Right),
+        _ => Err(McpError::validation_error(
+            format!("invalid direction '{}'", s),
+            vec!["up", "down", "left", "right"],
         )),
     }
 }
@@ -271,14 +311,20 @@ pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResu
                     "player": { "x": new_x, "y": new_y }
                 }))
         }
-        ParsedCommand::Clear => {
-            state.clear_action();
+        ParsedCommand::Clear(dir) => {
+            match dir {
+                Some(d) => state.clear_action_at(d),
+                None => state.clear_action(),
+            };
             CommandResult::new(state.message.clone()).with_events(vec!["Cleared tile".to_string()])
         }
-        ParsedCommand::Plant(crop) => {
+        ParsedCommand::Plant(crop, dir) => {
             let original_message = state.message.clone();
             state.selected_seed = crop;
-            state.plant_action();
+            match dir {
+                Some(d) => state.plant_action_at(d),
+                None => state.plant_action(),
+            };
 
             let events = if state.message.contains("Done") || original_message != state.message {
                 vec![format!("Planted {}", crop.seed_name())]
@@ -292,12 +338,18 @@ pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResu
                     "selected_seed": crop.seed_name()
                 }))
         }
-        ParsedCommand::Water => {
-            state.water_action();
+        ParsedCommand::Water(dir) => {
+            match dir {
+                Some(d) => state.water_action_at(d),
+                None => state.water_action(),
+            };
             CommandResult::new(state.message.clone()).with_events(vec!["Watered crop".to_string()])
         }
-        ParsedCommand::Harvest => {
-            state.harvest_action();
+        ParsedCommand::Harvest(dir) => {
+            match dir {
+                Some(d) => state.harvest_action_at(d),
+                None => state.harvest_action(),
+            };
             CommandResult::new(state.message.clone()).with_events(vec!["Harvested".to_string()])
         }
         ParsedCommand::Buy(crop, qty) => {
@@ -394,25 +446,184 @@ mod tests {
     #[test]
     fn test_parse_clear() {
         let result = parse_command("clear");
-        assert!(matches!(result, Ok(ParsedCommand::Clear)));
+        assert!(matches!(result, Ok(ParsedCommand::Clear(None))));
+    }
+
+    #[test]
+    fn test_parse_clear_with_direction() {
+        let result = parse_command("clear:up");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Clear(Some(Direction::Up)))
+        ));
+
+        let result = parse_command("clear:down");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Clear(Some(Direction::Down)))
+        ));
+
+        let result = parse_command("clear:left");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Clear(Some(Direction::Left)))
+        ));
+
+        let result = parse_command("clear:right");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Clear(Some(Direction::Right)))
+        ));
     }
 
     #[test]
     fn test_parse_plant() {
         let result = parse_command("plant:carrot");
-        assert!(matches!(result, Ok(ParsedCommand::Plant(CropType::Carrot))));
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Plant(CropType::Carrot, None))
+        ));
+    }
+
+    #[test]
+    fn test_parse_plant_with_direction() {
+        let result = parse_command("plant:carrot:up");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Plant(CropType::Carrot, Some(Direction::Up)))
+        ));
+
+        let result = parse_command("plant:strawberry:down");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Plant(
+                CropType::Strawberry,
+                Some(Direction::Down)
+            ))
+        ));
+
+        let result = parse_command("plant:cauliflower:left");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Plant(
+                CropType::Cauliflower,
+                Some(Direction::Left)
+            ))
+        ));
+
+        let result = parse_command("plant:rhubarb:right");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Plant(
+                CropType::Rhubarb,
+                Some(Direction::Right)
+            ))
+        ));
     }
 
     #[test]
     fn test_parse_water() {
         let result = parse_command("water");
-        assert!(matches!(result, Ok(ParsedCommand::Water)));
+        assert!(matches!(result, Ok(ParsedCommand::Water(None))));
+    }
+
+    #[test]
+    fn test_parse_water_with_direction() {
+        let result = parse_command("water:up");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Water(Some(Direction::Up)))
+        ));
+
+        let result = parse_command("water:down");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Water(Some(Direction::Down)))
+        ));
+
+        let result = parse_command("water:left");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Water(Some(Direction::Left)))
+        ));
+
+        let result = parse_command("water:right");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Water(Some(Direction::Right)))
+        ));
     }
 
     #[test]
     fn test_parse_harvest() {
         let result = parse_command("harvest");
-        assert!(matches!(result, Ok(ParsedCommand::Harvest)));
+        assert!(matches!(result, Ok(ParsedCommand::Harvest(None))));
+    }
+
+    #[test]
+    fn test_parse_harvest_with_direction() {
+        let result = parse_command("harvest:up");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Harvest(Some(Direction::Up)))
+        ));
+
+        let result = parse_command("harvest:down");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Harvest(Some(Direction::Down)))
+        ));
+
+        let result = parse_command("harvest:left");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Harvest(Some(Direction::Left)))
+        ));
+
+        let result = parse_command("harvest:right");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Harvest(Some(Direction::Right)))
+        ));
+    }
+
+    #[test]
+    fn test_parse_invalid_direction() {
+        let result = parse_command("clear:north");
+        assert!(matches!(
+            result,
+            Err(McpError {
+                code: ErrorCode::ValidationError,
+                ..
+            })
+        ));
+
+        let result = parse_command("water:south");
+        assert!(matches!(
+            result,
+            Err(McpError {
+                code: ErrorCode::ValidationError,
+                ..
+            })
+        ));
+
+        let result = parse_command("plant:carrot:east");
+        assert!(matches!(
+            result,
+            Err(McpError {
+                code: ErrorCode::ValidationError,
+                ..
+            })
+        ));
+
+        let result = parse_command("move:north");
+        assert!(matches!(
+            result,
+            Err(McpError {
+                code: ErrorCode::ValidationError,
+                ..
+            })
+        ));
     }
 
     #[test]
@@ -478,18 +689,6 @@ mod tests {
     #[test]
     fn test_parse_invalid_crop() {
         let result = parse_command("plant:tomato");
-        assert!(matches!(
-            result,
-            Err(McpError {
-                code: ErrorCode::ValidationError,
-                ..
-            })
-        ));
-    }
-
-    #[test]
-    fn test_parse_invalid_direction() {
-        let result = parse_command("move:north");
         assert!(matches!(
             result,
             Err(McpError {
@@ -592,7 +791,10 @@ mod tests {
         assert!(matches!(result, Ok(ParsedCommand::Move(Direction::Down))));
 
         let result = parse_command("plant:CARROT");
-        assert!(matches!(result, Ok(ParsedCommand::Plant(CropType::Carrot))));
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Plant(CropType::Carrot, None))
+        ));
     }
 
     #[test]
@@ -623,31 +825,34 @@ mod tests {
     #[test]
     fn test_parse_all_crop_types() {
         let result = parse_command("plant:carrot");
-        assert!(matches!(result, Ok(ParsedCommand::Plant(CropType::Carrot))));
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Plant(CropType::Carrot, None))
+        ));
 
         let result = parse_command("plant:strawberry");
         assert!(matches!(
             result,
-            Ok(ParsedCommand::Plant(CropType::Strawberry))
+            Ok(ParsedCommand::Plant(CropType::Strawberry, None))
         ));
 
         let result = parse_command("plant:cauliflower");
         assert!(matches!(
             result,
-            Ok(ParsedCommand::Plant(CropType::Cauliflower))
+            Ok(ParsedCommand::Plant(CropType::Cauliflower, None))
         ));
 
         let result = parse_command("plant:rhubarb");
         assert!(matches!(
             result,
-            Ok(ParsedCommand::Plant(CropType::Rhubarb))
+            Ok(ParsedCommand::Plant(CropType::Rhubarb, None))
         ));
     }
 
     #[test]
     fn test_execute_plant() {
         let mut state = GameState::new();
-        let result = execute_command(&mut state, ParsedCommand::Plant(CropType::Carrot));
+        let result = execute_command(&mut state, ParsedCommand::Plant(CropType::Carrot, None));
         assert!(!result.message.is_empty());
         assert!(result.state_delta.is_some());
     }
@@ -655,21 +860,93 @@ mod tests {
     #[test]
     fn test_execute_water() {
         let mut state = GameState::new();
-        let result = execute_command(&mut state, ParsedCommand::Water);
+        let result = execute_command(&mut state, ParsedCommand::Water(None));
         assert!(!result.message.is_empty());
     }
 
     #[test]
     fn test_execute_harvest() {
         let mut state = GameState::new();
-        let result = execute_command(&mut state, ParsedCommand::Harvest);
+        let result = execute_command(&mut state, ParsedCommand::Harvest(None));
         assert!(!result.message.is_empty());
     }
 
     #[test]
     fn test_execute_clear() {
         let mut state = GameState::new();
-        let result = execute_command(&mut state, ParsedCommand::Clear);
+        let result = execute_command(&mut state, ParsedCommand::Clear(None));
+        assert!(!result.message.is_empty());
+    }
+
+    #[test]
+    fn test_execute_directional_clear() {
+        use crate::world::TileType;
+
+        let mut state = GameState::new();
+        state.location = Location::Farm;
+        state.player_x = 3;
+        state.player_y = 3;
+        state.farm_map[3][4] = TileType::Grass;
+
+        let result = execute_command(&mut state, ParsedCommand::Clear(Some(Direction::Right)));
+        assert!(!result.message.is_empty());
+    }
+
+    #[test]
+    fn test_execute_directional_water() {
+        use crate::world::TileType;
+
+        let mut state = GameState::new();
+        state.location = Location::Farm;
+        state.player_x = 3;
+        state.player_y = 3;
+        state.farm_map[3][4] = TileType::Crop(
+            CropType::Carrot,
+            CropState {
+                days_grown: 1,
+                watered_today: false,
+            },
+        );
+
+        let result = execute_command(&mut state, ParsedCommand::Water(Some(Direction::Right)));
+        assert!(!result.message.is_empty());
+    }
+
+    #[test]
+    fn test_execute_directional_harvest() {
+        use crate::world::TileType;
+
+        let mut state = GameState::new();
+        state.location = Location::Farm;
+        state.player_x = 3;
+        state.player_y = 3;
+        state.farm_map[3][4] = TileType::Crop(
+            CropType::Carrot,
+            CropState {
+                days_grown: 4,
+                watered_today: true,
+            },
+        );
+
+        let result = execute_command(&mut state, ParsedCommand::Harvest(Some(Direction::Right)));
+        assert!(!result.message.is_empty());
+    }
+
+    #[test]
+    fn test_execute_directional_plant() {
+        use crate::world::TileType;
+
+        let mut state = GameState::new();
+        state.location = Location::Farm;
+        state.player_x = 3;
+        state.player_y = 3;
+        state.farm_map[3][4] = TileType::Soil;
+        state.inventory.seeds.insert(CropType::Carrot, 5);
+
+        let result = execute_command(
+            &mut state,
+            ParsedCommand::Plant(CropType::Carrot, Some(Direction::Right)),
+        );
         assert!(!result.message.is_empty());
     }
 

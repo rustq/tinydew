@@ -191,6 +191,20 @@ impl GameState {
         }
     }
 
+    pub fn tile_at_direction(&self, dir: Direction) -> Option<(usize, usize)> {
+        let (dx, dy) = dir.delta();
+        let (width, height) = self.get_map_size();
+
+        let new_x = self.player_x as i32 + dx;
+        let new_y = self.player_y as i32 + dy;
+
+        if new_x >= 0 && new_x < width as i32 && new_y >= 0 && new_y < height as i32 {
+            Some((new_x as usize, new_y as usize))
+        } else {
+            None
+        }
+    }
+
     pub fn can_move_to(&self, x: usize, y: usize) -> bool {
         let (width, height) = self.get_map_size();
         if x >= width || y >= height {
@@ -400,6 +414,26 @@ impl GameState {
         }
     }
 
+    pub fn clear_action_at(&mut self, dir: Direction) {
+        if self.location != Location::Farm {
+            self.message = String::from("Cannot clear here! (Farming only on farm)");
+            return;
+        }
+
+        if let Some((x, y)) = self.tile_at_direction(dir) {
+            let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Grass) = tile {
+                self.farm_map[y][x] = TileType::Soil;
+                self.message = format!("Clear Done! (Cleared {:?})", dir);
+                self.advance_time();
+            } else {
+                self.message = String::from("Nothing to clear! (Only weeds can be cleared)");
+            }
+        } else {
+            self.message = String::from("Out of bounds!");
+        }
+    }
+
     pub fn plant_action(&mut self) {
         if self.location != Location::Farm {
             self.message = String::from("Cannot plant here! (Farming only on farm)");
@@ -425,6 +459,37 @@ impl GameState {
             }
         } else {
             self.message = String::from("Nothing in front!");
+        }
+    }
+
+    pub fn plant_action_at(&mut self, dir: Direction) {
+        if self.location != Location::Farm {
+            self.message = String::from("Cannot plant here! (Farming only on farm)");
+            return;
+        }
+
+        if let Some((x, y)) = self.tile_at_direction(dir) {
+            let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Soil) = tile {
+                if self.inventory.use_seed(self.selected_seed) {
+                    self.farm_map[y][x] = TileType::Crop(self.selected_seed, CropState::new());
+                    self.message = format!(
+                        "Plant Done! (Planted {} at {:?})",
+                        self.selected_seed.seed_name(),
+                        dir
+                    );
+                    self.advance_time();
+                } else {
+                    self.message = format!(
+                        "No {} seeds! Press T to buy seeds.",
+                        self.selected_seed.seed_name()
+                    );
+                }
+            } else {
+                self.message = String::from("Cannot plant there! (Need cleared soil)");
+            }
+        } else {
+            self.message = String::from("Out of bounds!");
         }
     }
 
@@ -455,6 +520,36 @@ impl GameState {
             }
         } else {
             self.message = String::from("Nothing in front!");
+        }
+    }
+
+    pub fn water_action_at(&mut self, dir: Direction) {
+        if self.location != Location::Farm {
+            self.message = String::from("Cannot water here! (Farming only on farm)");
+            return;
+        }
+
+        if let Some((x, y)) = self.tile_at_direction(dir) {
+            let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Crop(crop, state)) = tile {
+                if !state.is_mature(crop) {
+                    self.farm_map[y][x] = TileType::Crop(
+                        crop,
+                        CropState {
+                            days_grown: state.days_grown,
+                            watered_today: true,
+                        },
+                    );
+                    self.message = format!("Water Done! (Watered {:?})", dir);
+                    self.advance_time();
+                } else {
+                    self.message = String::from("Already mature! (Harvest ready)");
+                }
+            } else {
+                self.message = String::from("Nothing to water! (Need a crop)");
+            }
+        } else {
+            self.message = String::from("Out of bounds!");
         }
     }
 
@@ -490,6 +585,42 @@ impl GameState {
             }
         } else {
             self.message = String::from("Nothing in front!");
+        }
+    }
+
+    pub fn harvest_action_at(&mut self, dir: Direction) {
+        if let Some((x, y)) = self.tile_at_direction(dir) {
+            let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Crop(crop, state)) = tile {
+                if state.is_mature(crop) {
+                    if self.location == Location::Farm {
+                        self.farm_map[y][x] = TileType::Soil;
+                    } else {
+                        self.east_path_map[y][x] = TileType::Grass;
+                    }
+                    self.inventory.add_produce(crop);
+                    self.message =
+                        format!("Harvest Done! (Got {} at {:?})", crop.produce_emoji(), dir);
+                    self.advance_time();
+                } else {
+                    self.message = String::from("Not ready yet! (Needs more time)");
+                }
+            } else if let Some(TileType::Mushroom) = tile {
+                if self.location == Location::EastPath {
+                    if let Some(map_row) = self.east_path_map.get_mut(y) {
+                        map_row[x] = TileType::Grass;
+                    }
+                    self.inventory.add_forage(ForageType::Mushroom);
+                    self.message = String::from("Harvest Done! (Got 🍄)");
+                    self.advance_time();
+                } else {
+                    self.message = String::from("Cannot harvest mushrooms here!");
+                }
+            } else {
+                self.message = String::from("Nothing to harvest!");
+            }
+        } else {
+            self.message = String::from("Out of bounds!");
         }
     }
 
