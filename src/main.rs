@@ -20,10 +20,7 @@ use std::io::{BufRead, Write, stdin, stdout};
 #[command(name = "shelldew")]
 #[command(version = "0.1.0")]
 #[command(about = "A cozy farming game", long_about = None)]
-struct Args {
-    #[arg(long)]
-    mcp: bool,
-}
+struct Args {}
 
 fn run_mcp_server() -> Result<(), Box<dyn std::error::Error>> {
     use crate::mcp::handler::{
@@ -364,32 +361,14 @@ fn handle_input(game: &mut GameState) -> bool {
 }
 
 fn main() {
-    let args = Args::parse();
+    let _args = Args::parse();
 
-    if args.mcp {
-        if let Err(e) = run_mcp_server() {
-            eprintln!("[MCP] Error: {}", e);
-            std::process::exit(1);
-        }
-        return;
+    // Interactive shell/TUI mode is intentionally removed.
+    // Shelldew now runs as MCP server runtime only.
+    if let Err(e) = run_mcp_server() {
+        eprintln!("[MCP] Error: {}", e);
+        std::process::exit(1);
     }
-
-    enable_raw_mode().unwrap();
-    stdout().execute(EnterAlternateScreen).unwrap();
-
-    let mut game = GameState::new();
-    render(&game);
-
-    loop {
-        if !handle_input(&mut game) {
-            break;
-        }
-        game.check_home_alert();
-        render(&game);
-    }
-
-    disable_raw_mode().unwrap();
-    stdout().execute(LeaveAlternateScreen).unwrap();
 }
 
 #[cfg(test)]
@@ -680,15 +659,14 @@ mod tests {
     }
 
     #[test]
-    fn test_cli_args_mcp_flag() {
-        let args = Args::parse_from(["shelldew", "--mcp"]);
-        assert!(args.mcp);
+    fn test_cli_args_no_flags() {
+        let _args = Args::parse_from(["shelldew"]);
     }
 
     #[test]
-    fn test_cli_args_no_mcp() {
-        let args = Args::parse_from(["shelldew"]);
-        assert!(!args.mcp);
+    fn test_cli_args_reject_mcp_flag() {
+        let result = Args::try_parse_from(["shelldew", "--mcp"]);
+        assert!(result.is_err());
     }
 
     #[test]
