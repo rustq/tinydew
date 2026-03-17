@@ -228,8 +228,17 @@ fn generate_text_snapshot(state: &GameState) -> String {
     lines.push("--- Farm Map ---".to_string());
 
     let map = state.get_current_map_ref();
-    for row in map {
-        let line: String = row.iter().map(|t| t.emoji()).collect();
+    let (width, height) = state.get_map_size();
+    for y in 0..height {
+        let line: String = (0..width)
+            .map(|x| {
+                if x == state.player_x && y == state.player_y {
+                    "🧑"
+                } else {
+                    map[y][x].emoji()
+                }
+            })
+            .collect();
         lines.push(line);
     }
 
@@ -505,6 +514,43 @@ mod tests {
         assert!(result.snapshot_text.is_some());
         let snapshot = result.snapshot_text.unwrap();
         assert!(snapshot.contains("Day"));
+    }
+
+    #[test]
+    fn test_print_snapshot_contains_player_marker() {
+        let mut state = GameState::new();
+        state.player_x = 2;
+        state.player_y = 3;
+        let result = execute_command(&mut state, ParsedCommand::Print);
+        let snapshot = result.snapshot_text.unwrap();
+
+        let map_start = snapshot
+            .lines()
+            .position(|l| l.starts_with("--- Farm Map ---"));
+        assert!(map_start.is_some(), "Map section should exist");
+        let map_start = map_start.unwrap();
+
+        let map_rows: Vec<&str> = snapshot.lines().skip(map_start + 1).take(8).collect();
+
+        assert_eq!(map_rows.len(), 8, "Should have 8 map rows");
+
+        let row_3 = map_rows.get(3);
+        assert!(row_3.is_some(), "Row 3 should exist");
+
+        assert!(
+            row_3.unwrap().contains("🧑"),
+            "Player marker 🧑 should appear in row 3"
+        );
+
+        let char_count = row_3.unwrap().chars().count();
+        assert_eq!(char_count, 8, "Row should have 8 characters");
+
+        let player_char_idx = row_3.unwrap().chars().position(|c| c == '🧑').unwrap();
+        assert_eq!(
+            player_char_idx, 2,
+            "Player marker should be at character index 2 (x=2) in row 3, got {}",
+            player_char_idx
+        );
     }
 
     #[test]
