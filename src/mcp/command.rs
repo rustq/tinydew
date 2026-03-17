@@ -56,7 +56,7 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
     let input = input.trim().to_lowercase();
     let parts: Vec<&str> = input.splitn(2, ':').collect();
     let cmd = parts[0];
-    let arg = parts.get(1).map(|s| *s);
+    let arg = parts.get(1).copied();
 
     match cmd {
         "move" => {
@@ -808,9 +808,7 @@ mod tests {
     #[test]
     fn test_mcp_command_batch_water_sleep_cycle_without_buying() {
         use crate::mcp::handler::{handle_command, handle_end_session, handle_start_session};
-        use crate::mcp::tools::{
-            CommandInput, EndSessionInput, GetMapInput, GetStateInput, StartSessionInput,
-        };
+        use crate::mcp::tools::{CommandInput, EndSessionInput, StartSessionInput};
 
         let start_input = StartSessionInput {
             seed: Some(42),
@@ -991,10 +989,8 @@ mod tests {
 
     #[test]
     fn test_mcp_command_batch_water_sleep_cycle() {
-        use crate::mcp::handler::{handle_command, handle_end_session, handle_start_session};
-        use crate::mcp::tools::{
-            CommandInput, EndSessionInput, GetMapInput, GetStateInput, StartSessionInput,
-        };
+        use crate::mcp::handler::{handle_command, handle_start_session};
+        use crate::mcp::tools::{CommandInput, GetMapInput, GetStateInput, StartSessionInput};
 
         let start_input = StartSessionInput {
             seed: Some(42),

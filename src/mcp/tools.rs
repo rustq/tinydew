@@ -152,6 +152,7 @@ impl McpTools {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ToolDefinition {
     pub name: String,
     pub description: String,

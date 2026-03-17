@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::state::GameState;
 use crate::world::TileType;
 use std::collections::HashMap;
@@ -85,6 +87,7 @@ impl Session {
     /// - "P": PathEast/PathFarm
     /// - "M": Mushroom
     /// - "C": Crop (generic)
+    ///
     /// When include_entities is true, crops show their type and growth stage.
     pub fn to_map_snapshot(&self, include_entities: bool) -> serde_json::Value {
         let map = self.game_state.get_current_map_ref();
@@ -288,9 +291,7 @@ impl SessionManager {
             .iter()
             .filter_map(|(id, session)| {
                 let session = session.read().ok()?;
-                if session.closed {
-                    Some(id.clone())
-                } else if now.signed_duration_since(session.last_accessed) > timeout {
+                if session.closed || now.signed_duration_since(session.last_accessed) > timeout {
                     Some(id.clone())
                 } else {
                     None

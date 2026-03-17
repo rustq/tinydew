@@ -1,4 +1,7 @@
+#![allow(dead_code)]
+
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ResourceDefinition {
     pub uri: String,
     pub name: String,

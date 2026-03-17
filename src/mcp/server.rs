@@ -5,6 +5,7 @@ use super::resources::McpResources;
 use super::tools::McpTools;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct RequestLog {
     pub timestamp: String,
     pub tool: String,
@@ -26,6 +27,7 @@ pub fn initialize_mcp_server() {
     info!("Transport: local-only (stdio)");
 }
 
+#[allow(dead_code)]
 pub fn log_request(log: RequestLog) {
     let status = if log.success { "SUCCESS" } else { "FAILED" };
     info!(
@@ -34,6 +36,7 @@ pub fn log_request(log: RequestLog) {
     );
 }
 
+#[allow(dead_code)]
 pub fn create_request_log(
     tool: &str,
     session_id: Option<String>,

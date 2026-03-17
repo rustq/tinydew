@@ -1,4 +1,5 @@
 #![allow(clippy::needless_range_loop)]
+#![allow(dead_code, unused_imports)]
 
 mod mcp;
 mod state;
@@ -12,7 +13,6 @@ use crossterm::{
     ExecutableCommand,
     cursor::MoveTo,
     event::{self, Event, KeyCode, KeyEventKind},
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use std::io::{BufRead, Write, stdin, stdout};
 
@@ -152,6 +152,7 @@ fn run_mcp_server() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn render(game: &GameState) {
     let mut stdout = stdout();
 
@@ -170,8 +171,10 @@ fn render(game: &GameState) {
 }
 
 /// CRLF so the terminal returns to column 0 each line (avoids staircase in raw mode).
+#[allow(dead_code)]
 const EOL: &str = "\r\n";
 
+#[allow(dead_code)]
 fn print_header<W: Write>(w: &mut W, game: &GameState) {
     write!(
         w,
@@ -186,6 +189,7 @@ fn print_header<W: Write>(w: &mut W, game: &GameState) {
     write!(w, "{}", EOL).unwrap();
 }
 
+#[allow(dead_code)]
 fn print_map<W: Write>(w: &mut W, game: &GameState) {
     let map = game.get_current_map_ref();
     let (width, height) = game.get_map_size();
@@ -203,6 +207,7 @@ fn print_map<W: Write>(w: &mut W, game: &GameState) {
     }
 }
 
+#[allow(dead_code)]
 fn print_message<W: Write>(w: &mut W, game: &GameState) {
     write!(w, "{}", EOL).unwrap();
     if game.in_home() {
@@ -221,6 +226,7 @@ fn print_message<W: Write>(w: &mut W, game: &GameState) {
     }
 }
 
+#[allow(dead_code)]
 fn print_shop_menu<W: Write>(w: &mut W, game: &GameState) {
     let title = match game.shop_state {
         state::ShopState::BuyMenu => "Shop",
@@ -246,6 +252,7 @@ fn print_shop_menu<W: Write>(w: &mut W, game: &GameState) {
     write!(w, "↑↓: Move | Enter: Confirm | Esc: Back{}", EOL).unwrap();
 }
 
+#[allow(dead_code)]
 fn print_home_menu<W: Write>(w: &mut W, game: &GameState) {
     match game.home_state {
         state::HomeState::Alert => {
@@ -311,6 +318,7 @@ fn print_home_menu<W: Write>(w: &mut W, game: &GameState) {
     }
 }
 
+#[allow(dead_code)]
 fn handle_input(game: &mut GameState) -> bool {
     if let Event::Key(key) = event::read().unwrap() {
         if key.kind == KeyEventKind::Press {
