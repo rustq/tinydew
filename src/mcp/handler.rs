@@ -120,10 +120,33 @@ pub fn handle_get_state(input: GetStateInput) -> ToolResponse {
 }
 
 pub fn handle_get_map(input: GetMapInput) -> ToolResponse {
-    ToolResponse::error(
-        ErrorCode::NotImplemented,
-        "get_map not yet implemented".to_string(),
-    )
+    let manager = get_session_manager();
+    let manager = match manager.read() {
+        Ok(m) => m,
+        Err(_) => {
+            return ToolResponse::from_mcp_error(McpError::internal_error(
+                "Failed to acquire session manager lock",
+            ));
+        }
+    };
+
+    match manager.get_session(&input.session_id) {
+        Ok(session) => {
+            let session = match session.read() {
+                Ok(s) => s,
+                Err(_) => {
+                    return ToolResponse::from_mcp_error(McpError::internal_error(
+                        "Failed to read session",
+                    ));
+                }
+            };
+
+            let include_entities = input.include_entities.unwrap_or(false);
+            let map_data = session.to_map_snapshot(include_entities);
+            ToolResponse::success(map_data)
+        }
+        Err(e) => ToolResponse::from_mcp_error(e),
+    }
 }
 
 pub fn handle_get_stats(input: GetStatsInput) -> ToolResponse {
@@ -147,7 +170,8 @@ pub fn handle_get_stats(input: GetStatsInput) -> ToolResponse {
                     ));
                 }
             };
-            ToolResponse::success(session.to_snapshot())
+            let stats = session.to_stats();
+            ToolResponse::success(stats)
         }
         Err(e) => ToolResponse::from_mcp_error(e),
     }
@@ -275,6 +299,61 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
             });
 
             ToolResponse::success(result_json)
+        }
+        Err(e) => ToolResponse::from_mcp_error(e),
+    }
+}
+
+pub fn handle_resource_read(uri: &str) -> ToolResponse {
+    use super::resources::McpResources;
+
+    let parsed = match McpResources::parse_resource_uri(uri) {
+        Some(p) => p,
+        None => {
+            return ToolResponse::error(
+                ErrorCode::ValidationError,
+                format!("Invalid resource URI: {}", uri),
+            );
+        }
+    };
+
+    let (session_id, resource_type) = parsed;
+
+    let manager_lock = get_session_manager();
+    let manager = match manager_lock.read() {
+        Ok(m) => m,
+        Err(_) => {
+            return ToolResponse::from_mcp_error(McpError::internal_error(
+                "Failed to acquire session manager lock",
+            ));
+        }
+    };
+
+    match manager.get_session(&session_id) {
+        Ok(session) => {
+            let session = match session.read() {
+                Ok(s) => s,
+                Err(_) => {
+                    return ToolResponse::from_mcp_error(McpError::internal_error(
+                        "Failed to read session",
+                    ));
+                }
+            };
+
+            let result = match resource_type.as_str() {
+                "state" => session.to_snapshot(),
+                "map" => session.to_map_snapshot(false),
+                "inventory" => session.to_inventory_snapshot(),
+                "log/recent" => session.to_log_snapshot(None),
+                _ => {
+                    return ToolResponse::error(
+                        ErrorCode::ValidationError,
+                        format!("Unknown resource type: {}", resource_type),
+                    );
+                }
+            };
+
+            ToolResponse::success(result)
         }
         Err(e) => ToolResponse::from_mcp_error(e),
     }

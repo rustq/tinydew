@@ -32,4 +32,17 @@ impl McpResources {
             },
         ]
     }
+
+    pub fn parse_resource_uri(uri: &str) -> Option<(String, String)> {
+        let prefix = "shelldew://session/";
+        if let Some(rest) = uri.strip_prefix(prefix) {
+            let parts: Vec<&str> = rest.split('/').collect();
+            if parts.len() >= 2 {
+                let session_id = parts[0].to_string();
+                let resource_type = parts[1..].join("/");
+                return Some((session_id, resource_type));
+            }
+        }
+        None
+    }
 }
