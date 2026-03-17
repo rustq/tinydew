@@ -4,15 +4,156 @@ mod mcp;
 mod state;
 mod world;
 
+use crate::mcp::handler::ToolResponse;
 use crate::state::GameState;
 use crate::world::Direction;
+use clap::Parser;
 use crossterm::{
     ExecutableCommand,
     cursor::MoveTo,
     event::{self, Event, KeyCode, KeyEventKind},
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use std::io::{Write, stdout};
+use std::io::{BufRead, Write, stdin, stdout};
+
+#[derive(Parser, Debug)]
+#[command(name = "shelldew")]
+#[command(version = "0.1.0")]
+#[command(about = "A cozy farming game", long_about = None)]
+struct Args {
+    #[arg(long)]
+    mcp: bool,
+}
+
+fn run_mcp_server() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::mcp::handler::{
+        handle_command, handle_command_batch, handle_end_session, handle_get_map, handle_get_state,
+        handle_get_stats, handle_start_session,
+    };
+    use crate::mcp::server::initialize_mcp_server;
+    use crate::mcp::tools::{
+        CommandBatchInput, CommandInput, EndSessionInput, GetMapInput, GetStateInput,
+        GetStatsInput, StartSessionInput,
+    };
+
+    println!("[MCP] Starting Shelldew MCP server on stdio...");
+    initialize_mcp_server();
+
+    let stdin = stdin();
+    let mut stdout = stdout();
+
+    loop {
+        let mut line = String::new();
+        match stdin.lock().read_line(&mut line) {
+            Ok(0) => break,
+            Ok(_) => {}
+            Err(_) => break,
+        }
+
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+
+        let request: serde_json::Value = match serde_json::from_str(line) {
+            Ok(v) => v,
+            Err(e) => {
+                let response = serde_json::json!({
+                    "ok": false,
+                    "error": {
+                        "code": "ParseError",
+                        "message": format!("Failed to parse JSON: {}", e)
+                    }
+                });
+                writeln!(stdout, "{}", response).ok();
+                stdout.flush().ok();
+                continue;
+            }
+        };
+
+        let method = request.get("method").and_then(|m| m.as_str());
+        let params = request.get("params");
+
+        let response = match method {
+            Some("startSession") => {
+                let input = params
+                    .and_then(|p| serde_json::from_value::<StartSessionInput>(p.clone()).ok())
+                    .unwrap_or(StartSessionInput {
+                        seed: None,
+                        mode: None,
+                    });
+                handle_start_session(input)
+            }
+            Some("endSession") => {
+                let input = params
+                    .and_then(|p| serde_json::from_value::<EndSessionInput>(p.clone()).ok())
+                    .unwrap_or(EndSessionInput {
+                        session_id: String::new(),
+                    });
+                handle_end_session(input)
+            }
+            Some("getState") => {
+                let input = params
+                    .and_then(|p| serde_json::from_value::<GetStateInput>(p.clone()).ok())
+                    .unwrap_or(GetStateInput {
+                        session_id: String::new(),
+                    });
+                handle_get_state(input)
+            }
+            Some("getMap") => {
+                let input = params
+                    .and_then(|p| serde_json::from_value::<GetMapInput>(p.clone()).ok())
+                    .unwrap_or(GetMapInput {
+                        session_id: String::new(),
+                        include_entities: None,
+                    });
+                handle_get_map(input)
+            }
+            Some("getStats") => {
+                let input = params
+                    .and_then(|p| serde_json::from_value::<GetStatsInput>(p.clone()).ok())
+                    .unwrap_or(GetStatsInput {
+                        session_id: String::new(),
+                    });
+                handle_get_stats(input)
+            }
+            Some("command") => {
+                let input = params
+                    .and_then(|p| serde_json::from_value::<CommandInput>(p.clone()).ok())
+                    .unwrap_or(CommandInput {
+                        session_id: String::new(),
+                        command: String::new(),
+                    });
+                handle_command(input)
+            }
+            Some("commandBatch") => {
+                let input = params
+                    .and_then(|p| serde_json::from_value::<CommandBatchInput>(p.clone()).ok())
+                    .unwrap_or(CommandBatchInput {
+                        session_id: String::new(),
+                        commands: vec![],
+                        stop_on_error: true,
+                    });
+                handle_command_batch(input)
+            }
+            _ => ToolResponse::error(
+                crate::mcp::errors::ErrorCode::InvalidCommand,
+                "Unknown method".to_string(),
+            ),
+        };
+
+        writeln!(
+            stdout,
+            "{}",
+            serde_json::to_string(&response).unwrap_or_default()
+        )
+        .ok();
+        stdout.flush().ok();
+    }
+
+    println!("[MCP] Shutting down server");
+    Ok(())
+}
 
 fn render(game: &GameState) {
     let mut stdout = stdout();
@@ -223,6 +364,16 @@ fn handle_input(game: &mut GameState) -> bool {
 }
 
 fn main() {
+    let args = Args::parse();
+
+    if args.mcp {
+        if let Err(e) = run_mcp_server() {
+            eprintln!("[MCP] Error: {}", e);
+            std::process::exit(1);
+        }
+        return;
+    }
+
     enable_raw_mode().unwrap();
     stdout().execute(EnterAlternateScreen).unwrap();
 
@@ -526,5 +677,23 @@ mod tests {
 
         game.water_action();
         assert!(game.message.contains("Cannot water here"));
+    }
+
+    #[test]
+    fn test_cli_args_mcp_flag() {
+        let args = Args::parse_from(["shelldew", "--mcp"]);
+        assert!(args.mcp);
+    }
+
+    #[test]
+    fn test_cli_args_no_mcp() {
+        let args = Args::parse_from(["shelldew"]);
+        assert!(!args.mcp);
+    }
+
+    #[test]
+    fn test_cli_args_help() {
+        let result = Args::try_parse_from(["shelldew", "--help"]);
+        assert!(result.is_err());
     }
 }
