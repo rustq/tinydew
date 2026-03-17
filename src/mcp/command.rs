@@ -493,4 +493,148 @@ mod tests {
         let snapshot = result.snapshot_text.unwrap();
         assert!(snapshot.contains("Day"));
     }
+
+    #[test]
+    fn test_parse_empty_command() {
+        let result = parse_command("");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().code, ErrorCode::InvalidCommand);
+    }
+
+    #[test]
+    fn test_parse_whitespace_command() {
+        let result = parse_command("   ");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().code, ErrorCode::InvalidCommand);
+    }
+
+    #[test]
+    fn test_parse_move_missing_direction() {
+        let result = parse_command("move");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.code, ErrorCode::ValidationError);
+    }
+
+    #[test]
+    fn test_parse_plant_missing_crop() {
+        let result = parse_command("plant");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.code, ErrorCode::ValidationError);
+    }
+
+    #[test]
+    fn test_parse_case_insensitive() {
+        let result = parse_command("MOVE:UP");
+        assert!(matches!(result, Ok(ParsedCommand::Move(Direction::Up))));
+
+        let result = parse_command("Move:Down");
+        assert!(matches!(result, Ok(ParsedCommand::Move(Direction::Down))));
+
+        let result = parse_command("plant:CARROT");
+        assert!(matches!(result, Ok(ParsedCommand::Plant(CropType::Carrot))));
+    }
+
+    #[test]
+    fn test_parse_buy_missing_item() {
+        let result = parse_command("buy:");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_sell_missing_item() {
+        let result = parse_command("sell:");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_buy_zero_quantity() {
+        let result = parse_command("buy:carrot:0");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().code, ErrorCode::ValidationError);
+    }
+
+    #[test]
+    fn test_parse_invalid_quantity() {
+        let result = parse_command("buy:carrot:abc");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_all_crop_types() {
+        let result = parse_command("plant:carrot");
+        assert!(matches!(result, Ok(ParsedCommand::Plant(CropType::Carrot))));
+
+        let result = parse_command("plant:strawberry");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Plant(CropType::Strawberry))
+        ));
+
+        let result = parse_command("plant:cauliflower");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Plant(CropType::Cauliflower))
+        ));
+
+        let result = parse_command("plant:rhubarb");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Plant(CropType::Rhubarb))
+        ));
+    }
+
+    #[test]
+    fn test_execute_plant() {
+        let mut state = GameState::new();
+        let result = execute_command(&mut state, ParsedCommand::Plant(CropType::Carrot));
+        assert!(!result.message.is_empty());
+        assert!(result.state_delta.is_some());
+    }
+
+    #[test]
+    fn test_execute_water() {
+        let mut state = GameState::new();
+        let result = execute_command(&mut state, ParsedCommand::Water);
+        assert!(!result.message.is_empty());
+    }
+
+    #[test]
+    fn test_execute_harvest() {
+        let mut state = GameState::new();
+        let result = execute_command(&mut state, ParsedCommand::Harvest);
+        assert!(!result.message.is_empty());
+    }
+
+    #[test]
+    fn test_execute_clear() {
+        let mut state = GameState::new();
+        let result = execute_command(&mut state, ParsedCommand::Clear);
+        assert!(!result.message.is_empty());
+    }
+
+    #[test]
+    fn test_execute_sleep() {
+        let mut state = GameState::new();
+        let result = execute_command(&mut state, ParsedCommand::Sleep);
+        assert!(!result.message.is_empty());
+        assert!(result.state_delta.is_some());
+    }
+
+    #[test]
+    fn test_execute_buy() {
+        let mut state = GameState::new();
+        state.money = 100;
+        let result = execute_command(&mut state, ParsedCommand::Buy(CropType::Carrot, 5));
+        assert!(!result.message.is_empty());
+    }
+
+    #[test]
+    fn test_execute_sell() {
+        let mut state = GameState::new();
+        state.inventory.produce.insert(CropType::Carrot, 5);
+        let result = execute_command(&mut state, ParsedCommand::Sell(CropType::Carrot, 3));
+        assert!(!result.message.is_empty());
+    }
 }

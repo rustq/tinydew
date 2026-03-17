@@ -17,6 +17,12 @@ pub fn get_session_manager() -> Arc<RwLock<SessionManager>> {
     SESSION_MANAGER.clone()
 }
 
+#[cfg(test)]
+fn reset_for_tests() {
+    let manager = SESSION_MANAGER.read().unwrap();
+    manager.clear_all();
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolResponse {
     pub ok: bool,
@@ -409,6 +415,7 @@ mod tests {
 
     #[test]
     fn test_start_session_creates_session() {
+        reset_for_tests();
         let input = StartSessionInput {
             seed: None,
             mode: Some("test".to_string()),
@@ -426,6 +433,7 @@ mod tests {
 
     #[test]
     fn test_start_session_with_seed() {
+        reset_for_tests();
         let input = StartSessionInput {
             seed: Some(42),
             mode: None,
@@ -470,6 +478,7 @@ mod tests {
 
     #[test]
     fn test_session_lifecycle() {
+        reset_for_tests();
         let start_input = StartSessionInput {
             seed: Some(123),
             mode: Some("standard".to_string()),
@@ -671,6 +680,240 @@ mod tests {
         };
         let response = handle_command_batch(batch_input);
 
+        assert!(!response.ok);
+        assert!(response.error.is_some());
+    }
+
+    #[test]
+    fn test_full_lifecycle() {
+        let start_input = StartSessionInput {
+            seed: None,
+            mode: Some("test".to_string()),
+        };
+        let start_response = handle_start_session(start_input);
+        assert!(start_response.ok);
+
+        let session_id =
+            serde_json::from_value::<StartSessionOutput>(start_response.result.unwrap())
+                .unwrap()
+                .session_id;
+
+        let cmd_input = CommandInput {
+            session_id: session_id.clone(),
+            command: "move:down".to_string(),
+        };
+        let cmd_response = handle_command(cmd_input);
+        assert!(cmd_response.ok);
+
+        let state_input = GetStateInput {
+            session_id: session_id.clone(),
+        };
+        let state_response = handle_get_state(state_input);
+        assert!(state_response.ok);
+
+        let map_input = GetMapInput {
+            session_id: session_id.clone(),
+            include_entities: Some(true),
+        };
+        let map_response = handle_get_map(map_input);
+        assert!(map_response.ok);
+
+        let stats_input = GetStatsInput {
+            session_id: session_id.clone(),
+        };
+        let stats_response = handle_get_stats(stats_input);
+        assert!(stats_response.ok);
+
+        let end_input = EndSessionInput {
+            session_id: session_id.clone(),
+        };
+        let end_response = handle_end_session(end_input);
+        assert!(end_response.ok);
+    }
+
+    #[test]
+    fn test_batch_continue_on_error() {
+        reset_for_tests();
+        let start_input = StartSessionInput {
+            seed: None,
+            mode: Some("test".to_string()),
+        };
+        let start_response = handle_start_session(start_input);
+        let session_id =
+            serde_json::from_value::<StartSessionOutput>(start_response.result.unwrap())
+                .unwrap()
+                .session_id;
+
+        let batch_input = CommandBatchInput {
+            session_id: session_id.clone(),
+            commands: vec![
+                "move:down".to_string(),
+                "move:right".to_string(),
+                "move:up".to_string(),
+            ],
+            stop_on_error: false,
+        };
+        let response = handle_command_batch(batch_input);
+
+        assert!(response.ok);
+        let result = response.result.unwrap();
+        assert_eq!(result.get("executed_count").unwrap().as_u64().unwrap(), 3);
+        assert!(!result.get("stopped_early").unwrap().as_bool().unwrap());
+
+        let _ = handle_end_session(EndSessionInput { session_id });
+    }
+
+    #[test]
+    fn test_resource_read_consistency() {
+        let start_input = StartSessionInput {
+            seed: None,
+            mode: Some("test".to_string()),
+        };
+        let start_response = handle_start_session(start_input);
+        let session_id =
+            serde_json::from_value::<StartSessionOutput>(start_response.result.unwrap())
+                .unwrap()
+                .session_id;
+
+        let cmd_input = CommandInput {
+            session_id: session_id.clone(),
+            command: "buy:carrot:5".to_string(),
+        };
+        let _ = handle_command(cmd_input);
+
+        let state_input = GetStateInput {
+            session_id: session_id.clone(),
+        };
+        let state_response = handle_get_state(state_input.clone());
+        let state_result = state_response.result.unwrap();
+
+        let resource_uri = format!("shelldew://session/{}/state", session_id);
+        let resource_response = handle_resource_read(&resource_uri);
+        let resource_result = resource_response.result.unwrap();
+
+        assert_eq!(state_result.get("money"), resource_result.get("money"));
+        assert_eq!(
+            state_result.get("inventory"),
+            resource_result.get("inventory")
+        );
+
+        let map_input = GetMapInput {
+            session_id: session_id.clone(),
+            include_entities: None,
+        };
+        let map_response = handle_get_map(map_input);
+
+        let map_resource_uri = format!("shelldew://session/{}/map", session_id);
+        let map_resource_response = handle_resource_read(&map_resource_uri);
+
+        assert_eq!(
+            map_response.result.unwrap().get("location"),
+            map_resource_response.result.unwrap().get("location")
+        );
+
+        let _ = handle_end_session(EndSessionInput { session_id });
+    }
+
+    #[test]
+    fn test_seed_determinism() {
+        reset_for_tests();
+        let start_input1 = StartSessionInput {
+            seed: Some(42),
+            mode: None,
+        };
+        let response1 = handle_start_session(start_input1.clone());
+        let session1_id = serde_json::from_value::<StartSessionOutput>(response1.result.unwrap())
+            .unwrap()
+            .session_id;
+
+        let cmd1 = CommandInput {
+            session_id: session1_id.clone(),
+            command: "print".to_string(),
+        };
+        let print1 = handle_command(cmd1);
+        let result1 = print1.result.unwrap();
+        let snapshot1 = result1
+            .get("snapshot_text")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string();
+
+        let _ = handle_end_session(EndSessionInput {
+            session_id: session1_id.clone(),
+        });
+
+        let start_input2 = StartSessionInput {
+            seed: Some(42),
+            mode: None,
+        };
+        let response2 = handle_start_session(start_input2);
+        let session2_id = serde_json::from_value::<StartSessionOutput>(response2.result.unwrap())
+            .unwrap()
+            .session_id;
+
+        let cmd2 = CommandInput {
+            session_id: session2_id.clone(),
+            command: "print".to_string(),
+        };
+        let print2 = handle_command(cmd2);
+        let result2 = print2.result.unwrap();
+        let snapshot2 = result2
+            .get("snapshot_text")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_string();
+
+        assert_eq!(snapshot1, snapshot2);
+
+        let _ = handle_end_session(EndSessionInput {
+            session_id: session1_id,
+        });
+        let _ = handle_end_session(EndSessionInput {
+            session_id: session2_id,
+        });
+    }
+
+    #[test]
+    fn test_session_id_validation_empty() {
+        let result = validate_session_id("");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_session_id_validation_too_long() {
+        let long_id = "a".repeat(300);
+        let result = validate_session_id(&long_id);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_session_id_validation_valid() {
+        let result = validate_session_id("valid-session-id");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_tool_response_success() {
+        let response = ToolResponse::success(serde_json::json!({"key": "value"}));
+        assert!(response.ok);
+        assert!(response.error.is_none());
+        assert!(response.result.is_some());
+    }
+
+    #[test]
+    fn test_tool_response_error() {
+        let response = ToolResponse::error(ErrorCode::InvalidCommand, "test error".to_string());
+        assert!(!response.ok);
+        assert!(response.error.is_some());
+        assert!(response.result.is_none());
+    }
+
+    #[test]
+    fn test_tool_response_from_mcp_error() {
+        let mcp_error = McpError::invalid_command("test error");
+        let response = ToolResponse::from_mcp_error(mcp_error);
         assert!(!response.ok);
         assert!(response.error.is_some());
     }

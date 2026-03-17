@@ -16,6 +16,7 @@ pub struct LogEntry {
     pub result: String,
 }
 
+#[derive(Debug)]
 pub struct Session {
     pub id: String,
     pub game_state: GameState,
@@ -323,6 +324,13 @@ impl SessionManager {
     pub fn get_idle_timeout_minutes(&self) -> u64 {
         self.idle_timeout_minutes
     }
+
+    #[cfg(test)]
+    pub fn clear_all(&self) {
+        if let Ok(mut sessions) = self.sessions.write() {
+            sessions.clear();
+        }
+    }
 }
 
 impl Default for SessionManager {
@@ -341,5 +349,258 @@ impl Clone for Session {
             closed: self.closed,
             logs: self.logs.clone(),
         }
+    }
+}
+
+#[cfg(test)]
+mod session_tests {
+    use super::*;
+
+    #[test]
+    fn test_session_creation() {
+        let session = Session::new(None, None);
+        assert!(!session.id.is_empty());
+        assert!(!session.closed);
+        assert_eq!(session.logs.len(), 1);
+        assert_eq!(session.logs[0].action, "session_start");
+    }
+
+    #[test]
+    fn test_session_creation_with_seed() {
+        let session = Session::new(Some(42), None);
+        assert!(!session.id.is_empty());
+    }
+
+    #[test]
+    fn test_session_creation_with_mode() {
+        let session = Session::new(None, Some("test".to_string()));
+        assert!(!session.id.is_empty());
+        assert!(session.game_state.message.contains("test"));
+    }
+
+    #[test]
+    fn test_session_to_snapshot() {
+        let session = Session::new(None, None);
+        let snapshot = session.to_snapshot();
+        assert!(snapshot.get("day").is_some());
+        assert!(snapshot.get("time").is_some());
+        assert!(snapshot.get("location").is_some());
+        assert!(snapshot.get("money").is_some());
+        assert!(snapshot.get("inventory").is_some());
+        assert!(snapshot.get("player").is_some());
+        assert_eq!(snapshot.get("status").unwrap(), "ok");
+    }
+
+    #[test]
+    fn test_session_to_snapshot_closed() {
+        let mut session = Session::new(None, None);
+        session.closed = true;
+        let snapshot = session.to_snapshot();
+        assert_eq!(snapshot.get("status").unwrap(), "closed");
+    }
+
+    #[test]
+    fn test_session_to_map_snapshot() {
+        let session = Session::new(None, None);
+        let map = session.to_map_snapshot(false);
+        assert!(map.get("location").is_some());
+        assert!(map.get("width").is_some());
+        assert!(map.get("height").is_some());
+        assert!(map.get("player_x").is_some());
+        assert!(map.get("player_y").is_some());
+        assert!(map.get("tiles").is_some());
+    }
+
+    #[test]
+    fn test_session_to_map_snapshot_with_entities() {
+        let session = Session::new(None, None);
+        let map = session.to_map_snapshot(true);
+        let tiles = map.get("tiles").unwrap().as_array().unwrap();
+        for row in tiles {
+            for tile in row.as_array().unwrap() {
+                let tile_str = tile.as_str().unwrap();
+                assert!(tile_str.len() > 1);
+            }
+        }
+    }
+
+    #[test]
+    fn test_session_to_inventory_snapshot() {
+        let session = Session::new(None, None);
+        let inv = session.to_inventory_snapshot();
+        assert!(inv.get("seeds").is_some());
+        assert!(inv.get("produce").is_some());
+        assert!(inv.get("forage").is_some());
+        assert!(inv.get("money").is_some());
+        assert!(inv.get("selected_seed").is_some());
+    }
+
+    #[test]
+    fn test_session_to_log_snapshot() {
+        let session = Session::new(None, None);
+        let log = session.to_log_snapshot(None);
+        assert_eq!(log.get("total_entries").unwrap().as_u64().unwrap(), 1);
+        assert!(log.get("entries").is_some());
+    }
+
+    #[test]
+    fn test_session_to_log_snapshot_with_limit() {
+        let mut session = Session::new(None, None);
+        session.logs.push(LogEntry {
+            timestamp: chrono::Utc::now().to_rfc3339(),
+            day: 1,
+            time: "08:00".to_string(),
+            action: "test".to_string(),
+            result: "test result".to_string(),
+        });
+        let log = session.to_log_snapshot(Some(1));
+        assert_eq!(log.get("total_entries").unwrap().as_u64().unwrap(), 2);
+    }
+
+    #[test]
+    fn test_session_to_stats() {
+        let session = Session::new(None, None);
+        let stats = session.to_stats();
+        assert!(stats.get("day").is_some());
+        assert!(stats.get("time").is_some());
+        assert!(stats.get("location").is_some());
+        assert!(stats.get("money").is_some());
+        assert!(stats.get("inventory").is_some());
+        assert!(stats.get("status").is_some());
+        assert!(stats.get("season").is_some());
+        assert!(stats.get("weather").is_some());
+    }
+}
+
+#[cfg(test)]
+mod session_manager_tests {
+    use super::*;
+    use crate::mcp::errors::ErrorCode;
+
+    #[test]
+    fn test_session_manager_new() {
+        let manager = SessionManager::new();
+        assert_eq!(manager.get_active_session_count(), 0);
+        assert_eq!(manager.get_max_sessions(), 10);
+        assert_eq!(manager.get_idle_timeout_minutes(), 30);
+    }
+
+    #[test]
+    fn test_create_session() {
+        let manager = SessionManager::new();
+        let result = manager.create_session(None, None);
+        assert!(result.is_ok());
+        let session = result.unwrap();
+        assert!(!session.id.is_empty());
+        assert_eq!(manager.get_active_session_count(), 1);
+    }
+
+    #[test]
+    fn test_create_session_with_seed_and_mode() {
+        let manager = SessionManager::new();
+        let result = manager.create_session(Some(42), Some("test".to_string()));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_create_max_sessions() {
+        let manager = SessionManager::new();
+        let mut session_ids = Vec::new();
+
+        for i in 0..10 {
+            let result = manager.create_session(None, None);
+            assert!(result.is_ok(), "Failed at iteration {}", i);
+            session_ids.push(result.unwrap().id);
+        }
+
+        let result = manager.create_session(None, None);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().code, ErrorCode::ValidationError);
+
+        for id in session_ids {
+            let _ = manager.close_session(&id);
+        }
+    }
+
+    #[test]
+    fn test_get_session() {
+        let manager = SessionManager::new();
+        let created = manager.create_session(None, None).unwrap();
+        let session = manager.get_session(&created.id);
+        assert!(session.is_ok());
+    }
+
+    #[test]
+    fn test_get_session_not_found() {
+        let manager = SessionManager::new();
+        let session = manager.get_session("non-existent");
+        assert!(session.is_err());
+        let err = session.unwrap_err();
+        assert_eq!(err.code, ErrorCode::SessionNotFound);
+    }
+
+    #[test]
+    fn test_get_session_closed() {
+        let manager = SessionManager::new();
+        let created = manager.create_session(None, None).unwrap();
+        manager.close_session(&created.id).unwrap();
+
+        let session = manager.get_session(&created.id);
+        assert!(session.is_err());
+        let err = session.unwrap_err();
+        assert_eq!(err.code, ErrorCode::SessionClosed);
+    }
+
+    #[test]
+    fn test_close_session() {
+        let manager = SessionManager::new();
+        let created = manager.create_session(None, None).unwrap();
+        let result = manager.close_session(&created.id);
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_close_session_not_found() {
+        let manager = SessionManager::new();
+        let result = manager.close_session("non-existent");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_cleanup_idle_sessions() {
+        let manager = SessionManager::new();
+        let created = manager.create_session(None, None).unwrap();
+        manager.close_session(&created.id).unwrap();
+
+        let cleaned = manager.cleanup_idle_sessions();
+        assert!(cleaned >= 1);
+    }
+
+    #[test]
+    fn test_get_active_session_count() {
+        let manager = SessionManager::new();
+        assert_eq!(manager.get_active_session_count(), 0);
+
+        let created = manager.create_session(None, None).unwrap();
+        assert_eq!(manager.get_active_session_count(), 1);
+
+        manager.close_session(&created.id).unwrap();
+        assert_eq!(manager.get_active_session_count(), 0);
+    }
+
+    #[test]
+    fn test_multiple_sessions() {
+        let manager = SessionManager::new();
+
+        let session1 = manager.create_session(None, None).unwrap();
+        let session2 = manager.create_session(None, None).unwrap();
+        let session3 = manager.create_session(None, None).unwrap();
+
+        assert_ne!(session1.id, session2.id);
+        assert_ne!(session2.id, session3.id);
+        assert_ne!(session1.id, session3.id);
+
+        assert_eq!(manager.get_active_session_count(), 3);
     }
 }
