@@ -147,8 +147,8 @@ impl TileType {
             | TileType::House
             | TileType::PathEast
             | TileType::PathFarm
-            | TileType::Player
-            | TileType::Mushroom => true,
+            | TileType::Player => true,
+            TileType::Mushroom => false,
         }
     }
 

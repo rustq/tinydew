@@ -872,7 +872,7 @@ mod tests {
         assert!(TileType::PathEast.is_walkable());
         assert!(TileType::PathFarm.is_walkable());
         assert!(TileType::House.is_walkable());
-        assert!(TileType::Mushroom.is_walkable());
+        assert!(!TileType::Mushroom.is_walkable());
         assert!(!TileType::Boundary.is_walkable());
     }
 
