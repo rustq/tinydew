@@ -216,6 +216,11 @@ fn advance_to_morning(state: &mut GameState) {
     state.hour = 6;
     state.minute = 0;
 
+    state.location = Location::Farm;
+    state.player_x = 3;
+    state.player_y = 3;
+    state.direction = Direction::Down;
+
     state.start_new_day();
 
     state.home_state = crate::state::HomeState::None;
@@ -1067,6 +1072,82 @@ mod tests {
     }
 
     #[test]
+    fn test_sleep_from_farm_wakes_at_home_front() {
+        let mut state = GameState::new();
+        state.day = 1;
+        state.hour = 20;
+        state.minute = 0;
+        state.location = Location::Farm;
+        state.player_x = 5;
+        state.player_y = 4;
+
+        execute_command(&mut state, ParsedCommand::Sleep);
+
+        assert_eq!(
+            state.location,
+            Location::Farm,
+            "After sleep from Farm, location should be Farm"
+        );
+        assert_eq!(
+            state.player_x, 3,
+            "After sleep, player_x should be 3 (home-front). Got: {}",
+            state.player_x
+        );
+        assert_eq!(
+            state.player_y, 3,
+            "After sleep, player_y should be 3 (home-front). Got: {}",
+            state.player_y
+        );
+    }
+
+    #[test]
+    fn test_sleep_from_east_path_wakes_at_home_front() {
+        let mut state = GameState::new();
+        state.day = 1;
+        state.hour = 20;
+        state.minute = 0;
+        state.location = Location::EastPath;
+        state.player_x = 5;
+        state.player_y = 2;
+
+        execute_command(&mut state, ParsedCommand::Sleep);
+
+        assert_eq!(
+            state.location,
+            Location::Farm,
+            "After sleep from EastPath, location should be Farm"
+        );
+        assert_eq!(
+            state.player_x, 3,
+            "After sleep, player_x should be 3 (home-front). Got: {}",
+            state.player_x
+        );
+        assert_eq!(
+            state.player_y, 3,
+            "After sleep, player_y should be 3 (home-front). Got: {}",
+            state.player_y
+        );
+    }
+
+    #[test]
+    fn test_sleep_resets_direction_to_down() {
+        let mut state = GameState::new();
+        state.day = 1;
+        state.hour = 20;
+        state.minute = 0;
+        state.direction = Direction::Right;
+
+        execute_command(&mut state, ParsedCommand::Sleep);
+
+        assert_eq!(
+            state.direction,
+            Direction::Down,
+            "After sleep, direction should be Down. Got: {:?}",
+            state.direction
+        );
+    }
+
+    #[test]
     fn test_execute_buy() {
         let mut state = GameState::new();
         state.money = 100;
@@ -1151,15 +1232,20 @@ mod tests {
         let _ = handle_command_batch(batch_prepare);
 
         // Then water + sleep for 4 days
+        // Note: After planting, player at (3,4) can water (3,5) without moving.
+        // After each sleep, player returns to home-front (3,3), so needs move:down to get to (3,4).
         let batch_grow = CommandBatchInput {
             session_id: session_id.clone(),
             commands: vec![
                 "water".to_string(),
                 "sleep".to_string(),
+                "move:down".to_string(),
                 "water".to_string(),
                 "sleep".to_string(),
+                "move:down".to_string(),
                 "water".to_string(),
                 "sleep".to_string(),
+                "move:down".to_string(),
                 "water".to_string(),
                 "sleep".to_string(),
             ],
@@ -1326,6 +1412,14 @@ mod tests {
         assert_eq!(state.get("day").unwrap().as_u64().unwrap(), 2);
 
         for _ in 0..3 {
+            // After each sleep, player returns to home-front (3,3)
+            // Move down to get back to crop position (3,5)
+            let cmd_move = CommandInput {
+                session_id: session_id.clone(),
+                command: "move:down".to_string(),
+            };
+            let _ = handle_command(cmd_move);
+
             let cmd_water = CommandInput {
                 session_id: session_id.clone(),
                 command: "water".to_string(),
