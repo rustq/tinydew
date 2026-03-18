@@ -202,7 +202,7 @@ fn parse_item_with_qty(s: &str) -> Result<(&str, u32), McpError> {
 }
 
 fn capture_state_snapshot(state: &GameState) -> serde_json::Value {
-    serde_json::json!({
+    let mut snapshot = serde_json::json!({
         "day": state.day,
         "time": state.format_time(),
         "location": format!("{:?}", state.location),
@@ -216,7 +216,20 @@ fn capture_state_snapshot(state: &GameState) -> serde_json::Value {
             "x": state.player_x,
             "y": state.player_y,
         }
-    })
+    });
+
+    if state.guest_enabled {
+        let guest = serde_json::json!({
+            "enabled": state.guest_enabled,
+            "x": state.guest_x,
+            "y": state.guest_y,
+            "location": format!("{:?}", state.guest_location),
+            "active": state.active_control == crate::state::ControlTarget::Guest,
+        });
+        snapshot["guest"] = guest;
+    }
+
+    snapshot
 }
 
 fn advance_to_morning(state: &mut GameState) {
@@ -371,6 +384,15 @@ fn generate_text_snapshot(state: &GameState) -> String {
         }
     }
 
+    if state.guest_enabled && state.guest_location == state.location {
+        lines.push(String::new());
+        lines.push("--- Guest ---".to_string());
+        lines.push(format!("Position: ({}, {})", state.guest_x, state.guest_y));
+        if state.active_control == crate::state::ControlTarget::Guest {
+            lines.push("(Active)".to_string());
+        }
+    }
+
     lines.push(String::new());
     lines.push("--- Farm Map ---".to_string());
 
@@ -380,7 +402,29 @@ fn generate_text_snapshot(state: &GameState) -> String {
         let line: String = (0..width)
             .map(|x| {
                 if x == state.player_x && y == state.player_y {
-                    "🧑"
+                    if state.guest_enabled
+                        && state.guest_location == state.location
+                        && x == state.guest_x
+                        && y == state.guest_y
+                    {
+                        if state.active_control == crate::state::ControlTarget::Guest {
+                            "👧"
+                        } else {
+                            "🧑"
+                        }
+                    } else {
+                        "🧑"
+                    }
+                } else if state.guest_enabled
+                    && state.guest_location == state.location
+                    && x == state.guest_x
+                    && y == state.guest_y
+                {
+                    if state.active_control == crate::state::ControlTarget::Player {
+                        "👧"
+                    } else {
+                        "👧"
+                    }
                 } else {
                     map[y][x].emoji()
                 }

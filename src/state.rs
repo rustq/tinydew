@@ -19,6 +19,12 @@ pub enum Location {
     EastPath,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ControlTarget {
+    Player,
+    Guest,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Inventory {
     pub seeds: HashMap<CropType, u32>,
@@ -133,6 +139,11 @@ pub struct GameState {
     pub rng_seed: u64,
     pub spring_forced_flower_6_2_done: bool,
     pub last_spawn_processed_day: u32,
+    pub guest_enabled: bool,
+    pub guest_x: usize,
+    pub guest_y: usize,
+    pub guest_location: Location,
+    pub active_control: ControlTarget,
 }
 
 #[allow(dead_code)]
@@ -172,7 +183,142 @@ impl GameState {
             rng_seed: 12345,
             spring_forced_flower_6_2_done: false,
             last_spawn_processed_day: 0,
+            guest_enabled: false,
+            guest_x: 0,
+            guest_y: 0,
+            guest_location: Location::Farm,
+            active_control: ControlTarget::Player,
         }
+    }
+
+    pub fn enable_guest_for_interactive(&mut self) {
+        self.guest_enabled = true;
+        self.active_control = ControlTarget::Player;
+        self.guest_location = self.location;
+        if let Some((x, y)) = self.find_guest_spawn_location() {
+            self.guest_x = x;
+            self.guest_y = y;
+        }
+    }
+
+    pub fn disable_guest(&mut self) {
+        self.guest_enabled = false;
+        self.active_control = ControlTarget::Player;
+    }
+
+    pub fn is_guest_on_current_map(&self) -> bool {
+        self.guest_enabled && self.guest_location == self.location
+    }
+
+    fn find_guest_spawn_location(&self) -> Option<(usize, usize)> {
+        let map = self.get_current_map_ref();
+        let (width, height) = self.get_map_size();
+
+        for y in 0..height {
+            for x in 0..width {
+                if map[y][x].is_walkable() && !(x == self.player_x && y == self.player_y) {
+                    return Some((x, y));
+                }
+            }
+        }
+        None
+    }
+
+    pub fn can_move_guest_to(&self, x: usize, y: usize) -> bool {
+        if x == self.player_x && y == self.player_y {
+            return false;
+        }
+
+        let (width, height) = if self.guest_location == Location::Farm {
+            (crate::world::FARM_WIDTH, crate::world::FARM_HEIGHT)
+        } else {
+            (
+                crate::world::EAST_PATH_WIDTH,
+                crate::world::EAST_PATH_HEIGHT,
+            )
+        };
+
+        if x >= width || y >= height {
+            return false;
+        }
+
+        let map = match self.guest_location {
+            Location::Farm => &self.farm_map,
+            Location::EastPath => &self.east_path_map,
+        };
+        map[y][x].is_walkable()
+    }
+
+    pub fn move_guest(&mut self, direction: Direction) -> bool {
+        if !self.guest_enabled {
+            return false;
+        }
+
+        let map = match self.guest_location {
+            Location::Farm => &self.farm_map,
+            Location::EastPath => &self.east_path_map,
+        };
+        let current_tile = &map[self.guest_y][self.guest_x];
+        if current_tile.is_transition() {
+            self.handle_guest_transition_at(self.guest_x, self.guest_y);
+            return true;
+        }
+
+        let (dx, dy) = direction.delta();
+        let new_x = self.guest_x as i32 + dx;
+        let new_y = self.guest_y as i32 + dy;
+
+        if new_x < 0 || new_y < 0 {
+            return false;
+        }
+
+        let new_x = new_x as usize;
+        let new_y = new_y as usize;
+
+        if self.can_move_guest_to(new_x, new_y) {
+            self.guest_x = new_x;
+            self.guest_y = new_y;
+            true
+        } else if new_x == self.player_x && new_y == self.player_y {
+            self.message = String::from("Tile occupied.");
+            false
+        } else {
+            false
+        }
+    }
+
+    fn handle_guest_transition_at(&mut self, _x: usize, _y: usize) {
+        match self.guest_location {
+            Location::Farm => {
+                self.guest_location = Location::EastPath;
+                self.guest_x = 1;
+                self.guest_y = 2;
+                self.message = String::from("Guest entered East Path!");
+            }
+            Location::EastPath => {
+                self.guest_location = Location::Farm;
+                self.guest_x = 7;
+                self.guest_y = 5;
+                self.message = String::from("Guest returned to Farm!");
+            }
+        }
+    }
+
+    pub fn is_guest_active(&self) -> bool {
+        self.guest_enabled && self.active_control == ControlTarget::Guest
+    }
+
+    pub fn toggle_control(&mut self) {
+        if self.guest_enabled {
+            self.active_control = match self.active_control {
+                ControlTarget::Player => ControlTarget::Guest,
+                ControlTarget::Guest => ControlTarget::Player,
+            };
+        }
+    }
+
+    pub fn is_time_frozen(&self) -> bool {
+        self.is_guest_active()
     }
 
     pub fn get_current_map_ref(&self) -> &Map {
@@ -262,6 +408,11 @@ impl GameState {
         let new_x = new_x as usize;
         let new_y = new_y as usize;
 
+        if self.is_guest_enabled_at(new_x, new_y) {
+            self.message = String::from("Tile occupied.");
+            return false;
+        }
+
         if self.can_move_to(new_x, new_y) {
             let target_tile = self.get_tile_at(new_x, new_y);
 
@@ -271,7 +422,9 @@ impl GameState {
                 } else {
                     self.player_x = new_x;
                     self.player_y = new_y;
-                    self.advance_time();
+                    if !self.is_time_frozen() {
+                        self.advance_time();
+                    }
                 }
             }
             true
@@ -279,6 +432,13 @@ impl GameState {
             self.message = String::from("Cannot move there!");
             false
         }
+    }
+
+    fn is_guest_enabled_at(&self, x: usize, y: usize) -> bool {
+        self.guest_enabled
+            && self.guest_location == self.location
+            && self.guest_x == x
+            && self.guest_y == y
     }
 
     fn handle_transition(&mut self, tile: &TileType) {
@@ -680,7 +840,8 @@ impl GameState {
                     self.advance_time();
                 }
                 _ => {
-                    self.message = String::from("Nothing to clear! (Only weeds/crops can be cleared)");
+                    self.message =
+                        String::from("Nothing to clear! (Only weeds/crops can be cleared)");
                 }
             }
         } else {
@@ -713,7 +874,8 @@ impl GameState {
                     self.advance_time();
                 }
                 _ => {
-                    self.message = String::from("Nothing to clear! (Only weeds/crops can be cleared)");
+                    self.message =
+                        String::from("Nothing to clear! (Only weeds/crops can be cleared)");
                 }
             }
         } else {
@@ -1512,7 +1674,10 @@ mod tests {
             }
         }
 
-        assert!(!hit_home, "Random flower should never spawn on home tile (2,2)");
+        assert!(
+            !hit_home,
+            "Random flower should never spawn on home tile (2,2)"
+        );
         assert!(
             !hit_wakeup,
             "Random flower should never spawn on wake-up tile (3,3)"
@@ -1554,5 +1719,153 @@ mod tests {
             !hit_wakeup,
             "Random mushroom should never spawn on wake-up tile (3,3)"
         );
+    }
+
+    #[test]
+    fn test_guest_enable_and_spawn() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+
+        assert!(state.guest_enabled);
+        assert_eq!(state.active_control, ControlTarget::Player);
+        assert!(state.is_guest_on_current_map());
+        assert!(state.guest_x != state.player_x || state.guest_y != state.player_y);
+    }
+
+    #[test]
+    fn test_guest_disable() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.disable_guest();
+
+        assert!(!state.guest_enabled);
+        assert_eq!(state.active_control, ControlTarget::Player);
+    }
+
+    #[test]
+    fn test_guest_movement() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        let initial_x = state.guest_x;
+        let initial_y = state.guest_y;
+
+        state.move_guest(Direction::Right);
+        assert_eq!(state.guest_x, initial_x + 1);
+        assert_eq!(state.guest_y, initial_y);
+    }
+
+    #[test]
+    fn test_guest_player_collision_blocks() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.player_x = 3;
+        state.player_y = 3;
+        state.guest_x = 2;
+        state.guest_y = 3;
+
+        state.direction = Direction::Left;
+        let result = state.move_player(Direction::Left);
+        assert!(!result);
+        assert!(state.message.contains("Tile occupied"));
+    }
+
+    #[test]
+    fn test_control_toggle() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+
+        assert_eq!(state.active_control, ControlTarget::Player);
+        state.toggle_control();
+        assert_eq!(state.active_control, ControlTarget::Guest);
+        assert!(state.is_guest_active());
+        state.toggle_control();
+        assert_eq!(state.active_control, ControlTarget::Player);
+    }
+
+    #[test]
+    fn test_guest_transition_farm_to_east_path() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.guest_location = Location::Farm;
+        state.guest_x = 7;
+        state.guest_y = 5;
+
+        state.move_guest(Direction::Right);
+
+        assert_eq!(state.guest_location, Location::EastPath);
+        assert_eq!(state.guest_x, 1);
+        assert_eq!(state.guest_y, 2);
+    }
+
+    #[test]
+    fn test_guest_transition_east_path_to_farm() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.guest_location = Location::EastPath;
+        state.guest_x = 0;
+        state.guest_y = 2;
+
+        state.move_guest(Direction::Left);
+
+        assert_eq!(state.guest_location, Location::Farm);
+        assert_eq!(state.guest_x, 7);
+        assert_eq!(state.guest_y, 5);
+    }
+
+    #[test]
+    fn test_guest_blocks_non_movement_actions() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.toggle_control();
+
+        assert!(state.is_guest_active());
+    }
+
+    #[test]
+    fn test_time_frozen_when_guest_active() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.toggle_control();
+
+        assert!(state.is_time_frozen());
+        assert!(state.is_guest_active());
+
+        state.toggle_control();
+        assert!(!state.is_time_frozen());
+    }
+
+    #[test]
+    fn test_guest_not_on_current_map() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.guest_location = Location::EastPath;
+        state.location = Location::Farm;
+
+        assert!(!state.is_guest_on_current_map());
+    }
+
+    #[test]
+    fn test_guest_save_load_preserves_state() {
+        use crate::savegame::{load_game_from_path, save_game_to_path};
+
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.guest_x = 4;
+        state.guest_y = 5;
+        state.guest_location = Location::EastPath;
+        state.toggle_control();
+
+        let test_path = std::env::temp_dir().join("shelldew_guest_test.json");
+        save_game_to_path(&state, &test_path).expect("Save should succeed");
+
+        let loaded = load_game_from_path(&test_path).expect("Load should succeed");
+
+        assert!(loaded.guest_enabled);
+        assert_eq!(loaded.guest_x, 4);
+        assert_eq!(loaded.guest_y, 5);
+        assert_eq!(loaded.guest_location, Location::EastPath);
+        assert_eq!(loaded.active_control, ControlTarget::Guest);
+
+        std::fs::remove_file(&test_path).ok();
     }
 }
