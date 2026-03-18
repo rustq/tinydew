@@ -311,12 +311,14 @@ impl GameState {
         match self.guest_location {
             Location::Farm => {
                 self.guest_location = Location::EastPath;
+                self.location = Location::EastPath;
                 self.guest_x = 1;
                 self.guest_y = 2;
                 self.message = String::from("Guest entered East Path!");
             }
             Location::EastPath => {
                 self.guest_location = Location::Farm;
+                self.location = Location::Farm;
                 self.guest_x = 7;
                 self.guest_y = 5;
                 self.message = String::from("Guest returned to Farm!");
