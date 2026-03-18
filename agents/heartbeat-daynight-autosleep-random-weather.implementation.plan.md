@@ -13,6 +13,11 @@ These four specs introduce time-based game mechanics to Shelldew:
 3. **Auto-Sleep**: Force sleep at 02:00, use existing sleep pipeline
 4. **Random-Weather**: Spring weather (80% Sunny, 13% Cloudy, 7% Rainy), rainy auto-waters crops
 
+### Runtime Clarification (Observed)
+
+- Heartbeat currently behaves as wall-clock driven in interactive loop context.
+- In the current MCP request/response flow, time mostly advances on command-driven actions unless explicit MCP idle ticking is implemented.
+
 ---
 
 ## Architecture Changes by Module/File

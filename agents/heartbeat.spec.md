@@ -4,6 +4,11 @@
 
 This spec defines the time advancement system for Shelldew's game world. Every 1 real-world second advances world time by 5 in-game minutes.
 
+### Current Runtime Note
+
+- **Interactive runtime loop:** heartbeat is wall-clock driven (`tick()` over real time).
+- **Current MCP request/response flow:** time is effectively command-driven unless MCP idle ticking is explicitly wired.
+
 --------------------------------------------------------------------
 
 # 1. Goals
