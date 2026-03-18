@@ -245,7 +245,14 @@ fn advance_to_morning(state: &mut GameState) {
 }
 
 fn display_message_for_snapshot(state: &GameState) -> String {
-    if state.message == "Good morning! Ready for another day." {
+    let is_generic_day_greeting = state.message == "Good morning! Ready for another day."
+        || state.message == "Good morning! A new day begins.";
+
+    if state.hour < 6 && state.home_state == crate::state::HomeState::None {
+        return "It's after midnight. You should go back home and sleep.".to_string();
+    }
+
+    if is_generic_day_greeting {
         if state.hour < 12 {
             "Good morning! Ready for another day.".to_string()
         } else if state.hour < 18 {
