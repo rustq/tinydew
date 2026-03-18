@@ -249,7 +249,7 @@ impl GameState {
     }
 
     pub fn can_move_guest_to(&self, x: usize, y: usize) -> bool {
-        if x == self.player_x && y == self.player_y {
+        if self.player_location == self.guest_location && x == self.player_x && y == self.player_y {
             return false;
         }
 
@@ -308,7 +308,10 @@ impl GameState {
                 self.guest_y = new_y;
             }
             true
-        } else if new_x == self.player_x && new_y == self.player_y {
+        } else if self.player_location == self.guest_location
+            && new_x == self.player_x
+            && new_y == self.player_y
+        {
             self.message = String::from("Tile occupied.");
             false
         } else {
@@ -1825,6 +1828,7 @@ mod tests {
         let mut state = GameState::new();
         state.enable_guest_for_interactive();
         state.location = Location::Farm;
+        state.player_location = Location::Farm;
         state.guest_location = Location::Farm;
         state.player_x = 3;
         state.player_y = 3;
@@ -1835,6 +1839,27 @@ mod tests {
         let result = state.move_player(Direction::Left);
         assert!(!result);
         assert!(state.message.contains("Tile occupied"));
+    }
+
+    #[test]
+    fn test_guest_can_move_to_player_coordinates_when_in_different_region() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+
+        // Player is on Farm, guest is on EastPath; same (x,y) should not collide.
+        state.player_location = Location::Farm;
+        state.guest_location = Location::EastPath;
+        state.location = Location::EastPath;
+
+        state.player_x = 2;
+        state.player_y = 2;
+        state.guest_x = 1;
+        state.guest_y = 2;
+
+        let moved = state.move_guest(Direction::Right);
+        assert!(moved, "Guest should move when player is in a different region");
+        assert_eq!(state.guest_x, 2);
+        assert_eq!(state.guest_y, 2);
     }
 
     #[test]
