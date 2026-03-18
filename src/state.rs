@@ -400,6 +400,12 @@ impl GameState {
         positions
     }
 
+    fn is_protected_farm_spawn_tile(x: usize, y: usize) -> bool {
+        // Never allow random mature crop/forage spawn on home or wake-up tile.
+        // Home tile: (2,2), wake-up tile (front of home): (3,3)
+        (x == 2 && y == 2) || (x == 3 && y == 3)
+    }
+
     fn pick_random_tile(
         &mut self,
         positions: &mut Vec<(usize, usize)>,
@@ -470,7 +476,9 @@ impl GameState {
                     watered_today: false,
                 };
                 if y < FARM_HEIGHT && x < FARM_WIDTH {
-                    self.farm_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                    if !Self::is_protected_farm_spawn_tile(x, y) {
+                        self.farm_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                    }
                 } else if y < EAST_PATH_HEIGHT && x < EAST_PATH_WIDTH {
                     self.east_path_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
                 }
@@ -501,7 +509,9 @@ impl GameState {
                 self.pick_random_tile(chosen_positions, mushroom_seed.wrapping_add(2))
             {
                 if y < FARM_HEIGHT && x < FARM_WIDTH {
-                    self.farm_map[y][x] = TileType::Mushroom;
+                    if !Self::is_protected_farm_spawn_tile(x, y) {
+                        self.farm_map[y][x] = TileType::Mushroom;
+                    }
                 } else if y < EAST_PATH_HEIGHT && x < EAST_PATH_WIDTH {
                     self.east_path_map[y][x] = TileType::Mushroom;
                 }
@@ -1447,5 +1457,75 @@ mod tests {
             }
         }
         count
+    }
+
+    #[test]
+    fn test_random_flower_never_spawns_on_home_or_wakeup_tile() {
+        let mut hit_home = false;
+        let mut hit_wakeup = false;
+
+        for day in 2..=300 {
+            let mut state = GameState::new();
+            state.season = String::from("Spring");
+            state.day = day;
+            state.last_spawn_processed_day = 0;
+            state.spring_forced_flower_6_2_done = true;
+            state.rng_seed = 0;
+
+            state.farm_map[2][2] = TileType::Grass;
+            state.farm_map[3][3] = TileType::Grass;
+
+            state.spawn_random_crops();
+
+            if matches!(state.farm_map[2][2], TileType::Crop(CropType::Rhubarb, _)) {
+                hit_home = true;
+            }
+            if matches!(state.farm_map[3][3], TileType::Crop(CropType::Rhubarb, _)) {
+                hit_wakeup = true;
+            }
+        }
+
+        assert!(!hit_home, "Random flower should never spawn on home tile (2,2)");
+        assert!(
+            !hit_wakeup,
+            "Random flower should never spawn on wake-up tile (3,3)"
+        );
+    }
+
+    #[test]
+    fn test_random_mushroom_never_spawns_on_home_or_wakeup_tile() {
+        let mut hit_home = false;
+        let mut hit_wakeup = false;
+
+        for day in 2..=300 {
+            let mut state = GameState::new();
+            state.season = String::from("Spring");
+            state.weather = Weather::Rainy;
+            state.day = day;
+            state.last_spawn_processed_day = 0;
+            state.spring_forced_flower_6_2_done = true;
+            state.rng_seed = 0;
+
+            state.farm_map[2][2] = TileType::Grass;
+            state.farm_map[3][3] = TileType::Grass;
+
+            state.spawn_random_crops();
+
+            if matches!(state.farm_map[2][2], TileType::Mushroom) {
+                hit_home = true;
+            }
+            if matches!(state.farm_map[3][3], TileType::Mushroom) {
+                hit_wakeup = true;
+            }
+        }
+
+        assert!(
+            !hit_home,
+            "Random mushroom should never spawn on home tile (2,2)"
+        );
+        assert!(
+            !hit_wakeup,
+            "Random mushroom should never spawn on wake-up tile (3,3)"
+        );
     }
 }
