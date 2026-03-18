@@ -301,18 +301,7 @@ impl GameState {
     }
 
     pub fn advance_time(&mut self) {
-        let was_night = self.is_night();
-
-        self.total_minutes += 5;
-        self.sync_time_from_minutes();
-
-        if was_night && self.is_day() {
-            self.start_new_day();
-        }
-
-        if self.should_auto_sleep() {
-            self.run_auto_sleep();
-        }
+        self.advance_minutes(5);
     }
 
     pub fn start_new_day(&mut self) {
@@ -558,11 +547,7 @@ impl GameState {
     }
 
     pub fn get_day_and_time(&self) -> (u32, u8, u8) {
-        let day = self.total_minutes / 1440 + 1;
-        let minute_of_day = self.total_minutes % 1440;
-        let hour = (minute_of_day / 60) as u8;
-        let minute = (minute_of_day % 60) as u8;
-        (day, hour, minute)
+        (self.day, self.hour as u8, self.minute as u8)
     }
 
     pub fn should_auto_sleep(&self) -> bool {
@@ -582,7 +567,7 @@ impl GameState {
         self.auto_sleep_triggered_day = self.day;
         self.hour = 6;
         self.minute = 0;
-        self.total_minutes = (self.day - 1) * 1440 + 360;
+        self.total_minutes = 0;
 
         self.location = Location::Farm;
         self.player_x = 3;
@@ -606,22 +591,36 @@ impl GameState {
         const MAX_ELAPSED_SECONDS: u64 = 5;
         let capped_seconds = std::cmp::min(elapsed_seconds, MAX_ELAPSED_SECONDS);
 
-        let minutes_advanced = capped_seconds * 5;
-        self.total_minutes += minutes_advanced as u32;
+        let minutes_advanced = (capped_seconds * 5) as u32;
         self.last_update_ms = current_time_ms;
 
-        self.sync_time_from_minutes();
-
-        if self.should_auto_sleep() {
-            self.run_auto_sleep();
+        if minutes_advanced > 0 {
+            self.advance_minutes(minutes_advanced);
         }
     }
 
-    fn sync_time_from_minutes(&mut self) {
-        self.day = self.total_minutes / 1440 + 1;
-        let minute_of_day = self.total_minutes % 1440;
-        self.hour = minute_of_day / 60;
-        self.minute = minute_of_day % 60;
+    fn advance_minutes(&mut self, minutes: u32) {
+        let mut remaining = minutes;
+        while remaining > 0 {
+            self.minute += 1;
+            if self.minute >= 60 {
+                self.minute = 0;
+                self.hour += 1;
+            }
+
+            if self.hour >= 24 {
+                self.hour = 0;
+                self.day += 1;
+                self.start_new_day();
+            }
+
+            if self.should_auto_sleep() {
+                self.run_auto_sleep();
+                break;
+            }
+
+            remaining -= 1;
+        }
     }
 
     pub fn pause(&mut self) {

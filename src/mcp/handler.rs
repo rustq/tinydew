@@ -245,7 +245,6 @@ pub fn handle_get_world_time(input: GetWorldTimeInput) -> ToolResponse {
 
             let (day, hour, minute) = session.game_state.get_day_and_time();
             let result = serde_json::json!({
-                "total_minutes": session.game_state.total_minutes,
                 "hour": hour,
                 "minute": minute,
                 "day": day,
