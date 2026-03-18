@@ -347,6 +347,22 @@ impl GameState {
         self.guest_enabled
     }
 
+    pub fn guest_greeting_message(&self) -> String {
+        match self.weather {
+            Weather::Rainy => "It’s rainy today, stay dry out there.".to_string(),
+            Weather::Cloudy => "It’s cloudy today, a calm day to stroll.".to_string(),
+            _ => {
+                if self.hour < 12 {
+                    "Good morning, long time no see.".to_string()
+                } else if self.hour < 18 {
+                    "Good afternoon, long time no see.".to_string()
+                } else {
+                    "Good night, maybe it's time to sleep.".to_string()
+                }
+            }
+        }
+    }
+
     pub fn get_current_map_ref(&self) -> &Map {
         match self.location {
             Location::Farm => &self.farm_map,

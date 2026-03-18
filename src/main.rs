@@ -247,7 +247,7 @@ fn print_message<W: Write>(w: &mut W, game: &GameState) {
         write!(w, "{}{}", game.message, EOL).unwrap();
         write!(w, "{}", EOL).unwrap();
         if game.is_guest_active() {
-            write!(w, "Arrow keys: Move Guest | Esc: Quit{}", EOL).unwrap();
+            write!(w, "Arrow keys: Move Guest | Space: Greet | Esc: Quit{}", EOL).unwrap();
         } else {
             write!(
                 w,
@@ -468,7 +468,7 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
             if game.guest_enabled {
                 write!(
                     stdout,
-                    "\r\nControl: Guest | Arrow: Move Guest | Esc: Quit"
+                    "\r\nControl: Guest | Arrow: Move Guest | Space: Greet | Esc: Quit"
                 )
                 .ok();
             } else {
@@ -568,6 +568,11 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
                                 game.message = String::from("Guest can only walk around.");
                             } else {
                                 game.trade_action();
+                            }
+                        }
+                        KeyCode::Char(' ') => {
+                            if game.guest_enabled {
+                                game.message = game.guest_greeting_message();
                             }
                         }
                         _ => {}
