@@ -1083,10 +1083,26 @@ impl GameState {
                 }
             }
             ShopState::SellMenu => {
-                // Selling is disabled by game rule.
-                self.shop_state = ShopState::BuyMenu;
-                self.shop_cursor = 0;
-                self.message = String::from("Selling is disabled.");
+                let crops_with_produce: Vec<CropType> = CropType::all()
+                    .iter()
+                    .filter(|c| self.inventory.get_produce(**c) > 0)
+                    .copied()
+                    .collect();
+
+                if self.shop_cursor < crops_with_produce.len() {
+                    let crop = crops_with_produce[self.shop_cursor];
+                    if self.inventory.sell_produce(crop) {
+                        let price = crop.produce_price();
+                        self.money += price;
+                        self.record_income(price);
+                        self.record_crop_sold(crop, 1);
+                        self.message = format!("Sold {} for ${}!", crop.produce_emoji(), price);
+                    }
+                } else {
+                    self.shop_state = ShopState::BuyMenu;
+                    self.shop_cursor = 0;
+                    self.message = String::from("Back to buy menu.");
+                }
             }
             ShopState::None => {}
         }

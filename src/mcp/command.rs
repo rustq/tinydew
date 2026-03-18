@@ -447,14 +447,31 @@ pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResu
                     "seeds": state.inventory.seeds
                 }))
         }
-        ParsedCommand::Sell(crop, _qty) => {
-            state.message = format!(
-                "Selling is disabled. {} produce cannot be sold.",
-                crop.seed_name()
-            );
+        ParsedCommand::Sell(crop, qty) => {
+            let mut sold_count = 0;
+            for _ in 0..qty {
+                if state.inventory.sell_produce(crop) {
+                    sold_count += 1;
+                } else {
+                    break;
+                }
+            }
+
+            if sold_count > 0 {
+                let revenue = crop.produce_price() * sold_count;
+                state.money += revenue;
+                state.message = format!(
+                    "Sold {} x{} for ${}!",
+                    crop.produce_emoji(),
+                    sold_count,
+                    revenue
+                );
+            } else {
+                state.message = format!("No {} produce to sell!", crop.seed_name());
+            }
 
             CommandResult::new(state.message.clone())
-                .with_events(vec!["Sell disabled".to_string()])
+                .with_events(vec![format!("Sold {} produce", sold_count)])
                 .with_state_delta(serde_json::json!({
                     "money": state.money,
                     "produce": state.inventory.produce
