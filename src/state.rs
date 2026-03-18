@@ -276,16 +276,6 @@ impl GameState {
             return false;
         }
 
-        let map = match self.guest_location {
-            Location::Farm => &self.farm_map,
-            Location::EastPath => &self.east_path_map,
-        };
-        let current_tile = &map[self.guest_y][self.guest_x];
-        if current_tile.is_transition() {
-            self.handle_guest_transition_at(self.guest_x, self.guest_y);
-            return true;
-        }
-
         let (dx, dy) = direction.delta();
         let new_x = self.guest_x as i32 + dx;
         let new_y = self.guest_y as i32 + dy;
@@ -298,8 +288,17 @@ impl GameState {
         let new_y = new_y as usize;
 
         if self.can_move_guest_to(new_x, new_y) {
-            self.guest_x = new_x;
-            self.guest_y = new_y;
+            let target_tile = match self.guest_location {
+                Location::Farm => self.farm_map[new_y][new_x],
+                Location::EastPath => self.east_path_map[new_y][new_x],
+            };
+
+            if target_tile.is_transition() {
+                self.handle_guest_transition_at(new_x, new_y);
+            } else {
+                self.guest_x = new_x;
+                self.guest_y = new_y;
+            }
             true
         } else if new_x == self.player_x && new_y == self.player_y {
             self.message = String::from("Tile occupied.");
@@ -1806,7 +1805,8 @@ mod tests {
         let mut state = GameState::new();
         state.enable_guest_for_interactive();
         state.guest_location = Location::Farm;
-        state.guest_x = 7;
+        state.location = Location::Farm;
+        state.guest_x = 6;
         state.guest_y = 5;
 
         state.move_guest(Direction::Right);
@@ -1821,7 +1821,8 @@ mod tests {
         let mut state = GameState::new();
         state.enable_guest_for_interactive();
         state.guest_location = Location::EastPath;
-        state.guest_x = 0;
+        state.location = Location::EastPath;
+        state.guest_x = 1;
         state.guest_y = 2;
 
         state.move_guest(Direction::Left);
