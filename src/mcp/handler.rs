@@ -289,6 +289,10 @@ pub fn handle_command(input: CommandInput) -> ToolResponse {
 
             let result = execute_command(&mut session.game_state, parsed);
 
+            if session.game_state.home_state == crate::state::HomeState::Income {
+                session.game_state.run_auto_sleep_and_advance();
+            }
+
             let result_json = serde_json::json!({
                 "message": result.message,
                 "events": result.events,
@@ -360,6 +364,20 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
                     }
                 };
 
+                if session.game_state.home_state != crate::state::HomeState::None {
+                    let error_obj = serde_json::json!({
+                        "code": "Sleeping",
+                        "message": "Cannot execute commands while sleeping. Auto-sleep completed to morning.",
+                        "details": Vec::<String>::new(),
+                    });
+                    results.push(serde_json::json!({
+                        "command": cmd_str,
+                        "ok": false,
+                        "error": error_obj,
+                    }));
+                    break;
+                }
+
                 let result = execute_command(&mut session.game_state, parsed);
 
                 results.push(serde_json::json!({
@@ -374,6 +392,11 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
                 }));
 
                 executed_count += 1;
+
+                if session.game_state.home_state == crate::state::HomeState::Income {
+                    session.game_state.run_auto_sleep_and_advance();
+                    break;
+                }
             }
 
             let final_state = session.to_snapshot();
@@ -957,5 +980,131 @@ mod tests {
         let response = ToolResponse::from_mcp_error(mcp_error);
         assert!(!response.ok);
         assert!(response.error.is_some());
+    }
+
+    #[test]
+    fn test_auto_sleep_at_2am_completes_sleep_cycle() {
+        use crate::mcp::tools::{
+            CommandBatchInput, EndSessionInput, GetStateInput, StartSessionInput,
+        };
+
+        let start_input = StartSessionInput {
+            seed: None,
+            mode: Some("test".to_string()),
+        };
+        let start_response = handle_start_session(start_input);
+        let session_id = serde_json::from_value::<crate::mcp::tools::StartSessionOutput>(
+            start_response.result.unwrap(),
+        )
+        .unwrap()
+        .session_id;
+
+        let state_input = GetStateInput {
+            session_id: session_id.clone(),
+        };
+        let state_response = handle_get_state(state_input);
+        let initial_state = state_response.result.unwrap();
+        assert_eq!(
+            initial_state.get("time").unwrap().as_str().unwrap(),
+            "06:00"
+        );
+        assert_eq!(initial_state.get("day").unwrap().as_u64().unwrap(), 1);
+
+        let directions = ["move:down", "move:right", "move:up", "move:left"];
+        let commands: Vec<String> = (0..240).map(|i| directions[i % 4].to_string()).collect();
+
+        let batch_input = CommandBatchInput {
+            session_id: session_id.clone(),
+            commands,
+            stop_on_error: true,
+        };
+        let batch_resp = handle_command_batch(batch_input);
+        assert!(batch_resp.ok);
+
+        let state_input = GetStateInput {
+            session_id: session_id.clone(),
+        };
+        let state_response = handle_get_state(state_input);
+        let state = state_response.result.unwrap();
+
+        let time_str = state.get("time").unwrap().as_str().unwrap();
+        let day_val = state.get("day").unwrap().as_u64().unwrap();
+
+        assert_eq!(
+            time_str, "06:00",
+            "After auto-sleep, time should reset to 06:00"
+        );
+        assert!(
+            day_val >= 2,
+            "After auto-sleep at 02:00, should be at least day 2, got day {}",
+            day_val
+        );
+
+        let msg = state.get("message").unwrap().as_str().unwrap();
+        assert!(
+            msg.contains("morning") || msg.contains("day"),
+            "Should have morning message after auto-sleep. Got: {}",
+            msg
+        );
+
+        let _ = handle_end_session(EndSessionInput { session_id });
+    }
+
+    #[test]
+    fn test_auto_sleep_allows_subsequent_commands_in_batch() {
+        use crate::mcp::tools::{
+            CommandBatchInput, EndSessionInput, GetStateInput, StartSessionInput,
+        };
+
+        let start_input = StartSessionInput {
+            seed: None,
+            mode: Some("test".to_string()),
+        };
+        let start_response = handle_start_session(start_input);
+        let session_id = serde_json::from_value::<crate::mcp::tools::StartSessionOutput>(
+            start_response.result.unwrap(),
+        )
+        .unwrap()
+        .session_id;
+
+        // Use alternating directions - need enough to reach 02:00 and trigger auto-sleep
+        let directions = ["move:down", "move:right", "move:up", "move:left"];
+        let commands: Vec<String> = (0..240).map(|i| directions[i % 4].to_string()).collect();
+
+        let batch_input = CommandBatchInput {
+            session_id: session_id.clone(),
+            commands,
+            stop_on_error: true,
+        };
+        let batch_resp = handle_command_batch(batch_input);
+        assert!(batch_resp.ok);
+
+        let result = batch_resp.result.unwrap();
+        let executed_count = result.get("executed_count").unwrap().as_u64().unwrap();
+
+        // With new behavior: auto-sleep advances to morning and allows subsequent commands
+        // So all 240 commands should execute (multiple days may pass)
+        assert_eq!(
+            executed_count, 240,
+            "All 240 commands should execute with new auto-sleep behavior"
+        );
+
+        let state_input = GetStateInput {
+            session_id: session_id.clone(),
+        };
+        let state_response = handle_get_state(state_input);
+        let state = state_response.result.unwrap();
+
+        let day_val = state.get("day").unwrap().as_u64().unwrap();
+        assert!(
+            day_val >= 2,
+            "Should be at least day 2 after auto-sleep, got day {}",
+            day_val
+        );
+
+        let time_str = state.get("time").unwrap().as_str().unwrap();
+        assert_eq!(time_str, "06:00", "Should be morning after auto-sleep");
+
+        let _ = handle_end_session(EndSessionInput { session_id });
     }
 }

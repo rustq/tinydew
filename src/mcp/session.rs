@@ -68,6 +68,7 @@ impl Session {
             "is_paused": self.game_state.is_paused,
             "location": format!("{:?}", self.game_state.location),
             "money": self.game_state.money,
+            "message": self.game_state.message,
             "inventory": {
                 "seeds": self.game_state.inventory.seeds,
                 "produce": self.game_state.inventory.produce,

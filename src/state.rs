@@ -439,6 +439,24 @@ impl GameState {
         self.perform_sleep();
     }
 
+    pub fn run_auto_sleep_and_advance(&mut self) {
+        self.day += 1;
+        self.auto_sleep_triggered_day = self.day;
+        self.hour = 6;
+        self.minute = 0;
+        self.total_minutes = (self.day - 1) * 1440 + 360;
+
+        self.location = Location::Farm;
+        self.player_x = 3;
+        self.player_y = 3;
+
+        self.start_new_day();
+
+        self.home_state = HomeState::None;
+        self.current_income = DailyIncome::default();
+        self.message = String::from("Good morning! Ready for another day.");
+    }
+
     pub fn tick(&mut self, current_time_ms: u64) {
         if self.is_paused {
             return;
