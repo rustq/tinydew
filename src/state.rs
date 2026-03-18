@@ -340,8 +340,6 @@ impl GameState {
             }
         }
 
-        self.spawn_east_path_mushrooms();
-
         self.spawn_random_crops();
 
         self.message = String::from("Good morning! A new day begins.");
