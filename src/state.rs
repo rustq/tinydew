@@ -268,7 +268,13 @@ impl GameState {
             Location::Farm => &self.farm_map,
             Location::EastPath => &self.east_path_map,
         };
-        map[y][x].is_walkable()
+
+        let tile = map[y][x];
+        if tile == TileType::House {
+            return false;
+        }
+
+        tile.is_walkable()
     }
 
     pub fn move_guest(&mut self, direction: Direction) -> bool {
@@ -1764,12 +1770,33 @@ mod tests {
     fn test_guest_movement() {
         let mut state = GameState::new();
         state.enable_guest_for_interactive();
+        state.guest_location = Location::Farm;
+        state.location = Location::Farm;
+        state.guest_x = 1;
+        state.guest_y = 1;
+
         let initial_x = state.guest_x;
         let initial_y = state.guest_y;
 
         state.move_guest(Direction::Right);
         assert_eq!(state.guest_x, initial_x + 1);
         assert_eq!(state.guest_y, initial_y);
+    }
+
+    #[test]
+    fn test_guest_cannot_enter_house_tile() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.guest_location = Location::Farm;
+        state.location = Location::Farm;
+        state.guest_x = 1;
+        state.guest_y = 2;
+
+        // House is at (2,2)
+        let moved = state.move_guest(Direction::Right);
+        assert!(!moved);
+        assert_eq!(state.guest_x, 1);
+        assert_eq!(state.guest_y, 2);
     }
 
     #[test]
