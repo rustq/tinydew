@@ -113,6 +113,21 @@ fn autosave_if_needed(manager: &mut GameStateManager) -> Option<Warning> {
     }
 }
 
+fn should_autosave_after_command(cmd: &super::command::ParsedCommand) -> bool {
+    use super::command::ParsedCommand;
+    matches!(
+        cmd,
+        ParsedCommand::Move(_)
+            | ParsedCommand::Clear(_)
+            | ParsedCommand::Plant(_, _)
+            | ParsedCommand::Water(_)
+            | ParsedCommand::Harvest(_)
+            | ParsedCommand::Sleep
+            | ParsedCommand::Buy(_, _)
+            | ParsedCommand::Sell(_, _)
+    )
+}
+
 pub fn handle_start_session(_input: StartSessionInput) -> ToolResponse {
     let state = match GAME_STATE.lock() {
         Ok(s) => s,
@@ -221,14 +236,13 @@ pub fn handle_command(input: CommandInput) -> ToolResponse {
         Err(e) => return ToolResponse::from_mcp_error(e),
     };
 
-    let day_before = state.state.day;
+    let should_autosave = should_autosave_after_command(&parsed);
     let result = execute_command(&mut state.state, parsed);
-    let day_after = state.state.day;
     state.mark_dirty();
 
     let mut warnings: Vec<Warning> = Vec::new();
 
-    if day_after > day_before {
+    if should_autosave {
         if let Some(warning) = autosave_if_needed(&mut state) {
             warnings.push(warning);
         }
@@ -270,7 +284,6 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
     let mut results: Vec<serde_json::Value> = Vec::new();
     let mut executed_count: usize = 0;
     let mut last_error: Option<McpError> = None;
-    let mut day_before = state.state.day;
     let mut autosaved = false;
 
     for cmd_str in &input.commands {
@@ -310,11 +323,6 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
 
         let result = execute_command(&mut state.state, parsed);
 
-        let day_after = state.state.day;
-        if day_after > day_before {
-            day_before = day_after;
-        }
-
         results.push(serde_json::json!({
             "command": cmd_str,
             "ok": true,
@@ -336,14 +344,13 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
 
     state.mark_dirty();
 
-    let final_day = state.state.day;
     let mut warnings: Vec<Warning> = Vec::new();
 
-    if final_day > day_before - (input.commands.len() as u32 / 100) {
+    if state.dirty {
         if let Some(warning) = autosave_if_needed(&mut state) {
             warnings.push(warning);
-            autosaved = true;
         }
+        autosaved = true;
     }
 
     let final_state = state.to_snapshot();
