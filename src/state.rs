@@ -201,6 +201,9 @@ impl GameState {
             self.guest_x = x;
             self.guest_y = y;
         }
+
+        // Start interactive camera/location in East Path so guest is immediately visible.
+        self.location = Location::EastPath;
     }
 
     pub fn disable_guest(&mut self) {
