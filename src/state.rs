@@ -861,16 +861,14 @@ impl GameState {
                     self.message = String::from("Not ready yet! (Needs more time)");
                 }
             } else if let Some(TileType::Mushroom) = tile {
-                if self.location == Location::EastPath {
-                    if let Some(map_row) = self.east_path_map.get_mut(y) {
-                        map_row[x] = TileType::Grass;
-                    }
-                    self.inventory.add_forage(ForageType::Mushroom);
-                    self.message = String::from("Harvest Done! (Got 🍄)");
-                    self.advance_time();
-                } else {
-                    self.message = String::from("Cannot harvest mushrooms here!");
+                if self.location == Location::Farm {
+                    self.farm_map[y][x] = TileType::Grass;
+                } else if let Some(map_row) = self.east_path_map.get_mut(y) {
+                    map_row[x] = TileType::Grass;
                 }
+                self.inventory.add_forage(ForageType::Mushroom);
+                self.message = String::from("Harvest Done! (Got 🍄)");
+                self.advance_time();
             } else {
                 self.message = String::from("Nothing to harvest!");
             }
@@ -902,16 +900,14 @@ impl GameState {
                     self.message = String::from("Not ready yet! (Needs more time)");
                 }
             } else if let Some(TileType::Mushroom) = tile {
-                if self.location == Location::EastPath {
-                    if let Some(map_row) = self.east_path_map.get_mut(y) {
-                        map_row[x] = TileType::Grass;
-                    }
-                    self.inventory.add_forage(ForageType::Mushroom);
-                    self.message = String::from("Harvest Done! (Got 🍄)");
-                    self.advance_time();
-                } else {
-                    self.message = String::from("Cannot harvest mushrooms here!");
+                if self.location == Location::Farm {
+                    self.farm_map[y][x] = TileType::Grass;
+                } else if let Some(map_row) = self.east_path_map.get_mut(y) {
+                    map_row[x] = TileType::Grass;
                 }
+                self.inventory.add_forage(ForageType::Mushroom);
+                self.message = String::from("Harvest Done! (Got 🍄)");
+                self.advance_time();
             } else {
                 self.message = String::from("Nothing to harvest!");
             }
