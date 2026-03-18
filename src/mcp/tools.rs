@@ -51,6 +51,11 @@ pub struct GetStatsInput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetWorldTimeInput {
+    pub session_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EndSessionInput {
     pub session_id: String,
 }

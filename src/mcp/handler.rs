@@ -9,7 +9,7 @@ use super::errors::{ErrorCode, McpError};
 use super::session::SessionManager;
 use super::tools::{
     CommandBatchInput, CommandInput, EndSessionInput, GetMapInput, GetStateInput, GetStatsInput,
-    StartSessionInput, StartSessionOutput,
+    GetWorldTimeInput, StartSessionInput, StartSessionOutput,
 };
 
 static SESSION_MANAGER: std::sync::LazyLock<Arc<RwLock<SessionManager>>> =
@@ -212,6 +212,45 @@ pub fn handle_get_stats(input: GetStatsInput) -> ToolResponse {
             };
             let stats = session.to_stats();
             ToolResponse::success(stats)
+        }
+        Err(e) => ToolResponse::from_mcp_error(e),
+    }
+}
+
+pub fn handle_get_world_time(input: GetWorldTimeInput) -> ToolResponse {
+    if let Err(e) = validate_session_id(&input.session_id) {
+        return ToolResponse::from_mcp_error(e);
+    }
+
+    let manager = get_session_manager();
+    let manager = match manager.read() {
+        Ok(m) => m,
+        Err(_) => {
+            return ToolResponse::from_mcp_error(McpError::internal_error(
+                "Failed to acquire session manager lock",
+            ));
+        }
+    };
+
+    match manager.get_session(&input.session_id) {
+        Ok(session) => {
+            let session = match session.read() {
+                Ok(s) => s,
+                Err(_) => {
+                    return ToolResponse::from_mcp_error(McpError::internal_error(
+                        "Failed to read session",
+                    ));
+                }
+            };
+
+            let (day, hour, minute) = session.game_state.get_day_and_time();
+            let result = serde_json::json!({
+                "total_minutes": session.game_state.total_minutes,
+                "hour": hour,
+                "minute": minute,
+                "day": day,
+            });
+            ToolResponse::success(result)
         }
         Err(e) => ToolResponse::from_mcp_error(e),
     }

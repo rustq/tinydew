@@ -26,12 +26,12 @@ struct Args {}
 fn run_mcp_server() -> Result<(), Box<dyn std::error::Error>> {
     use crate::mcp::handler::{
         handle_command, handle_command_batch, handle_end_session, handle_get_map, handle_get_state,
-        handle_get_stats, handle_start_session,
+        handle_get_stats, handle_get_world_time, handle_start_session,
     };
     use crate::mcp::server::initialize_mcp_server;
     use crate::mcp::tools::{
         CommandBatchInput, CommandInput, EndSessionInput, GetMapInput, GetStateInput,
-        GetStatsInput, StartSessionInput,
+        GetStatsInput, GetWorldTimeInput, StartSessionInput,
     };
 
     println!("[MCP] Starting Shelldew MCP server on stdio...");
@@ -114,6 +114,14 @@ fn run_mcp_server() -> Result<(), Box<dyn std::error::Error>> {
                         session_id: String::new(),
                     });
                 handle_get_stats(input)
+            }
+            Some("getWorldTime") => {
+                let input = params
+                    .and_then(|p| serde_json::from_value::<GetWorldTimeInput>(p.clone()).ok())
+                    .unwrap_or(GetWorldTimeInput {
+                        session_id: String::new(),
+                    });
+                handle_get_world_time(input)
             }
             Some("command") => {
                 let input = params

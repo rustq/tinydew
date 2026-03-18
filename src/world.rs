@@ -73,6 +73,23 @@ pub enum ForageType {
     Mushroom,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Weather {
+    Sunny,
+    Cloudy,
+    Rainy,
+}
+
+impl Weather {
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Weather::Sunny => "☀️",
+            Weather::Cloudy => "⛅",
+            Weather::Rainy => "🌧",
+        }
+    }
+}
+
 impl ForageType {
     pub fn emoji(&self) -> &'static str {
         match self {

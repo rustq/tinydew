@@ -1,6 +1,6 @@
 use crate::world::{
     CropState, CropType, Direction, EAST_PATH_HEIGHT, EAST_PATH_WIDTH, FARM_HEIGHT, FARM_WIDTH,
-    ForageType, Map, TileType, create_east_path_map, create_farm_map,
+    ForageType, Map, TileType, Weather, create_east_path_map, create_farm_map,
 };
 use crossterm::event::KeyCode;
 use serde::{Deserialize, Serialize};
@@ -114,7 +114,8 @@ pub struct GameState {
     pub hour: u32,
     pub minute: u32,
     pub season: String,
-    pub weather: String,
+    pub weather: Weather,
+    pub weather_day: u32,
     pub inventory: Inventory,
     pub selected_seed: CropType,
     pub money: u32,
@@ -123,6 +124,11 @@ pub struct GameState {
     pub home_state: HomeState,
     pub home_cursor: usize,
     pub current_income: DailyIncome,
+    pub total_minutes: u32,
+    pub last_update_ms: u64,
+    pub is_paused: bool,
+    pub auto_sleep_triggered_day: u32,
+    pub rng_seed: u64,
 }
 
 #[allow(dead_code)]
@@ -145,7 +151,8 @@ impl GameState {
             hour: 6,
             minute: 0,
             season: String::from("Spring"),
-            weather: String::from("Sunny"),
+            weather: Weather::Sunny,
+            weather_day: 1,
             inventory: Inventory::new(),
             selected_seed: CropType::Carrot,
             money: 500,
@@ -154,6 +161,11 @@ impl GameState {
             home_state: HomeState::None,
             home_cursor: 0,
             current_income: DailyIncome::default(),
+            total_minutes: 360,
+            last_update_ms: 0,
+            is_paused: false,
+            auto_sleep_triggered_day: 0,
+            rng_seed: 12345,
         }
     }
 
@@ -280,25 +292,24 @@ impl GameState {
     }
 
     pub fn advance_time(&mut self) {
-        let was_night = self.hour >= 20;
+        let was_night = self.is_night();
 
-        self.minute += 5;
-        if self.minute >= 60 {
-            self.minute = 0;
-            self.hour += 1;
-        }
-        if self.hour >= 24 {
-            self.hour = 0;
-            self.day += 1;
-        }
+        self.total_minutes += 5;
+        self.sync_time_from_minutes();
 
-        if was_night && self.hour >= 6 {
+        if was_night && self.is_day() {
             self.start_new_day();
+        }
+
+        if self.should_auto_sleep() {
+            self.run_auto_sleep();
         }
     }
 
     pub fn start_new_day(&mut self) {
-        self.roll_weather();
+        if self.weather_day != self.day {
+            self.roll_weather();
+        }
 
         for y in 0..FARM_HEIGHT {
             for x in 0..FARM_WIDTH {
@@ -307,6 +318,18 @@ impl GameState {
                         state.days_grown += 1;
                     }
                     state.watered_today = false;
+                }
+            }
+        }
+
+        if self.weather == Weather::Rainy {
+            for y in 0..FARM_HEIGHT {
+                for x in 0..FARM_WIDTH {
+                    if let TileType::Crop(crop, state) = &mut self.farm_map[y][x] {
+                        if !state.is_mature(*crop) && !state.watered_today {
+                            state.watered_today = true;
+                        }
+                    }
                 }
             }
         }
@@ -368,35 +391,90 @@ impl GameState {
     }
 
     fn roll_weather(&mut self) {
-        use std::time::SystemTime;
-        let seed = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos() as u64;
-
-        let weather_idx = ((seed + self.day as u64) % 3) as usize;
-        self.weather = match weather_idx {
-            0 => String::from("Sunny"),
-            1 => String::from("Rain"),
-            _ => String::from("Cloudy"),
+        let seed = self.rng_seed.wrapping_add(self.day as u64);
+        let weather_idx = (seed % 100) as usize;
+        self.weather = if weather_idx < 80 {
+            Weather::Sunny
+        } else if weather_idx < 93 {
+            Weather::Cloudy
+        } else {
+            Weather::Rainy
         };
+        self.weather_day = self.day;
+    }
+
+    pub fn is_day(&self) -> bool {
+        self.hour >= 6 && self.hour < 18
     }
 
     pub fn is_night(&self) -> bool {
-        self.hour >= 20 || self.hour < 6
+        !self.is_day()
     }
 
     pub fn get_weather_icon(&self) -> &'static str {
         if self.is_night() {
             "🌙"
         } else {
-            match self.weather.as_str() {
-                "Sunny" => "☀️",
-                "Rain" => "🌧",
-                "Cloudy" => "☁️",
-                _ => "☀️",
-            }
+            self.weather.icon()
         }
+    }
+
+    pub fn get_day_and_time(&self) -> (u32, u8, u8) {
+        let day = self.total_minutes / 1440 + 1;
+        let minute_of_day = self.total_minutes % 1440;
+        let hour = (minute_of_day / 60) as u8;
+        let minute = (minute_of_day % 60) as u8;
+        (day, hour, minute)
+    }
+
+    pub fn should_auto_sleep(&self) -> bool {
+        self.hour == 2
+            && self.minute == 0
+            && self.auto_sleep_triggered_day != self.day
+            && self.home_state == HomeState::None
+    }
+
+    pub fn run_auto_sleep(&mut self) {
+        self.auto_sleep_triggered_day = self.day;
+        self.perform_sleep();
+    }
+
+    pub fn tick(&mut self, current_time_ms: u64) {
+        if self.is_paused {
+            return;
+        }
+
+        let elapsed_ms = current_time_ms.saturating_sub(self.last_update_ms);
+        let elapsed_seconds = elapsed_ms / 1000;
+
+        const MAX_ELAPSED_SECONDS: u64 = 5;
+        let capped_seconds = std::cmp::min(elapsed_seconds, MAX_ELAPSED_SECONDS);
+
+        let minutes_advanced = capped_seconds * 5;
+        self.total_minutes += minutes_advanced as u32;
+        self.last_update_ms = current_time_ms;
+
+        self.sync_time_from_minutes();
+
+        if self.should_auto_sleep() {
+            self.run_auto_sleep();
+        }
+    }
+
+    fn sync_time_from_minutes(&mut self) {
+        self.day = self.total_minutes / 1440 + 1;
+        let minute_of_day = self.total_minutes % 1440;
+        self.hour = minute_of_day / 60;
+        self.minute = minute_of_day % 60;
+    }
+
+    pub fn pause(&mut self) {
+        self.is_paused = true;
+    }
+
+    pub fn resume(&mut self, current_time_ms: u64) {
+        self.is_paused = false;
+        self.last_update_ms = current_time_ms;
     }
 
     pub fn format_time(&self) -> String {

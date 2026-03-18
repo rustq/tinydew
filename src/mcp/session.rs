@@ -62,6 +62,10 @@ impl Session {
         serde_json::json!({
             "day": self.game_state.day,
             "time": self.game_state.format_time(),
+            "total_minutes": self.game_state.total_minutes,
+            "weather": format!("{:?}", self.game_state.weather),
+            "weather_day": self.game_state.weather_day,
+            "is_paused": self.game_state.is_paused,
             "location": format!("{:?}", self.game_state.location),
             "money": self.game_state.money,
             "inventory": {
@@ -179,6 +183,7 @@ impl Session {
         serde_json::json!({
             "day": self.game_state.day,
             "time": self.game_state.format_time(),
+            "total_minutes": self.game_state.total_minutes,
             "location": format!("{:?}", self.game_state.location),
             "money": self.game_state.money,
             "inventory": {
@@ -188,7 +193,10 @@ impl Session {
             },
             "status": if self.closed { "closed" } else { "ok" },
             "season": self.game_state.season,
-            "weather": self.game_state.weather,
+            "weather": format!("{:?}", self.game_state.weather),
+            "heartbeat": {
+                "is_paused": self.game_state.is_paused,
+            }
         })
     }
 }
