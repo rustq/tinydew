@@ -142,8 +142,8 @@ Errors follow this format:
 Error codes:
 - `INVALID_COMMAND` - Unknown command
 - `VALIDATION_ERROR` - Invalid arguments
-- `SESSION_NOT_FOUND` - Session ID not found (for non-singleton IDs)
-- `SESSION_CLOSED` - Session already closed
+- `SESSION_NOT_FOUND` - Legacy/compat error (not expected in singleton mode)
+- `SESSION_CLOSED` - Legacy/compat error
 - `INTERNAL_ERROR` - Internal server error
 - `NOT_IMPLEMENTED` - Feature not implemented
 
@@ -203,4 +203,6 @@ map_data = client.read_resource(f"shelldew://session/{session_id}/map")
 
 # Read inventory
 inventory = client.read_resource(f"shelldew://session/{session_id}/inventory")
+```
+/session/{session_id}/inventory")
 ```

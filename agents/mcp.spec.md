@@ -101,8 +101,9 @@ Supported command grammar:
 - `harvest`
 - `buy:<item>[:<qty>]`
 - `sell:<item>[:<qty>]`
-- `sleep`
 - `print` (returns text snapshot payload)
+
+Note: `sleep` is intentionally disabled in MCP API. Day transition should happen via go-home/auto-sleep flow.
 
 **Output**
 - `ok` (boolean)
