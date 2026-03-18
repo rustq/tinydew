@@ -220,14 +220,12 @@ Allow small tolerance band (e.g., ±0.5% to ±1.0%).
 
 ## 14) Acceptance Criteria
 
-Feature is complete when:
+Accepted criteria:
 
-1. In Spring, daily weather uses exactly these probabilities:
-   - Sunny `☀️` 80%
-   - Cloudy `⛅` 13%
-   - Rainy `🌧️` 7%
 2. Weather is selected once per day and stays constant for that day.
 3. On rainy days, eligible crops are auto-watered.
 4. During daytime, top UI shows correct weather icon.
 5. Existing night icon behavior remains correct and not regressed.
 6. Save/load and MCP state remain consistent with selected weather and rain effects.
+
+Criterion 1 is **not accepted** at this time.
