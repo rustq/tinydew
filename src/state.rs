@@ -571,7 +571,14 @@ impl GameState {
     }
 
     pub fn run_auto_sleep_and_advance(&mut self) {
-        self.day += 1;
+        // Sleep always advances to the next 06:00 checkpoint.
+        // If already after midnight (00:00-05:59), remain on the same day.
+        // Otherwise, advance to next day.
+        let crossed_to_next_day = self.hour >= 6;
+        if crossed_to_next_day {
+            self.day += 1;
+        }
+
         self.auto_sleep_triggered_day = self.day;
         self.hour = 6;
         self.minute = 0;
@@ -581,7 +588,9 @@ impl GameState {
         self.player_x = 3;
         self.player_y = 3;
 
-        self.start_new_day();
+        if crossed_to_next_day {
+            self.start_new_day();
+        }
 
         self.home_state = HomeState::None;
         self.current_income = DailyIncome::default();

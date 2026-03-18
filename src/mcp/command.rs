@@ -217,7 +217,14 @@ fn capture_state_snapshot(state: &GameState) -> serde_json::Value {
 }
 
 fn advance_to_morning(state: &mut GameState) {
-    state.day += 1;
+    // Sleep should move to the next 06:00 checkpoint.
+    // If already past midnight (00:00-05:59), waking up at 06:00 stays on the same day.
+    // Otherwise, sleeping advances to the next day morning.
+    let crossed_to_next_day = state.hour >= 6;
+    if crossed_to_next_day {
+        state.day += 1;
+    }
+
     state.hour = 6;
     state.minute = 0;
 
@@ -225,7 +232,9 @@ fn advance_to_morning(state: &mut GameState) {
     state.player_x = 3;
     state.player_y = 3;
 
-    state.start_new_day();
+    if crossed_to_next_day {
+        state.start_new_day();
+    }
 
     state.home_state = crate::state::HomeState::None;
     state.current_income = crate::state::DailyIncome::default();
@@ -233,6 +242,45 @@ fn advance_to_morning(state: &mut GameState) {
 }
 
 fn generate_text_snapshot(state: &GameState) -> String {
+    if state.home_state == crate::state::HomeState::Income {
+        let mut lines = vec![
+            format!(
+                "=== Shelldew Day {} {} {} ===",
+                state.day,
+                state.format_time(),
+                state.get_weather_icon()
+            ),
+            "--- Income this day ---".to_string(),
+        ];
+
+        if state.current_income.money_earned > 0 {
+            lines.push(format!("💰 * {}", state.current_income.money_earned));
+        }
+
+        for (crop, count) in &state.current_income.crops_sold {
+            if *count > 0 {
+                lines.push(format!("{} * {}", crop.produce_emoji(), count));
+            }
+        }
+
+        for (forage, count) in &state.current_income.forage_sold {
+            if *count > 0 {
+                lines.push(format!("{} * {}", forage.emoji(), count));
+            }
+        }
+
+        if state.current_income.money_earned == 0
+            && state.current_income.crops_sold.is_empty()
+            && state.current_income.forage_sold.is_empty()
+        {
+            lines.push("(No income today)".to_string());
+        }
+
+        lines.push(String::new());
+        lines.push(format!("> {}", state.message));
+        return lines.join("\n");
+    }
+
     let mut lines = vec![
         format!(
             "=== Shelldew Day {} {} {} ===",
@@ -1090,6 +1138,26 @@ mod tests {
             state.day,
             state.format_time()
         );
+    }
+
+    #[test]
+    fn test_sleep_after_midnight_keeps_same_day() {
+        let mut state = GameState::new();
+        state.day = 2;
+        state.hour = 2;
+        state.minute = 0;
+
+        execute_command(&mut state, ParsedCommand::Sleep);
+
+        assert_eq!(
+            state.day,
+            2,
+            "Sleep after midnight should keep same day and wake at 06:00. Got: Day {} {}",
+            state.day,
+            state.format_time()
+        );
+        assert_eq!(state.hour, 6);
+        assert_eq!(state.minute, 0);
     }
 
     #[test]
