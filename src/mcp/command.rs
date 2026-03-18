@@ -402,7 +402,7 @@ fn generate_text_snapshot(state: &GameState) -> String {
     for y in 0..height {
         let line: String = (0..width)
             .map(|x| {
-                if x == state.player_x && y == state.player_y {
+                if state.player_location == state.location && x == state.player_x && y == state.player_y {
                     if state.guest_enabled
                         && state.guest_location == state.location
                         && x == state.guest_x
@@ -421,11 +421,7 @@ fn generate_text_snapshot(state: &GameState) -> String {
                     && x == state.guest_x
                     && y == state.guest_y
                 {
-                    if state.active_control == crate::state::ControlTarget::Player {
-                        "👧"
-                    } else {
-                        "👧"
-                    }
+                    "👧"
                 } else {
                     map[y][x].emoji()
                 }
@@ -936,6 +932,33 @@ mod tests {
             player_char_idx, 2,
             "Player marker should be at character index 2 (x=2) in row 3, got {}",
             player_char_idx
+        );
+    }
+
+    #[test]
+    fn test_print_snapshot_hides_player_when_on_different_region() {
+        let mut state = GameState::new();
+        state.location = Location::EastPath;
+        state.player_location = Location::Farm;
+        state.player_x = 2;
+        state.player_y = 3;
+
+        let result = execute_command(&mut state, ParsedCommand::Print);
+        let snapshot = result.snapshot_text.unwrap();
+
+        let map_start = snapshot
+            .lines()
+            .position(|l| l.starts_with("--- Farm Map ---"));
+        assert!(map_start.is_some(), "Map section should exist");
+        let map_start = map_start.unwrap();
+
+        let (_, height) = state.get_map_size();
+        let map_rows: Vec<&str> = snapshot.lines().skip(map_start + 1).take(height).collect();
+        assert_eq!(map_rows.len(), height, "Should have {} map rows", height);
+
+        assert!(
+            !map_rows.iter().any(|row| row.contains('🧑')),
+            "Player marker should be hidden when player_location differs from active location"
         );
     }
 
