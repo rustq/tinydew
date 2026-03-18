@@ -234,7 +234,12 @@ fn advance_to_morning(state: &mut GameState) {
 
 fn generate_text_snapshot(state: &GameState) -> String {
     let mut lines = vec![
-        format!("=== Shelldew Day {} {} ===", state.day, state.format_time()),
+        format!(
+            "=== Shelldew Day {} {} {} ===",
+            state.day,
+            state.format_time(),
+            state.get_weather_icon()
+        ),
         format!("Location: {:?}", state.location),
         format!("Money: ${}", state.money),
         String::new(),
