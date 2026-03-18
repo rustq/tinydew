@@ -523,6 +523,12 @@ impl GameState {
     }
 
     fn roll_weather(&mut self) {
+        if self.day == 1 {
+            self.weather = Weather::Sunny;
+            self.weather_day = self.day;
+            return;
+        }
+
         let seed = self.rng_seed.wrapping_add(self.day as u64);
         let weather_idx = (seed % 100) as usize;
         self.weather = if weather_idx < 80 {
