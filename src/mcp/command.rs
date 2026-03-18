@@ -133,12 +133,15 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
             let crop = parse_crop(item_str)?;
             Ok(ParsedCommand::Sell(crop, qty))
         }
-        "sleep" => Ok(ParsedCommand::Sleep),
+        "sleep" => Err(McpError::validation_error(
+            "sleep command is disabled in MCP API",
+            vec!["Go home and let auto-sleep handle day transition"],
+        )),
         "print" => Ok(ParsedCommand::Print),
         "save" => Ok(ParsedCommand::Save),
         "load" => Ok(ParsedCommand::Load),
         _ => Err(McpError::invalid_command(format!(
-            "unknown command '{}'. Valid commands: move:up|down|left|right, clear[:<dir>], plant:<crop>[:<dir>], water[:<dir>], harvest[:<dir>], buy:<item>[:<qty>], sell:<item>[:<qty>], sleep, print, save, load",
+            "unknown command '{}'. Valid commands: move:up|down|left|right, clear[:<dir>], plant:<crop>[:<dir>], water[:<dir>], harvest[:<dir>], buy:<item>[:<qty>], sell:<item>[:<qty>], print, save, load",
             cmd
         ))),
     }
@@ -743,9 +746,9 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_sleep() {
+    fn test_parse_sleep_is_rejected() {
         let result = parse_command("sleep");
-        assert!(matches!(result, Ok(ParsedCommand::Sleep)));
+        assert!(result.is_err());
     }
 
     #[test]
@@ -1422,6 +1425,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "sleep command is intentionally disabled in MCP API"]
     fn test_mcp_command_batch_water_sleep_cycle() {
         use crate::mcp::handler::{handle_command, handle_start_session};
         use crate::mcp::state_manager::SINGLETON_SESSION_ID;

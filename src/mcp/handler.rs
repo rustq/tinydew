@@ -122,10 +122,13 @@ fn should_autosave_after_command(cmd: &super::command::ParsedCommand) -> bool {
             | ParsedCommand::Plant(_, _)
             | ParsedCommand::Water(_)
             | ParsedCommand::Harvest(_)
-            | ParsedCommand::Sleep
             | ParsedCommand::Buy(_, _)
             | ParsedCommand::Sell(_, _)
     )
+}
+
+fn is_sleep_api_forbidden(cmd: &super::command::ParsedCommand) -> bool {
+    matches!(cmd, super::command::ParsedCommand::Sleep)
 }
 
 pub fn handle_start_session(_input: StartSessionInput) -> ToolResponse {
@@ -236,6 +239,13 @@ pub fn handle_command(input: CommandInput) -> ToolResponse {
         Err(e) => return ToolResponse::from_mcp_error(e),
     };
 
+    if is_sleep_api_forbidden(&parsed) {
+        return ToolResponse::error(
+            ErrorCode::ValidationError,
+            "sleep command is disabled in MCP API. Go home and let auto-sleep handle day transition.".to_string(),
+        );
+    }
+
     let should_autosave = should_autosave_after_command(&parsed);
     let result = execute_command(&mut state.state, parsed);
     state.mark_dirty();
@@ -319,6 +329,23 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
                 "error": error_obj,
             }));
             break;
+        }
+
+        if is_sleep_api_forbidden(&parsed) {
+            let error_obj = serde_json::json!({
+                "code": "VALIDATION_ERROR",
+                "message": "sleep command is disabled in MCP API. Go home and let auto-sleep handle day transition.",
+                "details": ["Use movement/gameplay commands only; do not call sleep directly."],
+            });
+            results.push(serde_json::json!({
+                "command": cmd_str,
+                "ok": false,
+                "error": error_obj,
+            }));
+            if input.stop_on_error {
+                break;
+            }
+            continue;
         }
 
         let result = execute_command(&mut state.state, parsed);
@@ -825,7 +852,7 @@ mod tests {
     }
 
     #[test]
-    fn test_sleep_triggers_autosave() {
+    fn test_sleep_command_is_disabled_in_mcp_api() {
         use crate::mcp::state_manager::SINGLETON_SESSION_ID;
 
         reset_for_tests();
@@ -836,32 +863,17 @@ mod tests {
         };
         let response = handle_command(cmd_sleep);
 
-        assert!(response.ok);
-        let _state = response.result.unwrap();
-
-        let state_input = GetStateInput {
-            session_id: SINGLETON_SESSION_ID.to_string(),
-        };
-        let state_response = handle_get_state(state_input);
-        let loaded_state = state_response.result.unwrap();
-
-        assert_eq!(
-            loaded_state.get("day").unwrap().as_u64().unwrap(),
-            2,
-            "After sleep, day should be 2"
-        );
+        assert!(!response.ok);
+        let err = response.error.unwrap();
+        assert_eq!(err.code, ErrorCode::ValidationError);
+        assert!(err.message.contains("sleep command is disabled"));
     }
 
     #[test]
-    fn test_autosave_after_day_advance() {
+    fn test_sleep_in_batch_is_rejected() {
         use crate::mcp::state_manager::SINGLETON_SESSION_ID;
 
         reset_for_tests();
-
-        let mut state = GAME_STATE.lock().unwrap();
-        state.state.day = 1;
-        state.state.hour = 22;
-        drop(state);
 
         let batch = CommandBatchInput {
             session_id: SINGLETON_SESSION_ID.to_string(),
@@ -873,13 +885,21 @@ mod tests {
         assert!(response.ok);
 
         let result = response.result.unwrap();
-        let final_day = result
-            .get("final_state")
-            .unwrap()
-            .get("day")
-            .unwrap()
-            .as_u64()
-            .unwrap();
-        assert_eq!(final_day, 2, "Final day should be 2 after sleep");
+        let first = result
+            .get("results")
+            .and_then(|v| v.as_array())
+            .and_then(|arr| arr.first())
+            .cloned()
+            .unwrap_or_default();
+
+        assert_eq!(first.get("ok").and_then(|v| v.as_bool()), Some(false));
+        assert!(
+            first
+                .get("error")
+                .and_then(|e| e.get("message"))
+                .and_then(|m| m.as_str())
+                .unwrap_or("")
+                .contains("sleep command is disabled")
+        );
     }
 }
