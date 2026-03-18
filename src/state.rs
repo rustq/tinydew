@@ -650,12 +650,20 @@ impl GameState {
 
         if let Some((x, y)) = self.tile_in_front() {
             let tile = self.get_tile_at(x, y);
-            if let Some(TileType::Grass) = tile {
-                self.farm_map[y][x] = TileType::Soil;
-                self.message = String::from("Clear Done! (Weeds cleared)");
-                self.advance_time();
-            } else {
-                self.message = String::from("Nothing to clear! (Only weeds can be cleared)");
+            match tile {
+                Some(TileType::Grass) => {
+                    self.farm_map[y][x] = TileType::Soil;
+                    self.message = String::from("Clear Done! (Weeds cleared)");
+                    self.advance_time();
+                }
+                Some(TileType::Crop(_, _)) => {
+                    self.farm_map[y][x] = TileType::Soil;
+                    self.message = String::from("Clear Done! (Crop uprooted)");
+                    self.advance_time();
+                }
+                _ => {
+                    self.message = String::from("Nothing to clear! (Only weeds/crops can be cleared)");
+                }
             }
         } else {
             self.message = String::from("Nothing in front!");
@@ -675,12 +683,20 @@ impl GameState {
 
         if let Some((x, y)) = self.tile_at_direction(dir) {
             let tile = self.get_tile_at(x, y);
-            if let Some(TileType::Grass) = tile {
-                self.farm_map[y][x] = TileType::Soil;
-                self.message = format!("Clear Done! (Cleared {:?})", dir);
-                self.advance_time();
-            } else {
-                self.message = String::from("Nothing to clear! (Only weeds can be cleared)");
+            match tile {
+                Some(TileType::Grass) => {
+                    self.farm_map[y][x] = TileType::Soil;
+                    self.message = format!("Clear Done! (Cleared {:?})", dir);
+                    self.advance_time();
+                }
+                Some(TileType::Crop(_, _)) => {
+                    self.farm_map[y][x] = TileType::Soil;
+                    self.message = format!("Clear Done! (Uprooted {:?})", dir);
+                    self.advance_time();
+                }
+                _ => {
+                    self.message = String::from("Nothing to clear! (Only weeds/crops can be cleared)");
+                }
             }
         } else {
             self.message = String::from("Out of bounds!");
