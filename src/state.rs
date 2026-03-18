@@ -195,8 +195,9 @@ impl GameState {
         self.guest_enabled = true;
         // Guest mode: guest is always the controllable character in interactive runtime.
         self.active_control = ControlTarget::Guest;
-        self.guest_location = self.location;
-        if let Some((x, y)) = self.find_guest_spawn_location() {
+        // Guest starts in East Path at a pseudo-random valid tile.
+        self.guest_location = Location::EastPath;
+        if let Some((x, y)) = self.find_guest_spawn_location_in(Location::EastPath) {
             self.guest_x = x;
             self.guest_y = y;
         }
@@ -212,14 +213,29 @@ impl GameState {
     }
 
     fn find_guest_spawn_location(&self) -> Option<(usize, usize)> {
-        let map = self.get_current_map_ref();
-        let (width, height) = self.get_map_size();
+        self.find_guest_spawn_location_in(self.guest_location)
+    }
 
-        for y in 0..height {
-            for x in 0..width {
-                if map[y][x].is_walkable() && !(x == self.player_x && y == self.player_y) {
-                    return Some((x, y));
-                }
+    fn find_guest_spawn_location_in(&self, location: Location) -> Option<(usize, usize)> {
+        let (map, width, height) = match location {
+            Location::Farm => (&self.farm_map, crate::world::FARM_WIDTH, crate::world::FARM_HEIGHT),
+            Location::EastPath => (
+                &self.east_path_map,
+                crate::world::EAST_PATH_WIDTH,
+                crate::world::EAST_PATH_HEIGHT,
+            ),
+        };
+
+        // Deterministic pseudo-random-ish start based on day/rng_seed.
+        let base = (self.rng_seed as usize).wrapping_add((self.day as usize).wrapping_mul(31));
+        let sx = base % width;
+        let sy = (base / width.max(1)) % height;
+
+        for offset in 0..(width * height) {
+            let x = (sx + offset) % width;
+            let y = (sy + (offset / width.max(1))) % height;
+            if map[y][x].is_walkable() && !(location == self.location && x == self.player_x && y == self.player_y) {
+                return Some((x, y));
             }
         }
         None
@@ -1724,7 +1740,7 @@ mod tests {
 
         assert!(state.guest_enabled);
         assert_eq!(state.active_control, ControlTarget::Guest);
-        assert!(state.is_guest_on_current_map());
+        assert_eq!(state.guest_location, Location::EastPath);
         assert!(state.guest_x != state.player_x || state.guest_y != state.player_y);
     }
 
@@ -1754,6 +1770,8 @@ mod tests {
     fn test_guest_player_collision_blocks() {
         let mut state = GameState::new();
         state.enable_guest_for_interactive();
+        state.location = Location::Farm;
+        state.guest_location = Location::Farm;
         state.player_x = 3;
         state.player_y = 3;
         state.guest_x = 2;
