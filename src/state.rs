@@ -195,15 +195,15 @@ impl GameState {
         self.guest_enabled = true;
         // Guest mode: guest is always the controllable character in interactive runtime.
         self.active_control = ControlTarget::Guest;
-        // Guest starts in East Path at a pseudo-random valid tile.
-        self.guest_location = Location::EastPath;
-        if let Some((x, y)) = self.find_guest_spawn_location_in(Location::EastPath) {
+        // Guest starts in Farm at a pseudo-random valid tile.
+        self.guest_location = Location::Farm;
+        if let Some((x, y)) = self.find_guest_spawn_location_in(Location::Farm) {
             self.guest_x = x;
             self.guest_y = y;
         }
 
-        // Start interactive camera/location in East Path so guest is immediately visible.
-        self.location = Location::EastPath;
+        // Start interactive camera/location in Farm.
+        self.location = Location::Farm;
     }
 
     pub fn disable_guest(&mut self) {
@@ -1745,7 +1745,7 @@ mod tests {
 
         assert!(state.guest_enabled);
         assert_eq!(state.active_control, ControlTarget::Guest);
-        assert_eq!(state.guest_location, Location::EastPath);
+        assert_eq!(state.guest_location, Location::Farm);
         assert!(state.guest_x != state.player_x || state.guest_y != state.player_y);
     }
 
