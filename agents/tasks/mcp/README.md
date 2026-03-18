@@ -1,11 +1,19 @@
 # MCP Implementation Tasks
 
-Objective: implement Shelldew MCP support with stable session, command, query, and error contracts for automation clients.
+Objective: implement Shelldew MCP support with singleton state, command, query, and error contracts for automation clients.
+
+## Architecture
+
+Shelldew MCP uses a **single persistent game state** model:
+- One authoritative `GameState` instance exists at runtime
+- All tools operate on the same shared state
+- State autosaves on sleep/day transitions
+- Server restart resumes from last saved state
 
 ## Execution Order
 
 1. [01-mcp-server-skeleton.task.md](./01-mcp-server-skeleton.task.md) — MCP server wiring, tool/resource registration
-2. [02-session-lifecycle.task.md](./02-session-lifecycle.task.md) — session create/close and validation
+2. [02-session-lifecycle.task.md](./02-session-lifecycle.task.md) — session compatibility, state management
 3. [03-command-tools.task.md](./03-command-tools.task.md) — single/batch command execution
 4. [04-query-tools-and-resources.task.md](./04-query-tools-and-resources.task.md) — state/map/stats tools + resources
 5. [05-error-safety-and-limits.task.md](./05-error-safety-and-limits.task.md) — error contract, safety defaults, limits
@@ -19,13 +27,13 @@ Shelldew exposes a Model Context Protocol (MCP) interface that allows developers
 
 | Tool | Description |
 |------|-------------|
-| `shelldew.start_session` | Create a new game session |
+| `shelldew.start_session` | Start/resume the singleton game session |
 | `shelldew.command` | Execute a single gameplay command |
 | `shelldew.command_batch` | Execute multiple commands in sequence |
 | `shelldew.get_state` | Get current structured game state |
 | `shelldew.get_map` | Get current map view |
 | `shelldew.get_stats` | Get game statistics |
-| `shelldew.end_session` | Close a session |
+| `shelldew.end_session` | No-op (kept for compatibility) |
 
 ### Available Resources
 
@@ -44,12 +52,12 @@ from mcp.client import Client
 
 client = Client("shelldew-server")
 
-# Start a new session
+# Start the game (returns singleton session_id "singleton")
 result = client.call_tool("shelldew.start_session", {
     "seed": 42,
     "mode": "standard"
 })
-session_id = result["session_id"]
+session_id = result["session_id"]  # Always "singleton"
 
 # Execute commands
 client.call_tool("shelldew.command", {
@@ -68,7 +76,13 @@ state = client.call_tool("shelldew.get_state", {
 })
 print(f"Day: {state['day']}, Money: ${state['money']}")
 
-# End session
+# Sleep to advance day (autosaves state)
+client.call_tool("shelldew.command", {
+    "session_id": session_id,
+    "command": "sleep"
+})
+
+# end_session is a no-op - game continues
 client.call_tool("shelldew.end_session", {
     "session_id": session_id
 })
@@ -101,10 +115,13 @@ result = client.call_tool("shelldew.command_batch", {
         "move:down",
         "plant:carrot",
         "water",
-        "move:right"
+        "sleep"
     ],
     "stop_on_error": False  # Continue even if a command fails
 })
+
+print(f"Executed {result['executed_count']} commands")
+print(f"Final day: {result['final_state']['day']}")
 ```
 
 ### Error Handling
@@ -125,7 +142,7 @@ Errors follow this format:
 Error codes:
 - `INVALID_COMMAND` - Unknown command
 - `VALIDATION_ERROR` - Invalid arguments
-- `SESSION_NOT_FOUND` - Session ID not found
+- `SESSION_NOT_FOUND` - Session ID not found (for non-singleton IDs)
 - `SESSION_CLOSED` - Session already closed
 - `INTERNAL_ERROR` - Internal server error
 - `NOT_IMPLEMENTED` - Feature not implemented
@@ -141,6 +158,38 @@ result = client.call_tool("shelldew.start_session", {
 })
 ```
 
+Note: Seed is only used on first game start. Subsequent `startSession` calls will not reset state.
+
+### Autosave Behavior
+
+The game automatically saves state when:
+- `sleep` command completes day transition
+- Day advances via `command_batch` with time-consuming commands
+
+Save location: `~/.local/shelldew/savegame.json`
+
+If autosave fails, the response includes a warning but gameplay continues:
+
+```json
+{
+  "ok": true,
+  "result": {...},
+  "warnings": [
+    {
+      "code": "SAVE_FAILED",
+      "message": "Autosave failed: No such file or directory"
+    }
+  ]
+}
+```
+
+### Session Compatibility
+
+For backwards compatibility:
+- `startSession` returns `"singleton"` as the session_id
+- `endSession` is a no-op (game continues)
+- Any `session_id` value is accepted for compatibility
+
 ### Using Resources
 
 Read game data via MCP resources:
@@ -155,9 +204,3 @@ map_data = client.read_resource(f"shelldew://session/{session_id}/map")
 # Read inventory
 inventory = client.read_resource(f"shelldew://session/{session_id}/inventory")
 ```
-
-### Session Limits
-
-- Maximum 10 concurrent sessions
-- Sessions auto-cleanup after 30 minutes of inactivity
-- Always close sessions when done to free resources

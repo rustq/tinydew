@@ -1189,8 +1189,11 @@ mod tests {
 
     #[test]
     fn test_mcp_command_batch_water_sleep_cycle_without_buying() {
-        use crate::mcp::handler::{handle_command, handle_end_session, handle_start_session};
-        use crate::mcp::tools::{CommandInput, EndSessionInput, StartSessionInput};
+        use crate::mcp::handler::{handle_command, handle_start_session};
+        use crate::mcp::state_manager::SINGLETON_SESSION_ID;
+        use crate::mcp::tools::{CommandInput, StartSessionInput};
+
+        crate::mcp::handler::reset_for_tests();
 
         let start_input = StartSessionInput {
             seed: Some(42),
@@ -1198,20 +1201,13 @@ mod tests {
         };
         let start_response = handle_start_session(start_input);
         assert!(start_response.ok);
-        let session_id = serde_json::from_value::<crate::mcp::tools::StartSessionOutput>(
-            start_response.result.unwrap(),
-        )
-        .unwrap()
-        .session_id;
 
-        // Try to plant without buying seeds first - should fail because no soil
         let cmd_plant = CommandInput {
-            session_id: session_id.clone(),
+            session_id: SINGLETON_SESSION_ID.to_string(),
             command: "plant:carrot".to_string(),
         };
         let plant_resp = handle_command(cmd_plant);
 
-        // Should fail because no soil (player starts on grass)
         let result = plant_resp.result.as_ref().unwrap();
         let message = result.get("message").unwrap().as_str().unwrap();
         assert!(
@@ -1219,32 +1215,24 @@ mod tests {
             "Got: {}",
             message
         );
-
-        // Clean up
-        let _ = handle_end_session(EndSessionInput { session_id });
     }
 
     #[test]
     fn test_command_batch_crop_growth() {
-        use crate::mcp::handler::{handle_command_batch, handle_end_session, handle_start_session};
-        use crate::mcp::tools::{
-            CommandBatchInput, EndSessionInput, GetMapInput, StartSessionInput,
-        };
+        use crate::mcp::handler::{handle_command_batch, handle_start_session};
+        use crate::mcp::state_manager::SINGLETON_SESSION_ID;
+        use crate::mcp::tools::{CommandBatchInput, GetMapInput, StartSessionInput};
+
+        crate::mcp::handler::reset_for_tests();
 
         let start_input = StartSessionInput {
             seed: Some(42),
             mode: Some("test".to_string()),
         };
-        let start_response = handle_start_session(start_input);
-        let session_id = serde_json::from_value::<crate::mcp::tools::StartSessionOutput>(
-            start_response.result.unwrap(),
-        )
-        .unwrap()
-        .session_id;
+        let _start_response = handle_start_session(start_input);
 
-        // First prepare: move, clear, buy seeds, plant
         let batch_prepare = CommandBatchInput {
-            session_id: session_id.clone(),
+            session_id: SINGLETON_SESSION_ID.to_string(),
             commands: vec![
                 "move:down".to_string(),
                 "clear".to_string(),
@@ -1255,11 +1243,8 @@ mod tests {
         };
         let _ = handle_command_batch(batch_prepare);
 
-        // Then water + sleep for 4 days
-        // Note: After planting, player at (3,4) can water (3,5) without moving.
-        // After each sleep, player returns to home-front (3,3), so needs move:down to get to (3,4).
         let batch_grow = CommandBatchInput {
-            session_id: session_id.clone(),
+            session_id: SINGLETON_SESSION_ID.to_string(),
             commands: vec![
                 "water".to_string(),
                 "sleep".to_string(),
@@ -1278,9 +1263,8 @@ mod tests {
         let grow_resp = handle_command_batch(batch_grow);
         assert!(grow_resp.ok);
 
-        // Check final crop state
         let map_input = GetMapInput {
-            session_id: session_id.clone(),
+            session_id: SINGLETON_SESSION_ID.to_string(),
             include_entities: Some(true),
         };
         let map_response = crate::mcp::handler::handle_get_map(map_input);
@@ -1304,8 +1288,6 @@ mod tests {
             "Expected mature crop after batch water+sleep cycles. Crop: {}",
             crop_info
         );
-
-        let _ = handle_end_session(EndSessionInput { session_id });
     }
 
     #[test]
@@ -1377,88 +1359,83 @@ mod tests {
     #[test]
     fn test_mcp_command_batch_water_sleep_cycle() {
         use crate::mcp::handler::{handle_command, handle_start_session};
+        use crate::mcp::state_manager::SINGLETON_SESSION_ID;
         use crate::mcp::tools::{CommandInput, GetMapInput, GetStateInput, StartSessionInput};
+
+        crate::mcp::handler::reset_for_tests();
 
         let start_input = StartSessionInput {
             seed: Some(42),
             mode: Some("test".to_string()),
         };
-        let start_response = handle_start_session(start_input);
-        assert!(start_response.ok);
-        let session_id = serde_json::from_value::<crate::mcp::tools::StartSessionOutput>(
-            start_response.result.unwrap(),
-        )
-        .unwrap()
-        .session_id;
+        let _start_response = handle_start_session(start_input);
 
         let cmd_place = CommandInput {
-            session_id: session_id.clone(),
+            session_id: SINGLETON_SESSION_ID.to_string(),
             command: "move:down".to_string(),
         };
         let _ = handle_command(cmd_place);
 
         let cmd_clear = CommandInput {
-            session_id: session_id.clone(),
+            session_id: SINGLETON_SESSION_ID.to_string(),
             command: "clear".to_string(),
         };
         let _ = handle_command(cmd_clear);
 
         let cmd_buy = CommandInput {
-            session_id: session_id.clone(),
+            session_id: SINGLETON_SESSION_ID.to_string(),
             command: "buy:carrot:5".to_string(),
         };
         let _ = handle_command(cmd_buy);
 
         let cmd_plant = CommandInput {
-            session_id: session_id.clone(),
+            session_id: SINGLETON_SESSION_ID.to_string(),
             command: "plant:carrot".to_string(),
         };
         let _ = handle_command(cmd_plant);
 
         let cmd_water = CommandInput {
-            session_id: session_id.clone(),
+            session_id: SINGLETON_SESSION_ID.to_string(),
             command: "water".to_string(),
         };
         let _ = handle_command(cmd_water);
 
         let cmd_sleep = CommandInput {
-            session_id: session_id.clone(),
+            session_id: SINGLETON_SESSION_ID.to_string(),
             command: "sleep".to_string(),
         };
         let sleep_response = handle_command(cmd_sleep);
         assert!(sleep_response.ok);
 
         let state_input = GetStateInput {
-            session_id: session_id.clone(),
+            session_id: SINGLETON_SESSION_ID.to_string(),
         };
         let state_response = crate::mcp::handler::handle_get_state(state_input);
         let state = state_response.result.unwrap();
         assert_eq!(state.get("day").unwrap().as_u64().unwrap(), 2);
 
         for _ in 0..3 {
-            // After each sleep, player returns to home-front (3,3)
-            // Move down to get back to crop position (3,5)
             let cmd_move = CommandInput {
-                session_id: session_id.clone(),
+                session_id: SINGLETON_SESSION_ID.to_string(),
                 command: "move:down".to_string(),
             };
             let _ = handle_command(cmd_move);
 
             let cmd_water = CommandInput {
-                session_id: session_id.clone(),
+                session_id: SINGLETON_SESSION_ID.to_string(),
                 command: "water".to_string(),
             };
             let _ = handle_command(cmd_water);
 
             let cmd_sleep = CommandInput {
-                session_id: session_id.clone(),
+                session_id: SINGLETON_SESSION_ID.to_string(),
                 command: "sleep".to_string(),
             };
             let _ = handle_command(cmd_sleep);
         }
 
         let map_input = GetMapInput {
-            session_id: session_id.clone(),
+            session_id: SINGLETON_SESSION_ID.to_string(),
             include_entities: Some(true),
         };
         let map_response = crate::mcp::handler::handle_get_map(map_input);

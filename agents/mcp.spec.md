@@ -37,22 +37,36 @@ Primary usage is via tools.
 
 ---
 
-## 4) Session Model
+## 4) State Model
 
-### 4.1 Game Session
-Each MCP client starts or attaches to a Shelldew game session.
+### 4.1 Singleton Game State
+Shelldew uses a single persistent game state managed by the MCP server:
 
-- `session_id` is required for stateful calls after initialization.
-- One session maps to one game state instance.
-- Session lifecycle:
-  - create
-  - interact
-  - snapshot/query
-  - close
+- Exactly one authoritative `GameState` instance exists at runtime.
+- All tools read/write the same shared state.
+- No per-session state isolation.
+- State is automatically persisted when sleep/day transitions complete.
 
-### 4.2 Determinism
+### 4.2 Session Compatibility (Soft-Compat)
+For backwards compatibility, `startSession` and `endSession` methods are retained:
+
+- `startSession` returns the constant session_id `"singleton"` and does not reset game state.
+- `endSession` is a no-op success (game continues).
+- All other tools accept any `session_id` string for compatibility.
+
+### 4.3 Autosave Behavior
+- Autosave triggers on day transition completion (sleep/income flow).
+- Save destination: `~/.local/shelldew/savegame.json` (or `./savegame.json` fallback).
+- If save fails, gameplay continues but response includes a warning.
+
+### 4.4 Load-on-Start
+- Server attempts to load latest save at startup.
+- If save exists and valid: resume from saved state.
+- If missing/corrupt: start new game (with warning logged).
+
+### 4.5 Determinism
 For testing automation:
-- Support optional deterministic seed at session creation (`seed`)
+- Support optional deterministic seed at game creation (`seed`)
 - Document any RNG behavior affected by seed (e.g., forage spawn)
 
 ---
@@ -60,14 +74,14 @@ For testing automation:
 ## 5) Tool API (Normative)
 
 ## 5.1 `shelldew.start_session`
-Create a new game session.
+Start or resume the singleton game session.
 
 **Input**
-- `seed` (optional integer)
+- `seed` (optional integer) - used only on first game start
 - `mode` (optional string, default `"standard"`)
 
 **Output**
-- `session_id` (string)
+- `session_id` (string, always `"singleton"`)
 - `initial_state` (object; minimal state schema)
 
 ---
@@ -241,9 +255,9 @@ Optional debug mode may include state deltas.
 - Local-only MCP transport by default
 - No arbitrary shell execution via MCP
 - Enforce command allowlist
-- Hard session limits (idle timeout + max active sessions)
+- Single state instance with atomic save/load
 
-Recommended defaults:
+Recommended settings (for future multi-user extension):
 - idle timeout: 30 minutes
 - max active sessions: 10
 
@@ -251,7 +265,7 @@ Recommended defaults:
 
 ## 11) Compatibility Notes
 
-MCP layer should reuse Shelldew game logic used by:
+MCP layer reuses Shelldew game logic used by:
 - interactive TUI mode
 - non-interactive command mode
 
@@ -261,12 +275,15 @@ Goal: identical gameplay semantics across all interfaces.
 
 ## 12) Acceptance Criteria
 
-- MCP client can create session and run a full farming loop:
+- MCP client can run a full farming loop without resetting state:
   - move -> clear -> plant -> water -> sleep -> harvest -> sell
+- Repeated `startSession` calls do not reset progress.
+- `endSession` does not destroy active game.
+- Sleep transitions autosave state.
+- Server restart resumes from last saved state.
 - Structured state/stats retrievable at any point
 - Batch command execution works deterministically with seed
 - Error codes are stable and machine-readable
-- Session cleanup works and prevents post-close mutation
 
 ---
 
