@@ -211,10 +211,8 @@ fn print_map<W: Write>(w: &mut W, game: &GameState) {
 
     for y in 0..height {
         for x in 0..width {
-            // In guest interactive mode, the camera follows guest location.
-            // Player should only render when current view is Farm.
-            let player_on_current_map = !game.guest_enabled || game.location == state::Location::Farm;
-            let is_player_tile = player_on_current_map && x == game.player_x && y == game.player_y;
+            // Always render player at stored coordinates, even while guest is on another map.
+            let is_player_tile = x == game.player_x && y == game.player_y;
             let is_guest_tile = game.is_guest_on_current_map() && x == game.guest_x && y == game.guest_y;
 
             let tile = if is_player_tile {
