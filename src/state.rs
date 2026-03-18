@@ -238,6 +238,11 @@ impl GameState {
     }
 
     pub fn move_player(&mut self, direction: Direction) -> bool {
+        if self.home_state == HomeState::Income {
+            self.message = String::from("Sleeping... (Income calculated)");
+            return false;
+        }
+
         self.direction = direction;
 
         let (dx, dy) = direction.delta();
@@ -500,6 +505,11 @@ impl GameState {
     }
 
     pub fn clear_action(&mut self) {
+        if self.home_state == HomeState::Income {
+            self.message = String::from("Sleeping... (Income calculated)");
+            return;
+        }
+
         if self.location != Location::Farm {
             self.message = String::from("Cannot clear here! (Farming only on farm)");
             return;
@@ -520,6 +530,11 @@ impl GameState {
     }
 
     pub fn clear_action_at(&mut self, dir: Direction) {
+        if self.home_state == HomeState::Income {
+            self.message = String::from("Sleeping... (Income calculated)");
+            return;
+        }
+
         if self.location != Location::Farm {
             self.message = String::from("Cannot clear here! (Farming only on farm)");
             return;
@@ -540,6 +555,11 @@ impl GameState {
     }
 
     pub fn plant_action(&mut self) {
+        if self.home_state == HomeState::Income {
+            self.message = String::from("Sleeping... (Income calculated)");
+            return;
+        }
+
         if self.location != Location::Farm {
             self.message = String::from("Cannot plant here! (Farming only on farm)");
             return;
@@ -568,6 +588,11 @@ impl GameState {
     }
 
     pub fn plant_action_at(&mut self, dir: Direction) {
+        if self.home_state == HomeState::Income {
+            self.message = String::from("Sleeping... (Income calculated)");
+            return;
+        }
+
         if self.location != Location::Farm {
             self.message = String::from("Cannot plant here! (Farming only on farm)");
             return;
@@ -599,6 +624,11 @@ impl GameState {
     }
 
     pub fn water_action(&mut self) {
+        if self.home_state == HomeState::Income {
+            self.message = String::from("Sleeping... (Income calculated)");
+            return;
+        }
+
         if self.location != Location::Farm {
             self.message = String::from("Cannot water here! (Farming only on farm)");
             return;
@@ -629,6 +659,11 @@ impl GameState {
     }
 
     pub fn water_action_at(&mut self, dir: Direction) {
+        if self.home_state == HomeState::Income {
+            self.message = String::from("Sleeping... (Income calculated)");
+            return;
+        }
+
         if self.location != Location::Farm {
             self.message = String::from("Cannot water here! (Farming only on farm)");
             return;
@@ -659,6 +694,11 @@ impl GameState {
     }
 
     pub fn harvest_action(&mut self) {
+        if self.home_state == HomeState::Income {
+            self.message = String::from("Sleeping... (Income calculated)");
+            return;
+        }
+
         if let Some((x, y)) = self.tile_in_front() {
             let tile = self.get_tile_at(x, y);
             if let Some(TileType::Crop(crop, state)) = tile {
@@ -694,6 +734,11 @@ impl GameState {
     }
 
     pub fn harvest_action_at(&mut self, dir: Direction) {
+        if self.home_state == HomeState::Income {
+            self.message = String::from("Sleeping... (Income calculated)");
+            return;
+        }
+
         if let Some((x, y)) = self.tile_at_direction(dir) {
             let tile = self.get_tile_at(x, y);
             if let Some(TileType::Crop(crop, state)) = tile {
