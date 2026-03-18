@@ -254,7 +254,15 @@ fn display_message_for_snapshot(state: &GameState) -> String {
 
     if is_generic_day_greeting {
         if state.hour < 12 {
-            "Good morning! Ready for another day.".to_string()
+            match state.weather {
+                crate::world::Weather::Rainy => {
+                    "Good morning! It's rainy today — stay cozy out there.".to_string()
+                }
+                crate::world::Weather::Cloudy => {
+                    "Good morning! It's cloudy today — a calm day ahead.".to_string()
+                }
+                _ => "Good morning! Ready for another day.".to_string(),
+            }
         } else if state.hour < 18 {
             "Good afternoon! Ready for another day.".to_string()
         } else {
