@@ -186,14 +186,7 @@ const EOL: &str = "\r\n";
 #[allow(dead_code)]
 fn print_header<W: Write>(w: &mut W, game: &GameState) {
     let control_str = if game.guest_enabled {
-        format!(
-            " | Control: {}",
-            if game.active_control == state::ControlTarget::Guest {
-                "Guest"
-            } else {
-                "Player"
-            }
-        )
+        " | Control: Guest".to_string()
     } else {
         String::new()
     };
@@ -254,16 +247,11 @@ fn print_message<W: Write>(w: &mut W, game: &GameState) {
         write!(w, "{}{}", game.message, EOL).unwrap();
         write!(w, "{}", EOL).unwrap();
         if game.is_guest_active() {
-            write!(
-                w,
-                "Arrow keys: Move Guest | Tab: Switch to Player | Esc: Quit{}",
-                EOL
-            )
-            .unwrap();
+            write!(w, "Arrow keys: Move Guest | Esc: Quit{}", EOL).unwrap();
         } else {
             write!(
                 w,
-                "Arrow keys: Move | Tab: Switch to Guest | C: Clear | P: Plant | W: Water | H: Harvest | T: Trade | Esc: Quit{}",
+                "Arrow keys: Move | C: Clear | P: Plant | W: Water | H: Harvest | T: Trade | Esc: Quit{}",
                 EOL
             )
             .unwrap();
@@ -474,16 +462,19 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
             render(&game);
 
             let mut stdout = std::io::stdout();
-            write!(
-                stdout,
-                "\r\nControl: {} | Arrow: Move | Tab: Switch | C/P/W/H/T: Actions | Esc: Quit",
-                if game.active_control == state::ControlTarget::Guest {
-                    "Guest"
-                } else {
-                    "Player"
-                }
-            )
-            .ok();
+            if game.guest_enabled {
+                write!(
+                    stdout,
+                    "\r\nControl: Guest | Arrow: Move Guest | Esc: Quit"
+                )
+                .ok();
+            } else {
+                write!(
+                    stdout,
+                    "\r\nControl: Player | Arrow: Move | C/P/W/H/T: Actions | Esc: Quit"
+                )
+                .ok();
+            }
             stdout.flush().ok();
 
             if let Event::Key(key) = event::read().map_err(|e| InteractiveError::Other(e.to_string()))?
@@ -508,32 +499,29 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
                     }
 
                     match key.code {
-                        KeyCode::Tab => {
-                            game.toggle_control();
-                        }
                         KeyCode::Up => {
-                            if game.active_control == state::ControlTarget::Guest {
+                            if game.guest_enabled {
                                 game.move_guest(Direction::Up);
                             } else {
                                 game.move_player(Direction::Up);
                             }
                         }
                         KeyCode::Down => {
-                            if game.active_control == state::ControlTarget::Guest {
+                            if game.guest_enabled {
                                 game.move_guest(Direction::Down);
                             } else {
                                 game.move_player(Direction::Down);
                             }
                         }
                         KeyCode::Left => {
-                            if game.active_control == state::ControlTarget::Guest {
+                            if game.guest_enabled {
                                 game.move_guest(Direction::Left);
                             } else {
                                 game.move_player(Direction::Left);
                             }
                         }
                         KeyCode::Right => {
-                            if game.active_control == state::ControlTarget::Guest {
+                            if game.guest_enabled {
                                 game.move_guest(Direction::Right);
                             } else {
                                 game.move_player(Direction::Right);
@@ -543,35 +531,35 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
                             break;
                         }
                         KeyCode::Char('c') | KeyCode::Char('C') => {
-                            if game.is_guest_active() {
+                            if game.guest_enabled {
                                 game.message = String::from("Guest can only walk around.");
                             } else {
                                 game.clear_action();
                             }
                         }
                         KeyCode::Char('p') | KeyCode::Char('P') => {
-                            if game.is_guest_active() {
+                            if game.guest_enabled {
                                 game.message = String::from("Guest can only walk around.");
                             } else {
                                 game.plant_action();
                             }
                         }
                         KeyCode::Char('w') | KeyCode::Char('W') => {
-                            if game.is_guest_active() {
+                            if game.guest_enabled {
                                 game.message = String::from("Guest can only walk around.");
                             } else {
                                 game.water_action();
                             }
                         }
                         KeyCode::Char('h') | KeyCode::Char('H') => {
-                            if game.is_guest_active() {
+                            if game.guest_enabled {
                                 game.message = String::from("Guest can only walk around.");
                             } else {
                                 game.harvest_action();
                             }
                         }
                         KeyCode::Char('t') | KeyCode::Char('T') => {
-                            if game.is_guest_active() {
+                            if game.guest_enabled {
                                 game.message = String::from("Guest can only walk around.");
                             } else {
                                 game.trade_action();

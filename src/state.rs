@@ -193,7 +193,8 @@ impl GameState {
 
     pub fn enable_guest_for_interactive(&mut self) {
         self.guest_enabled = true;
-        self.active_control = ControlTarget::Player;
+        // Guest mode: guest is always the controllable character in interactive runtime.
+        self.active_control = ControlTarget::Guest;
         self.guest_location = self.location;
         if let Some((x, y)) = self.find_guest_spawn_location() {
             self.guest_x = x;
@@ -305,20 +306,15 @@ impl GameState {
     }
 
     pub fn is_guest_active(&self) -> bool {
-        self.guest_enabled && self.active_control == ControlTarget::Guest
+        self.guest_enabled
     }
 
     pub fn toggle_control(&mut self) {
-        if self.guest_enabled {
-            self.active_control = match self.active_control {
-                ControlTarget::Player => ControlTarget::Guest,
-                ControlTarget::Guest => ControlTarget::Player,
-            };
-        }
+        // Guest mode is guest-only control; toggle is intentionally disabled.
     }
 
     pub fn is_time_frozen(&self) -> bool {
-        self.is_guest_active()
+        self.guest_enabled
     }
 
     pub fn get_current_map_ref(&self) -> &Map {
@@ -1727,7 +1723,7 @@ mod tests {
         state.enable_guest_for_interactive();
 
         assert!(state.guest_enabled);
-        assert_eq!(state.active_control, ControlTarget::Player);
+        assert_eq!(state.active_control, ControlTarget::Guest);
         assert!(state.is_guest_on_current_map());
         assert!(state.guest_x != state.player_x || state.guest_y != state.player_y);
     }
@@ -1770,16 +1766,14 @@ mod tests {
     }
 
     #[test]
-    fn test_control_toggle() {
+    fn test_control_toggle_is_noop_in_guest_only_mode() {
         let mut state = GameState::new();
         state.enable_guest_for_interactive();
 
-        assert_eq!(state.active_control, ControlTarget::Player);
+        assert_eq!(state.active_control, ControlTarget::Guest);
         state.toggle_control();
         assert_eq!(state.active_control, ControlTarget::Guest);
         assert!(state.is_guest_active());
-        state.toggle_control();
-        assert_eq!(state.active_control, ControlTarget::Player);
     }
 
     #[test]
@@ -1816,7 +1810,6 @@ mod tests {
     fn test_guest_blocks_non_movement_actions() {
         let mut state = GameState::new();
         state.enable_guest_for_interactive();
-        state.toggle_control();
 
         assert!(state.is_guest_active());
     }
@@ -1825,13 +1818,13 @@ mod tests {
     fn test_time_frozen_when_guest_active() {
         let mut state = GameState::new();
         state.enable_guest_for_interactive();
-        state.toggle_control();
 
         assert!(state.is_time_frozen());
         assert!(state.is_guest_active());
 
+        // Guest-only mode keeps freeze on and toggle is a no-op.
         state.toggle_control();
-        assert!(!state.is_time_frozen());
+        assert!(state.is_time_frozen());
     }
 
     #[test]
@@ -1853,7 +1846,6 @@ mod tests {
         state.guest_x = 4;
         state.guest_y = 5;
         state.guest_location = Location::EastPath;
-        state.toggle_control();
 
         let test_path = std::env::temp_dir().join("shelldew_guest_test.json");
         save_game_to_path(&state, &test_path).expect("Save should succeed");
