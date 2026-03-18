@@ -92,6 +92,8 @@ pub struct DailyIncome {
     pub money_earned: u32,
     pub crops_sold: HashMap<CropType, u32>,
     pub forage_sold: HashMap<ForageType, u32>,
+    pub crops_harvested: HashMap<CropType, u32>,
+    pub forage_harvested: HashMap<ForageType, u32>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -874,6 +876,7 @@ impl GameState {
                         self.east_path_map[y][x] = TileType::Grass;
                     }
                     self.inventory.add_produce(crop);
+                    self.record_crop_harvested(crop, 1);
                     self.message = format!("Harvest Done! (Got {})", crop.produce_emoji());
                     self.advance_time();
                 } else {
@@ -886,6 +889,7 @@ impl GameState {
                     map_row[x] = TileType::Grass;
                 }
                 self.inventory.add_forage(ForageType::Mushroom);
+                self.record_forage_harvested(ForageType::Mushroom, 1);
                 self.message = String::from("Harvest Done! (Got 🍄)");
                 self.advance_time();
             } else {
@@ -912,6 +916,7 @@ impl GameState {
                         self.east_path_map[y][x] = TileType::Grass;
                     }
                     self.inventory.add_produce(crop);
+                    self.record_crop_harvested(crop, 1);
                     self.message =
                         format!("Harvest Done! (Got {} at {:?})", crop.produce_emoji(), dir);
                     self.advance_time();
@@ -925,6 +930,7 @@ impl GameState {
                     map_row[x] = TileType::Grass;
                 }
                 self.inventory.add_forage(ForageType::Mushroom);
+                self.record_forage_harvested(ForageType::Mushroom, 1);
                 self.message = String::from("Harvest Done! (Got 🍄)");
                 self.advance_time();
             } else {
@@ -978,6 +984,18 @@ impl GameState {
 
     pub fn record_forage_sold(&mut self, forage: ForageType, count: u32) {
         *self.current_income.forage_sold.entry(forage).or_insert(0) += count;
+    }
+
+    pub fn record_crop_harvested(&mut self, crop: CropType, count: u32) {
+        *self.current_income.crops_harvested.entry(crop).or_insert(0) += count;
+    }
+
+    pub fn record_forage_harvested(&mut self, forage: ForageType, count: u32) {
+        *self
+            .current_income
+            .forage_harvested
+            .entry(forage)
+            .or_insert(0) += count;
     }
 
     pub fn get_shop_menu_items(&self) -> Vec<String> {

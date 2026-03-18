@@ -259,19 +259,33 @@ fn generate_text_snapshot(state: &GameState) -> String {
 
         for (crop, count) in &state.current_income.crops_sold {
             if *count > 0 {
-                lines.push(format!("{} * {}", crop.produce_emoji(), count));
+                lines.push(format!("{} sold * {}", crop.produce_emoji(), count));
             }
         }
 
         for (forage, count) in &state.current_income.forage_sold {
             if *count > 0 {
-                lines.push(format!("{} * {}", forage.emoji(), count));
+                lines.push(format!("{} sold * {}", forage.emoji(), count));
+            }
+        }
+
+        for (crop, count) in &state.current_income.crops_harvested {
+            if *count > 0 {
+                lines.push(format!("{} harvested * {}", crop.produce_emoji(), count));
+            }
+        }
+
+        for (forage, count) in &state.current_income.forage_harvested {
+            if *count > 0 {
+                lines.push(format!("{} harvested * {}", forage.emoji(), count));
             }
         }
 
         if state.current_income.money_earned == 0
             && state.current_income.crops_sold.is_empty()
             && state.current_income.forage_sold.is_empty()
+            && state.current_income.crops_harvested.is_empty()
+            && state.current_income.forage_harvested.is_empty()
         {
             lines.push("(No income today)".to_string());
         }
