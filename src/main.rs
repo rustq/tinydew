@@ -455,7 +455,10 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
 
         enable_raw_mode().map_err(|e| InteractiveError::Other(e.to_string()))?;
 
-        let mut game = GameState::new();
+        let mut game = match crate::savegame::load_game() {
+            Ok(state) => state,
+            Err(_) => GameState::new(),
+        };
         game.enable_guest_for_interactive();
 
         let _ = crossterm::execute!(std::io::stdout(), EnterAlternateScreen);
@@ -530,6 +533,8 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
                             }
                         }
                         KeyCode::Esc => {
+                            // Persist timeline continuity before leaving interactive mode.
+                            let _ = crate::savegame::save_game(&game);
                             break;
                         }
                         KeyCode::Char('c') | KeyCode::Char('C') => {
