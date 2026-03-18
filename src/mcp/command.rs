@@ -244,6 +244,20 @@ fn advance_to_morning(state: &mut GameState) {
     state.message = String::from("Good morning! Ready for another day.");
 }
 
+fn display_message_for_snapshot(state: &GameState) -> String {
+    if state.message == "Good morning! Ready for another day." {
+        if state.hour < 12 {
+            "Good morning! Ready for another day.".to_string()
+        } else if state.hour < 18 {
+            "Good afternoon! Ready for another day.".to_string()
+        } else {
+            "Good evening! Ready for another day.".to_string()
+        }
+    } else {
+        state.message.clone()
+    }
+}
+
 fn generate_text_snapshot(state: &GameState) -> String {
     if state.home_state == crate::state::HomeState::Income {
         let mut lines = vec![
@@ -294,7 +308,7 @@ fn generate_text_snapshot(state: &GameState) -> String {
         }
 
         lines.push(String::new());
-        lines.push(format!("> {}", state.message));
+        lines.push(format!("> {}", display_message_for_snapshot(state)));
         return lines.join("\n");
     }
 
@@ -360,9 +374,10 @@ fn generate_text_snapshot(state: &GameState) -> String {
         lines.push(line);
     }
 
-    if !state.message.is_empty() {
+    let snapshot_message = display_message_for_snapshot(state);
+    if !snapshot_message.is_empty() {
         lines.push(String::new());
-        lines.push(format!("> {}", state.message));
+        lines.push(format!("> {}", snapshot_message));
     }
 
     lines.join("\n")
