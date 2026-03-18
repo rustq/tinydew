@@ -129,6 +129,8 @@ pub struct GameState {
     pub is_paused: bool,
     pub auto_sleep_triggered_day: u32,
     pub rng_seed: u64,
+    pub spring_forced_flower_6_2_done: bool,
+    pub last_spawn_processed_day: u32,
 }
 
 #[allow(dead_code)]
@@ -166,6 +168,8 @@ impl GameState {
             is_paused: false,
             auto_sleep_triggered_day: 0,
             rng_seed: 12345,
+            spring_forced_flower_6_2_done: false,
+            last_spawn_processed_day: 0,
         }
     }
 
@@ -349,6 +353,8 @@ impl GameState {
 
         self.spawn_east_path_mushrooms();
 
+        self.spawn_random_crops();
+
         self.message = String::from("Good morning! A new day begins.");
     }
 
@@ -392,6 +398,127 @@ impl GameState {
             let (mx, my) = valid_positions.remove(idx);
             self.east_path_map[my][mx] = TileType::Mushroom;
             rng_state = rng_state.wrapping_mul(1103515245).wrapping_add(12345);
+        }
+    }
+
+    fn get_empty_grass_positions(&self, map: &Map) -> Vec<(usize, usize)> {
+        let mut positions = Vec::new();
+        for y in 0..map.len() {
+            for x in 0..map[y].len() {
+                if map[y][x] == TileType::Grass {
+                    positions.push((x, y));
+                }
+            }
+        }
+        positions
+    }
+
+    fn pick_random_tile(
+        &mut self,
+        positions: &mut Vec<(usize, usize)>,
+        base_seed: u64,
+    ) -> Option<(usize, usize)> {
+        if positions.is_empty() {
+            return None;
+        }
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        let mut hasher = DefaultHasher::new();
+        self.day.hash(&mut hasher);
+        base_seed.hash(&mut hasher);
+        let rng_state = hasher.finish();
+
+        let idx = (rng_state % positions.len() as u64) as usize;
+        Some(positions.remove(idx))
+    }
+
+    pub fn spawn_random_crops(&mut self) {
+        if self.season != "Spring" {
+            return;
+        }
+
+        if self.last_spawn_processed_day == self.day {
+            return;
+        }
+        self.last_spawn_processed_day = self.day;
+
+        if !self.spring_forced_flower_6_2_done {
+            if self.farm_map[2][6] == TileType::Grass {
+                let mature_state = CropState {
+                    days_grown: 16,
+                    watered_today: false,
+                };
+                self.farm_map[2][6] = TileType::Crop(CropType::Rhubarb, mature_state);
+                self.spring_forced_flower_6_2_done = true;
+            }
+        }
+
+        let flower_seed = self
+            .rng_seed
+            .wrapping_add((self.day as u64).wrapping_mul(7919));
+        let flower_roll = (flower_seed % 100) as u32;
+
+        if flower_roll < 10 {
+            let mut farm_positions = self.get_empty_grass_positions(&self.farm_map);
+            let mut east_path_positions = self.get_empty_grass_positions(&self.east_path_map);
+
+            let chosen_positions = if farm_positions.is_empty() {
+                &mut east_path_positions
+            } else if east_path_positions.is_empty() {
+                &mut farm_positions
+            } else {
+                let map_choice = (flower_seed / 100) % 2;
+                if map_choice == 0 {
+                    &mut farm_positions
+                } else {
+                    &mut east_path_positions
+                }
+            };
+
+            if let Some((x, y)) =
+                self.pick_random_tile(chosen_positions, flower_seed.wrapping_add(1))
+            {
+                let mature_state = CropState {
+                    days_grown: 16,
+                    watered_today: false,
+                };
+                if y < FARM_HEIGHT && x < FARM_WIDTH {
+                    self.farm_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                } else if y < EAST_PATH_HEIGHT && x < EAST_PATH_WIDTH {
+                    self.east_path_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                }
+            }
+        }
+
+        if self.weather == Weather::Rainy {
+            let mushroom_seed = self
+                .rng_seed
+                .wrapping_add((self.day as u64).wrapping_mul(3571));
+            let mut farm_positions = self.get_empty_grass_positions(&self.farm_map);
+            let mut east_path_positions = self.get_empty_grass_positions(&self.east_path_map);
+
+            let chosen_positions = if farm_positions.is_empty() {
+                &mut east_path_positions
+            } else if east_path_positions.is_empty() {
+                &mut farm_positions
+            } else {
+                let map_choice = (mushroom_seed / 100) % 2;
+                if map_choice == 0 {
+                    &mut farm_positions
+                } else {
+                    &mut east_path_positions
+                }
+            };
+
+            if let Some((x, y)) =
+                self.pick_random_tile(chosen_positions, mushroom_seed.wrapping_add(2))
+            {
+                if y < FARM_HEIGHT && x < FARM_WIDTH {
+                    self.farm_map[y][x] = TileType::Mushroom;
+                } else if y < EAST_PATH_HEIGHT && x < EAST_PATH_WIDTH {
+                    self.east_path_map[y][x] = TileType::Mushroom;
+                }
+            }
         }
     }
 
@@ -1116,5 +1243,194 @@ mod tests {
         state.start_new_day();
 
         assert_eq!(state.farm_map[3][3], TileType::Grass);
+    }
+
+    #[test]
+    fn test_forced_flower_spawns_at_farm_6_2_in_spring_when_empty() {
+        let mut state = GameState::new();
+        state.season = String::from("Spring");
+        state.spring_forced_flower_6_2_done = false;
+
+        state.farm_map[2][6] = TileType::Grass;
+
+        state.spawn_random_crops();
+
+        assert!(matches!(
+            state.farm_map[2][6],
+            TileType::Crop(CropType::Rhubarb, state) if state.is_mature(CropType::Rhubarb)
+        ));
+        assert!(state.spring_forced_flower_6_2_done);
+    }
+
+    #[test]
+    fn test_forced_flower_does_not_overwrite_occupied_tile() {
+        let mut state = GameState::new();
+        state.season = String::from("Spring");
+        state.spring_forced_flower_6_2_done = false;
+
+        state.farm_map[2][6] = TileType::Crop(CropType::Carrot, CropState::new());
+
+        state.spawn_random_crops();
+
+        assert!(matches!(
+            state.farm_map[2][6],
+            TileType::Crop(CropType::Carrot, _)
+        ));
+        assert!(!state.spring_forced_flower_6_2_done);
+    }
+
+    #[test]
+    fn test_forced_flower_not_in_non_spring_season() {
+        let mut state = GameState::new();
+        state.season = String::from("Summer");
+        state.spring_forced_flower_6_2_done = false;
+        state.farm_map[2][6] = TileType::Grass;
+
+        state.spawn_random_crops();
+
+        assert_eq!(state.farm_map[2][6], TileType::Grass);
+        assert!(!state.spring_forced_flower_6_2_done);
+    }
+
+    #[test]
+    fn test_daily_flower_10_percent_chance() {
+        let mut state = GameState::new();
+        state.season = String::from("Spring");
+        state.rng_seed = 0;
+
+        let mut flower_count = 0;
+        let iterations = 1000;
+
+        for _ in 0..iterations {
+            let mut test_state = GameState::new();
+            test_state.season = String::from("Spring");
+            test_state.rng_seed = state.rng_seed;
+            test_state.day = state.day;
+
+            test_state.spawn_random_crops();
+
+            for y in 0..FARM_HEIGHT {
+                for x in 0..FARM_WIDTH {
+                    if let TileType::Crop(CropType::Rhubarb, _) = test_state.farm_map[y][x] {
+                        if x != 6 || y != 2 {
+                            flower_count += 1;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            state.day += 1;
+        }
+
+        let percentage = (flower_count as f64 / iterations as f64) * 100.0;
+        assert!(
+            percentage > 5.0 && percentage < 15.0,
+            "Expected ~10%, got {}%",
+            percentage
+        );
+    }
+
+    #[test]
+    fn test_rainy_day_mushroom_spawns() {
+        let mut state = GameState::new();
+        state.season = String::from("Spring");
+        state.weather = Weather::Rainy;
+
+        let initial_mushrooms = count_mushrooms(&state);
+
+        state.spawn_random_crops();
+
+        let final_mushrooms = count_mushrooms(&state);
+        assert!(final_mushrooms > initial_mushrooms);
+    }
+
+    #[test]
+    fn test_no_mushroom_on_sunny_day() {
+        let mut state = GameState::new();
+        state.season = String::from("Spring");
+        state.weather = Weather::Sunny;
+
+        state.spawn_random_crops();
+
+        for y in 0..FARM_HEIGHT {
+            for x in 0..FARM_WIDTH {
+                assert!(!matches!(state.farm_map[y][x], TileType::Mushroom));
+            }
+        }
+    }
+
+    #[test]
+    fn test_spawn_only_runs_once_per_day() {
+        let mut state = GameState::new();
+        state.season = String::from("Spring");
+        state.weather = Weather::Rainy;
+
+        let _initial_mushrooms = count_mushrooms(&state);
+
+        state.spawn_random_crops();
+
+        let after_first = count_mushrooms(&state);
+
+        state.spawn_random_crops();
+
+        let after_second = count_mushrooms(&state);
+
+        assert_eq!(after_first, after_second);
+    }
+
+    #[test]
+    fn test_no_spawn_outside_spring() {
+        for season in ["Summer", "Fall", "Winter"] {
+            let mut state = GameState::new();
+            state.season = String::from(season);
+            state.weather = Weather::Rainy;
+            state.spring_forced_flower_6_2_done = false;
+            state.farm_map[2][6] = TileType::Grass;
+
+            state.spawn_random_crops();
+
+            assert_eq!(state.farm_map[2][6], TileType::Grass);
+        }
+    }
+
+    #[test]
+    fn test_save_load_preserves_spawn_flags() {
+        use crate::savegame::{load_game_from_path, save_game_to_path};
+
+        let mut state = GameState::new();
+        state.season = String::from("Spring");
+        state.spring_forced_flower_6_2_done = true;
+        state.last_spawn_processed_day = 5;
+
+        let test_path = std::env::temp_dir().join("shelldew_random_crop_test.json");
+
+        save_game_to_path(&state, &test_path).expect("Save should succeed");
+
+        let loaded = load_game_from_path(&test_path).expect("Load should succeed");
+
+        assert!(loaded.spring_forced_flower_6_2_done);
+        assert_eq!(loaded.last_spawn_processed_day, 5);
+
+        std::fs::remove_file(&test_path).ok();
+    }
+
+    fn count_mushrooms(state: &GameState) -> usize {
+        let mut count = 0;
+        for y in 0..FARM_HEIGHT {
+            for x in 0..FARM_WIDTH {
+                if matches!(state.farm_map[y][x], TileType::Mushroom) {
+                    count += 1;
+                }
+            }
+        }
+        for y in 0..EAST_PATH_HEIGHT {
+            for x in 0..EAST_PATH_WIDTH {
+                if matches!(state.east_path_map[y][x], TileType::Mushroom) {
+                    count += 1;
+                }
+            }
+        }
+        count
     }
 }
