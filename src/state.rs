@@ -237,7 +237,9 @@ impl GameState {
         for offset in 0..(width * height) {
             let x = (sx + offset) % width;
             let y = (sy + (offset / width.max(1))) % height;
-            if map[y][x].is_walkable() && !(location == self.location && x == self.player_x && y == self.player_y) {
+            if map[y][x] == TileType::Grass
+                && !(location == self.location && x == self.player_x && y == self.player_y)
+            {
                 return Some((x, y));
             }
         }
