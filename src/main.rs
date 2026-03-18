@@ -211,8 +211,14 @@ fn print_map<W: Write>(w: &mut W, game: &GameState) {
 
     for y in 0..height {
         for x in 0..width {
-            let tile = if x == game.player_x && y == game.player_y {
-                if game.is_guest_on_current_map() && x == game.guest_x && y == game.guest_y {
+            // In guest interactive mode, the camera follows guest location.
+            // Player should only render when current view is Farm.
+            let player_on_current_map = !game.guest_enabled || game.location == state::Location::Farm;
+            let is_player_tile = player_on_current_map && x == game.player_x && y == game.player_y;
+            let is_guest_tile = game.is_guest_on_current_map() && x == game.guest_x && y == game.guest_y;
+
+            let tile = if is_player_tile {
+                if is_guest_tile {
                     if game.active_control == state::ControlTarget::Guest {
                         "👧"
                     } else {
@@ -221,12 +227,8 @@ fn print_map<W: Write>(w: &mut W, game: &GameState) {
                 } else {
                     "🧑"
                 }
-            } else if game.is_guest_on_current_map() && x == game.guest_x && y == game.guest_y {
-                if game.active_control == state::ControlTarget::Player {
-                    "👧"
-                } else {
-                    "👧"
-                }
+            } else if is_guest_tile {
+                "👧"
             } else {
                 map[y][x].emoji()
             };
