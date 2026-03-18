@@ -112,6 +112,7 @@ pub enum ShopState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameState {
     pub location: Location,
+    pub player_location: Location,
     pub farm_map: Map,
     pub east_path_map: Map,
     pub player_x: usize,
@@ -156,6 +157,7 @@ impl GameState {
 
         Self {
             location: Location::Farm,
+            player_location: Location::Farm,
             farm_map,
             east_path_map,
             player_x,
@@ -469,6 +471,7 @@ impl GameState {
         match (self.location, tile) {
             (Location::Farm, TileType::PathEast) => {
                 self.location = Location::EastPath;
+                self.player_location = Location::EastPath;
                 self.player_x = 1;
                 self.player_y = 2;
                 self.direction = Direction::Right;
@@ -476,6 +479,7 @@ impl GameState {
             }
             (Location::EastPath, TileType::PathFarm) => {
                 self.location = Location::Farm;
+                self.player_location = Location::Farm;
                 self.player_x = 7;
                 self.player_y = 5;
                 self.direction = Direction::Left;
@@ -771,6 +775,7 @@ impl GameState {
         self.total_minutes = 0;
 
         self.location = Location::Farm;
+        self.player_location = Location::Farm;
         self.player_x = 3;
         self.player_y = 3;
 
@@ -1069,7 +1074,7 @@ impl GameState {
                     self.message = String::from("Not ready yet! (Needs more time)");
                 }
             } else if let Some(TileType::Mushroom) = tile {
-                if self.location == Location::Farm {
+                if self.player_location == Location::Farm {
                     self.farm_map[y][x] = TileType::Grass;
                 } else if let Some(map_row) = self.east_path_map.get_mut(y) {
                     map_row[x] = TileType::Grass;
@@ -1110,7 +1115,7 @@ impl GameState {
                     self.message = String::from("Not ready yet! (Needs more time)");
                 }
             } else if let Some(TileType::Mushroom) = tile {
-                if self.location == Location::Farm {
+                if self.player_location == Location::Farm {
                     self.farm_map[y][x] = TileType::Grass;
                 } else if let Some(map_row) = self.east_path_map.get_mut(y) {
                     map_row[x] = TileType::Grass;

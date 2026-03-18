@@ -215,6 +215,7 @@ fn capture_state_snapshot(state: &GameState) -> serde_json::Value {
         "player": {
             "x": state.player_x,
             "y": state.player_y,
+            "location": format!("{:?}", state.player_location),
         }
     });
 

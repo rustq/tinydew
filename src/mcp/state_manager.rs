@@ -78,6 +78,7 @@ impl GameStateManager {
             "player": {
                 "x": self.state.player_x,
                 "y": self.state.player_y,
+                "location": format!("{:?}", self.state.player_location),
             },
             "status": "ok"
         })
