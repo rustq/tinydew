@@ -299,17 +299,6 @@ impl GameState {
             return false;
         }
 
-        let current_tile = match self.guest_location {
-            Location::Farm => self.farm_map[self.guest_y][self.guest_x],
-            Location::EastPath => self.east_path_map[self.guest_y][self.guest_x],
-            Location::Square => self.square_map[self.guest_y][self.guest_x],
-        };
-
-        if current_tile.is_transition() {
-            self.handle_guest_transition_at(self.guest_x, self.guest_y);
-            return true;
-        }
-
         let (dx, dy) = direction.delta();
         let new_x = self.guest_x as i32 + dx;
         let new_y = self.guest_y as i32 + dy;
@@ -372,7 +361,7 @@ impl GameState {
                 self.guest_location = Location::Square;
                 self.location = Location::Square;
                 self.guest_x = 5;
-                self.guest_y = 1;
+                self.guest_y = 5;
                 self.message = String::from("Guest entered Square!");
             }
             (Location::Square, TileType::PathSquare) => {
@@ -493,14 +482,6 @@ impl GameState {
 
         self.direction = direction;
 
-        let current_tile = self.get_tile_at(self.player_x, self.player_y);
-        if let Some(tile) = current_tile {
-            if tile.is_transition() {
-                self.handle_transition(&tile);
-                return true;
-            }
-        }
-
         let (dx, dy) = direction.delta();
         let new_x = self.player_x as i32 + dx;
         let new_y = self.player_y as i32 + dy;
@@ -567,8 +548,8 @@ impl GameState {
                 self.location = Location::Square;
                 self.player_location = Location::Square;
                 self.player_x = 5;
-                self.player_y = 1;
-                self.direction = Direction::Down;
+                self.player_y = 5;
+                self.direction = Direction::Up;
                 self.message = String::from("Welcome to the Square!");
             }
             (Location::Square, TileType::PathSquare) => {
@@ -2103,14 +2084,14 @@ mod tests {
         state.location = Location::EastPath;
         state.player_location = Location::EastPath;
         state.player_x = 5;
-        state.player_y = 0;
+        state.player_y = 1;
 
-        state.move_player(Direction::Down);
+        state.move_player(Direction::Up);
 
         assert_eq!(state.location, Location::Square);
         assert_eq!(state.player_location, Location::Square);
         assert_eq!(state.player_x, 5);
-        assert_eq!(state.player_y, 1);
+        assert_eq!(state.player_y, 5);
     }
 
     #[test]
@@ -2233,13 +2214,13 @@ mod tests {
         state.guest_location = Location::EastPath;
         state.location = Location::EastPath;
         state.guest_x = 5;
-        state.guest_y = 0;
+        state.guest_y = 1;
 
-        state.move_guest(Direction::Down);
+        state.move_guest(Direction::Up);
 
         assert_eq!(state.guest_location, Location::Square);
         assert_eq!(state.guest_x, 5);
-        assert_eq!(state.guest_y, 1);
+        assert_eq!(state.guest_y, 5);
     }
 
     #[test]
