@@ -10,7 +10,7 @@
 These four specs introduce time-based game mechanics to Shelldew:
 1. **Heartbeat**: Continuous time flow (1 real sec = 5 game min), pause integration, save/load
 2. **Day-Night**: Visual day/night state (06:00-17:59 day, 18:00-05:59 night), moon icon at night
-3. **Auto-Sleep**: Force sleep at 02:00, use existing sleep pipeline
+3. **Auto-Sleep**: Force sleep at 00:00, use existing sleep pipeline
 4. **Random-Weather**: Spring weather (80% Sunny, 13% Cloudy, 7% Rainy), rainy auto-waters crops
 
 ### Runtime Clarification (Observed)
@@ -101,7 +101,7 @@ These four specs introduce time-based game mechanics to Shelldew:
 **Dependencies:** Phase 1 (uses `hour`/`minute`)
 
 ### Phase 3: Auto-Sleep System
-**Goal:** Force sleep at 02:00
+**Goal:** Force sleep at 00:00
 
 1. Add `auto_sleep_triggered_day` guard field
 2. Add `should_auto_sleep()` checker
@@ -111,7 +111,7 @@ These four specs introduce time-based game mechanics to Shelldew:
    - Shows income summary
    - Wakes at "front of home" (coordinates 3,3)
 4. Integrate trigger check in heartbeat tick
-5. Handle edge cases: time jumps, pause at 02:00, menu interaction
+5. Handle edge cases: time jumps, pause at 00:00, menu interaction
 
 **Dependencies:** Phase 1 (needs tick point)
 
@@ -163,7 +163,7 @@ Phase 4: Random-Weather  [depends on Phase 2]
     └── Icon rendering priority
 ```
 
-**Note:** Auto-sleep (Phase 3) depends only on Phase 1, not Phase 2, because it doesn't need day/night logic—it triggers at 02:00 (always night).
+**Note:** Auto-sleep (Phase 3) depends only on Phase 1, not Phase 2, because it doesn't need day/night logic—it triggers at 00:00 (always night).
 
 ---
 
@@ -176,7 +176,7 @@ Phase 4: Random-Weather  [depends on Phase 2]
 | **Auto-sleep during menu** | Medium | Check trigger on resume, not just tick |
 | **Weather seed persistence** | Medium | Store seed in save, derive sequence from day |
 | **Rain double-watering** | Low | Check `watered_today` before applying |
-| **Batch commands crossing 02:00** | Medium | Auto-sleep resolves before continuing batch |
+| **Batch commands crossing 00:00** | Medium | Auto-sleep resolves before continuing batch |
 | **Day wrap with large time jump** | Low | Use modulo for day calculation |
 
 ---
@@ -211,11 +211,11 @@ Phase 4: Random-Weather  [depends on Phase 2]
 |------|------|-------|
 | Start game, verify clock shows 06:00 | Heartbeat | 1 |
 | Wait 60 real seconds, verify clock shows 11:00 | Heartbeat | 1 |
-| Open menu at 12:00, wait 30s, close, verify still 12:00 | Heartbeat | 1 |
+| Open menu at 10:00, wait 30s, close, verify still 10:00 | Heartbeat | 1 |
 | Advance to 06:00, verify day icon | Day-Night | 2 |
 | Advance to 18:00, verify moon icon | Day-Night | 2 |
 | Save at night, reload, verify moon icon | Day-Night | 2 |
-| Simulate time to 02:00, verify sleep flow | Auto-Sleep | 3 |
+| Simulate time to 00:00, verify sleep flow | Auto-Sleep | 3 |
 | Verify income summary appears | Auto-Sleep | 3 |
 | Verify wake at front of home | Auto-Sleep | 3 |
 | Day rollover displays new weather icon | Weather | 4 |
@@ -228,8 +228,8 @@ Phase 4: Random-Weather  [depends on Phase 2]
 |------|------|-------|
 | `get_world_time` returns correct time | Heartbeat | 1 |
 | `getState` includes weather field | Weather | 4 |
-| Command at 01:59, next tick 02:00 triggers auto sleep | Auto-Sleep | 3 |
-| Batch crossing 02:00 stops and resolves sleep | Auto-Sleep | 3 |
+| Command at 01:59, next tick 00:00 triggers auto sleep | Auto-Sleep | 3 |
+| Batch crossing 00:00 stops and resolves sleep | Auto-Sleep | 3 |
 
 ---
 
@@ -319,7 +319,7 @@ Phase 4: Random-Weather  [depends on Phase 2]
 
 | Criterion | Implementation |
 |-----------|----------------|
-| Auto-fall asleep at 02:00 | `should_auto_sleep()` checks `hour == 2 && minute == 0` |
+| Auto-fall asleep at 00:00 | `should_auto_sleep()` checks `hour == 0 && minute == 0` |
 | Uses normal sleep pipeline | Calls `perform_sleep()` → `HomeState::Income` |
 | Income summary shown | Handled by existing `HomeState::Income` flow |
 | Wake at front of home | Set `player_x=3, player_y=3` on day transition |

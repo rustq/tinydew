@@ -1,9 +1,9 @@
 # Auto Sleep System Specification
 
 ## Overview
-Define automatic sleep behavior when the in-game clock reaches **02:00**.
+Define automatic sleep behavior when the in-game clock reaches **00:00**.
 
-At 02:00, the player should:
+At 00:00, the player should:
 1. Automatically fall asleep
 2. Enter the normal sleep resolution flow (end-of-day loop)
 3. See income summary
@@ -31,11 +31,11 @@ At 02:00, the player should:
 
 ## 3.1 Auto Sleep Trigger
 
-Auto sleep triggers when game time becomes exactly **02:00**.
+Auto sleep triggers when game time becomes exactly **00:00**.
 
-- Trigger condition: `hour == 2 && minute == 0`
+- Trigger condition: `hour == 0 && minute == 0`
 - Trigger must fire **once per day**
-- If time jumps over boundaries (e.g., command batch), trigger on first state evaluation at/after 02:00 before any further player actions
+- If time jumps over boundaries (e.g., command batch), trigger on first state evaluation at/after 00:00 before any further player actions
 
 ## 3.2 Priority
 
@@ -96,7 +96,7 @@ If income is zero, still show a valid summary state (e.g., total 0).
 
 ## 8) Save/Load Behavior
 
-1. If saved before 02:00, auto sleep should still trigger when time reaches 02:00 after load.
+1. If saved before 00:00, auto sleep should still trigger when time reaches 00:00 after load.
 2. If saved during sleep-resolution state, loading should resume safely in a consistent post-sleep state or re-enter sleep resolution deterministically (implementation choice must be consistent).
 3. No data migration required if existing day/sleep fields already support manual sleep.
 
@@ -104,18 +104,18 @@ If income is zero, still show a valid summary state (e.g., total 0).
 
 ## 9) MCP / Command Behavior
 
-1. MCP command execution at/after 02:00 should resolve auto sleep before allowing additional world actions.
-2. Batch commands that cross into 02:00 should stop normal action processing, run auto sleep, then continue only under defined post-sleep rules (recommended: stop batch and require next turn).
+1. MCP command execution at/after 00:00 should resolve auto sleep before allowing additional world actions.
+2. Batch commands that cross into 00:00 should stop normal action processing, run auto sleep, then continue only under defined post-sleep rules (recommended: stop batch and require next turn).
 3. Response events should include explicit sleep/day-transition markers so clients can react.
 
 ---
 
 ## 10) Edge Cases
 
-1. **Exact boundary:** 01:59 -> 02:00 triggers immediately.
-2. **Large time jump:** If system jumps from before 02:00 to after 02:00, auto sleep still triggers once.
+1. **Exact boundary:** 01:59 -> 00:00 triggers immediately.
+2. **Large time jump:** If system jumps from before 00:00 to after 00:00, auto sleep still triggers once.
 3. **Already sleeping:** Prevent duplicate trigger while sleep flow is active.
-4. **Menu/pause at 02:00:** On resume/state tick, auto sleep triggers before normal input.
+4. **Menu/pause at 00:00:** On resume/state tick, auto sleep triggers before normal input.
 5. **Multiple triggers:** Ensure one trigger per day via guard flag/state transition.
 
 ---
@@ -143,14 +143,14 @@ Auto sleep must call the same underlying function/path used by manual sleep to a
 
 ## 12.1 Unit Tests
 
-1. At `02:00`, `should_auto_sleep == true`.
+1. At `00:00`, `should_auto_sleep == true`.
 2. At `01:59`, `should_auto_sleep == false`.
 3. At `02:01`, auto sleep still resolves once if crossing logic supports catch-up.
 4. Trigger does not repeat for same day after completion.
 
 ## 12.2 Integration Tests
 
-1. Simulate time progression to 02:00 -> verify sleep loop runs.
+1. Simulate time progression to 00:00 -> verify sleep loop runs.
 2. Verify income summary appears.
 3. Verify day increments.
 4. Verify wake location is front of home.
@@ -158,8 +158,8 @@ Auto sleep must call the same underlying function/path used by manual sleep to a
 
 ## 12.3 MCP Tests
 
-1. Command at 01:59 then next tick to 02:00 -> auto sleep event appears.
-2. Batch crossing 02:00 -> expected stop/transition behavior is enforced.
+1. Command at 01:59 then next tick to 00:00 -> auto sleep event appears.
+2. Batch crossing 00:00 -> expected stop/transition behavior is enforced.
 
 ---
 
@@ -177,7 +177,7 @@ Auto sleep must call the same underlying function/path used by manual sleep to a
 
 Feature is complete when:
 
-1. Player auto-falls asleep at **02:00**.
+1. Player auto-falls asleep at **00:00**.
 2. Auto sleep uses the normal sleep game loop.
 3. Income summary is shown during the sleep resolution.
 4. Player wakes at the **front of home**.
