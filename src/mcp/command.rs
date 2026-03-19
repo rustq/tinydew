@@ -1742,14 +1742,14 @@ mod tests {
         assert!(map_start.is_some(), "Map section should exist");
         let map_start = map_start.unwrap();
 
-        let map_rows: Vec<&str> = snapshot.lines().skip(map_start + 1).take(6).collect();
-        assert_eq!(map_rows.len(), 6, "Square should have 6 rows");
+        let map_rows: Vec<&str> = snapshot.lines().skip(map_start + 1).take(5).collect();
+        assert_eq!(map_rows.len(), 5, "Square should have 5 rows");
 
         for row in &map_rows {
             assert_eq!(
                 row.chars().count(),
-                11,
-                "Each row should have 11 characters"
+                9,
+                "Each row should have 9 characters"
             );
         }
     }
@@ -1792,7 +1792,7 @@ mod tests {
         assert!(map_start.is_some(), "Map section should exist");
         let map_start = map_start.unwrap();
 
-        let map_rows: Vec<&str> = snapshot.lines().skip(map_start + 1).take(6).collect();
+        let map_rows: Vec<&str> = snapshot.lines().skip(map_start + 1).take(5).collect();
 
         assert!(
             !map_rows.iter().any(|row| row.contains('🧑')),
@@ -1808,13 +1808,13 @@ mod tests {
         let mut manager = GameStateManager::new();
         manager.state.location = Location::Square;
         manager.state.player_location = Location::Square;
-        manager.state.player_x = 5;
+        manager.state.player_x = 4;
         manager.state.player_y = 1;
 
         let map_data = manager.to_map_snapshot(false);
 
-        assert_eq!(map_data.get("width").unwrap().as_u64().unwrap(), 11);
-        assert_eq!(map_data.get("height").unwrap().as_u64().unwrap(), 6);
+        assert_eq!(map_data.get("width").unwrap().as_u64().unwrap(), 9);
+        assert_eq!(map_data.get("height").unwrap().as_u64().unwrap(), 5);
     }
 
     #[test]
@@ -1832,7 +1832,7 @@ mod tests {
         let tiles = map_data.get("tiles").unwrap().as_array().unwrap();
 
         let fountain_row = tiles.get(2).unwrap().as_array().unwrap();
-        let fountain_tile = fountain_row.get(5).unwrap().as_str().unwrap();
+        let fountain_tile = fountain_row.get(4).unwrap().as_str().unwrap();
 
         assert!(
             fountain_tile.contains("Fountain"),

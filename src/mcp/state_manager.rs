@@ -139,6 +139,7 @@ impl GameStateManager {
             TileType::Player => "@".to_string(),
             TileType::Mushroom => "M".to_string(),
             TileType::Fountain => "F".to_string(),
+            TileType::Slide => "S".to_string(),
         }
     }
 
@@ -164,6 +165,7 @@ impl GameStateManager {
             TileType::Player => "Player".to_string(),
             TileType::Mushroom => "Mushroom".to_string(),
             TileType::Fountain => "Fountain".to_string(),
+            TileType::Slide => "Slide".to_string(),
         }
     }
 

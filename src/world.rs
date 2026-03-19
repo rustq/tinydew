@@ -34,6 +34,7 @@ pub enum TileType {
     Player,
     Mushroom,
     Fountain,
+    Slide,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -162,6 +163,7 @@ impl TileType {
             TileType::Boundary => false,
             TileType::Crop(_, _) => false,
             TileType::Fountain => false,
+            TileType::Slide => false,
             TileType::Mushroom => false,
             TileType::Grass
             | TileType::Soil
@@ -199,6 +201,7 @@ impl TileType {
             TileType::Player => "🧑",
             TileType::Mushroom => "🍄",
             TileType::Fountain => "⛲",
+            TileType::Slide => "🛝",
         }
     }
 }
@@ -371,25 +374,26 @@ pub fn create_square_map() -> Map {
             TileType::Boundary,
             TileType::Boundary,
             TileType::Boundary,
+        ],
+        vec![
             TileType::Boundary,
+            TileType::Crop(
+                CropType::Rhubarb,
+                CropState {
+                    days_grown: 16,
+                    watered_today: false,
+                },
+            ),
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
             TileType::Boundary,
         ],
         vec![
             TileType::Boundary,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Boundary,
-        ],
-        vec![
-            TileType::Boundary,
-            TileType::Grass,
             TileType::Grass,
             TileType::Grass,
             TileType::Grass,
@@ -397,7 +401,6 @@ pub fn create_square_map() -> Map {
             TileType::Grass,
             TileType::Grass,
             TileType::Grass,
-            TileType::Grass,
             TileType::Boundary,
         ],
         vec![
@@ -409,31 +412,14 @@ pub fn create_square_map() -> Map {
             TileType::Grass,
             TileType::Grass,
             TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
             TileType::Boundary,
         ],
         vec![
-            TileType::Boundary,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Grass,
-            TileType::Boundary,
-        ],
-        vec![
-            TileType::Boundary,
             TileType::Boundary,
             TileType::Boundary,
             TileType::Boundary,
             TileType::Boundary,
             TileType::PathSquare,
-            TileType::Boundary,
             TileType::Boundary,
             TileType::Boundary,
             TileType::Boundary,
@@ -446,5 +432,5 @@ pub const FARM_WIDTH: usize = 8;
 pub const FARM_HEIGHT: usize = 8;
 pub const EAST_PATH_WIDTH: usize = 11;
 pub const EAST_PATH_HEIGHT: usize = 4;
-pub const SQUARE_WIDTH: usize = 11;
-pub const SQUARE_HEIGHT: usize = 6;
+pub const SQUARE_WIDTH: usize = 9;
+pub const SQUARE_HEIGHT: usize = 5;

@@ -4,10 +4,10 @@
 Implement a new region: **Square**.
 
 Square requirements from spec:
-- New map region with fountain center and boundary trees.
+- New map region with fountain center, right-side slide, and boundary trees.
 - Entry from East Path top opening tile (`🌿`) into Square.
 - Exit from Square bottom-center opening tile (`🌿`) back to East Path.
-- Fountain is a blocking building tile.
+- Fountain and slide are blocking building tiles.
 - **All Square tiles forbid `clear` and `plant`.**
 - Preserve region-aware occupancy behavior for player/guest.
 - Render + MCP + save/load compatibility.
@@ -39,10 +39,11 @@ Square requirements from spec:
 ### 1.2 Add Square map dimensions/constants
 - Add `SQUARE_WIDTH = 11`, `SQUARE_HEIGHT = 6`.
 
-### 1.3 Add fountain tile type
+### 1.3 Add building tile types
 - Add `TileType::Fountain`.
-- Rendering emoji: `⛲`.
-- Walkability: non-walkable.
+- Add `TileType::Slide`.
+- Rendering emoji: `⛲` and `🛝`.
+- Walkability: both non-walkable.
 
 ### 1.4 Add/confirm transition tile usage
 - Reuse existing transition tile scheme or add new transition variant(s) to represent Square gateways.
@@ -106,8 +107,8 @@ Deliverable:
   - `clear` always denied
   - `plant` always denied
 
-### 4.2 Fountain action denial
-- Even outside global square deny path, targeting fountain must reject:
+### 4.2 Building action denial (fountain + slide)
+- Even outside global square deny path, targeting fountain/slide must reject:
   - clear, plant, water, harvest
 
 ### 4.3 Message consistency
@@ -121,7 +122,7 @@ Deliverable:
 ## Phase 5 — Rendering & MCP Surface
 
 ### 5.1 Interactive render updates
-- Ensure `⛲` renders correctly.
+- Ensure `⛲` and `🛝` render correctly.
 - Ensure map dimensions for Square render correctly.
 
 ### 5.2 MCP `print` snapshot updates
@@ -129,7 +130,7 @@ Deliverable:
 - Ensure player/guest markers remain region-aware.
 
 ### 5.3 MCP `getMap` updates
-- Return correct Square dimensions + tile encoding/details (including fountain and transition tiles).
+- Return correct Square dimensions + tile encoding/details (including fountain/slide and transition tiles).
 
 ### 5.4 MCP entity state separation updates
 - Ensure `getState` snapshot includes guest block when guest is enabled.
@@ -161,9 +162,12 @@ Deliverable:
 ## 7.1 Unit tests (minimum)
 - `test_square_map_layout_dimensions_and_fountain_position`
 - `test_square_fountain_not_walkable`
+- `test_square_slide_not_walkable`
 - `test_square_boundary_not_walkable`
 - `test_player_cannot_move_onto_square_fountain`
 - `test_guest_cannot_move_onto_square_fountain`
+- `test_player_cannot_move_onto_square_slide`
+- `test_guest_cannot_move_onto_square_slide`
 - `test_square_clear_forbidden_on_all_tiles`
 - `test_square_plant_forbidden_on_all_tiles`
 - `test_square_transition_enter_from_east_path`
@@ -173,6 +177,7 @@ Deliverable:
 ### 7.2 MCP-focused tests
 - `test_print_snapshot_renders_square_dimensions`
 - `test_print_snapshot_contains_fountain_icon_in_square`
+- `test_print_snapshot_contains_slide_icon_in_square`
 - `test_get_map_returns_square_dimensions`
 - `test_print_snapshot_hides_player_when_region_differs_in_square`
 

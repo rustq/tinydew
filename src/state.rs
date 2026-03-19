@@ -360,8 +360,8 @@ impl GameState {
             (Location::EastPath, TileType::PathSquare) => {
                 self.guest_location = Location::Square;
                 self.location = Location::Square;
-                self.guest_x = 5;
-                self.guest_y = 5;
+                self.guest_x = 4;
+                self.guest_y = 4;
                 self.message = String::from("Guest entered Square!");
             }
             (Location::Square, TileType::PathSquare) => {
@@ -547,8 +547,8 @@ impl GameState {
             (Location::EastPath, TileType::PathSquare) => {
                 self.location = Location::Square;
                 self.player_location = Location::Square;
-                self.player_x = 5;
-                self.player_y = 5;
+                self.player_x = 4;
+                self.player_y = 4;
                 self.direction = Direction::Up;
                 self.message = String::from("Welcome to the Square!");
             }
@@ -946,6 +946,9 @@ impl GameState {
                 Some(TileType::Fountain) => {
                     self.message = String::from("Cannot clear the fountain!");
                 }
+                Some(TileType::Slide) => {
+                    self.message = String::from("Cannot clear the slide!");
+                }
                 _ => {
                     self.message =
                         String::from("Nothing to clear! (Only weeds/crops can be cleared)");
@@ -983,6 +986,9 @@ impl GameState {
                 Some(TileType::Fountain) => {
                     self.message = String::from("Cannot clear the fountain!");
                 }
+                Some(TileType::Slide) => {
+                    self.message = String::from("Cannot clear the slide!");
+                }
                 _ => {
                     self.message =
                         String::from("Nothing to clear! (Only weeds/crops can be cleared)");
@@ -1008,6 +1014,10 @@ impl GameState {
             let tile = self.get_tile_at(x, y);
             if let Some(TileType::Fountain) = tile {
                 self.message = String::from("Cannot plant on the fountain!");
+                return;
+            }
+            if let Some(TileType::Slide) = tile {
+                self.message = String::from("Cannot plant on the slide!");
                 return;
             }
             if let Some(TileType::Soil) = tile {
@@ -1045,6 +1055,10 @@ impl GameState {
             let tile = self.get_tile_at(x, y);
             if let Some(TileType::Fountain) = tile {
                 self.message = String::from("Cannot plant on the fountain!");
+                return;
+            }
+            if let Some(TileType::Slide) = tile {
+                self.message = String::from("Cannot plant on the slide!");
                 return;
             }
             if let Some(TileType::Soil) = tile {
@@ -1087,6 +1101,10 @@ impl GameState {
                 self.message = String::from("Cannot water the fountain!");
                 return;
             }
+            if let Some(TileType::Slide) = tile {
+                self.message = String::from("Cannot water the slide!");
+                return;
+            }
             if let Some(TileType::Crop(crop, state)) = tile {
                 if !state.is_mature(crop) {
                     self.farm_map[y][x] = TileType::Crop(
@@ -1126,6 +1144,10 @@ impl GameState {
                 self.message = String::from("Cannot water the fountain!");
                 return;
             }
+            if let Some(TileType::Slide) = tile {
+                self.message = String::from("Cannot water the slide!");
+                return;
+            }
             if let Some(TileType::Crop(crop, state)) = tile {
                 if !state.is_mature(crop) {
                     self.farm_map[y][x] = TileType::Crop(
@@ -1158,6 +1180,10 @@ impl GameState {
             let tile = self.get_tile_at(x, y);
             if let Some(TileType::Fountain) = tile {
                 self.message = String::from("Nothing to harvest from the fountain!");
+                return;
+            }
+            if let Some(TileType::Slide) = tile {
+                self.message = String::from("Nothing to harvest from the slide!");
                 return;
             }
             if let Some(TileType::Crop(crop, state)) = tile {
@@ -1206,6 +1232,10 @@ impl GameState {
             let tile = self.get_tile_at(x, y);
             if let Some(TileType::Fountain) = tile {
                 self.message = String::from("Nothing to harvest from the fountain!");
+                return;
+            }
+            if let Some(TileType::Slide) = tile {
+                self.message = String::from("Nothing to harvest from the slide!");
                 return;
             }
             if let Some(TileType::Crop(crop, state)) = tile {
@@ -2065,12 +2095,24 @@ mod tests {
         assert_eq!(square_map.len(), SQUARE_HEIGHT);
         assert_eq!(square_map[0].len(), SQUARE_WIDTH);
 
-        assert_eq!(square_map[2][5], TileType::Fountain);
+        assert_eq!(square_map[2][4], TileType::Fountain);
+
+        match square_map[1][1] {
+            TileType::Crop(CropType::Rhubarb, state) => {
+                assert!(state.is_mature(CropType::Rhubarb));
+            }
+            _ => panic!("Expected day-1 spawn flower crop at square[1][1]"),
+        }
     }
 
     #[test]
     fn test_square_fountain_not_walkable() {
         assert!(!TileType::Fountain.is_walkable());
+    }
+
+    #[test]
+    fn test_square_slide_not_walkable() {
+        assert!(!TileType::Slide.is_walkable());
     }
 
     #[test]
@@ -2090,8 +2132,8 @@ mod tests {
 
         assert_eq!(state.location, Location::Square);
         assert_eq!(state.player_location, Location::Square);
-        assert_eq!(state.player_x, 5);
-        assert_eq!(state.player_y, 5);
+        assert_eq!(state.player_x, 4);
+        assert_eq!(state.player_y, 4);
     }
 
     #[test]
@@ -2099,8 +2141,8 @@ mod tests {
         let mut state = GameState::new();
         state.location = Location::Square;
         state.player_location = Location::Square;
-        state.player_x = 5;
-        state.player_y = 4;
+        state.player_x = 4;
+        state.player_y = 3;
 
         state.move_player(Direction::Down);
 
@@ -2115,10 +2157,10 @@ mod tests {
         let mut state = GameState::new();
         state.enable_guest_for_interactive();
         state.guest_location = Location::Square;
-        state.guest_x = 5;
+        state.guest_x = 4;
         state.guest_y = 1;
 
-        let can_move = state.can_move_guest_to(5, 2);
+        let can_move = state.can_move_guest_to(4, 2);
         assert!(!can_move, "Guest should not be able to move onto fountain");
     }
 
@@ -2197,8 +2239,8 @@ mod tests {
         state.enable_guest_for_interactive();
         state.guest_location = Location::Square;
         state.location = Location::Square;
-        state.guest_x = 5;
-        state.guest_y = 4;
+        state.guest_x = 4;
+        state.guest_y = 3;
 
         state.move_guest(Direction::Down);
 
@@ -2219,8 +2261,8 @@ mod tests {
         state.move_guest(Direction::Up);
 
         assert_eq!(state.guest_location, Location::Square);
-        assert_eq!(state.guest_x, 5);
-        assert_eq!(state.guest_y, 5);
+        assert_eq!(state.guest_x, 4);
+        assert_eq!(state.guest_y, 4);
     }
 
     #[test]
