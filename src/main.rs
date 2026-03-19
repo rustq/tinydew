@@ -267,8 +267,6 @@ fn print_shop_menu<W: Write>(w: &mut W, game: &GameState) {
         _ => "Menu",
     };
 
-    write!(w, "💰 ${}{}", game.money, EOL).unwrap();
-    write!(w, "{}", EOL).unwrap();
     write!(w, "{}{}", title, EOL).unwrap();
 
     let items = game.get_shop_menu_items();
