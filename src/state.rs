@@ -880,7 +880,7 @@ impl GameState {
     }
 
     pub fn should_auto_sleep(&self) -> bool {
-        self.hour == 2
+        self.hour == 0
             && self.minute == 0
             && self.auto_sleep_triggered_day != self.day
             && self.home_state == HomeState::None
@@ -1365,7 +1365,7 @@ impl GameState {
     }
 
     pub fn check_home_alert(&mut self) {
-        if self.home_state == HomeState::None && self.hour == 2 && self.location == Location::Farm {
+        if self.home_state == HomeState::None && self.hour == 0 && self.location == Location::Farm {
             self.home_state = HomeState::Alert;
             self.home_cursor = 0;
             self.message = String::from("It's late. You should rest.");
@@ -1598,7 +1598,7 @@ mod tests {
         assert!(TileType::Soil.is_walkable());
         assert!(TileType::PathEast.is_walkable());
         assert!(TileType::PathFarm.is_walkable());
-        assert!(TileType::House.is_walkable());
+        assert!(!TileType::House.is_walkable());
         assert!(!TileType::Mushroom.is_walkable());
         assert!(!TileType::Boundary.is_walkable());
     }

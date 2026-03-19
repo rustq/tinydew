@@ -630,16 +630,17 @@ mod tests {
     }
 
     #[test]
-    fn home_alert_triggers_at_2am() {
+    fn home_alert_triggers_at_midnight() {
         let mut game = GameState::new();
-        game.hour = 1;
+        game.hour = 23;
         game.minute = 55;
         game.location = state::Location::Farm;
 
         game.check_home_alert();
         assert_eq!(game.home_state, state::HomeState::None);
 
-        game.hour = 2;
+        game.hour = 0;
+        game.minute = 0;
         game.check_home_alert();
         assert_eq!(game.home_state, state::HomeState::Alert);
     }
@@ -647,7 +648,8 @@ mod tests {
     #[test]
     fn home_alert_not_in_east_path() {
         let mut game = GameState::new();
-        game.hour = 2;
+        game.hour = 0;
+        game.minute = 0;
         game.location = state::Location::EastPath;
 
         game.check_home_alert();

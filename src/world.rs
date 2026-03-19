@@ -171,13 +171,13 @@ impl TileType {
             TileType::River => false,
             TileType::Grass
             | TileType::Soil
-            | TileType::House
             | TileType::PathEast
             | TileType::PathFarm
             | TileType::PathSquare
             | TileType::PathSouthRiver
             | TileType::PathSouthRiverGate
             | TileType::Player => true,
+            TileType::House => false,
         }
     }
 
