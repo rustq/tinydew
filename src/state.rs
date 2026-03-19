@@ -1,7 +1,7 @@
 use crate::world::{
     CropState, CropType, Direction, EAST_PATH_HEIGHT, EAST_PATH_WIDTH, FARM_HEIGHT, FARM_WIDTH,
-    ForageType, Map, SQUARE_HEIGHT, SQUARE_WIDTH, TileType, Weather, create_east_path_map,
-    create_farm_map, create_square_map,
+    ForageType, Map, SOUTH_RIVER_HEIGHT, SOUTH_RIVER_WIDTH, SQUARE_HEIGHT, SQUARE_WIDTH, TileType,
+    Weather, create_east_path_map, create_farm_map, create_south_river_map, create_square_map,
 };
 use crossterm::event::KeyCode;
 use serde::{Deserialize, Serialize};
@@ -19,6 +19,7 @@ pub enum Location {
     Farm,
     EastPath,
     Square,
+    SouthRiver,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -118,6 +119,7 @@ pub struct GameState {
     pub farm_map: Map,
     pub east_path_map: Map,
     pub square_map: Map,
+    pub south_river_map: Map,
     pub player_x: usize,
     pub player_y: usize,
     pub direction: Direction,
@@ -158,6 +160,7 @@ impl GameState {
 
         let east_path_map = create_east_path_map();
         let square_map = create_square_map();
+        let south_river_map = create_south_river_map();
 
         Self {
             location: Location::Farm,
@@ -165,6 +168,7 @@ impl GameState {
             farm_map,
             east_path_map,
             square_map,
+            south_river_map,
             player_x,
             player_y,
             direction: Direction::Down,
@@ -243,9 +247,13 @@ impl GameState {
                 crate::world::SQUARE_WIDTH,
                 crate::world::SQUARE_HEIGHT,
             ),
+            Location::SouthRiver => (
+                &self.south_river_map,
+                crate::world::SOUTH_RIVER_WIDTH,
+                crate::world::SOUTH_RIVER_HEIGHT,
+            ),
         };
 
-        // Deterministic pseudo-random-ish start based on day/rng_seed.
         let base = (self.rng_seed as usize).wrapping_add((self.day as usize).wrapping_mul(31));
         let sx = base % width;
         let sy = (base / width.max(1)) % height;
@@ -274,6 +282,10 @@ impl GameState {
                 crate::world::EAST_PATH_HEIGHT,
             ),
             Location::Square => (crate::world::SQUARE_WIDTH, crate::world::SQUARE_HEIGHT),
+            Location::SouthRiver => (
+                crate::world::SOUTH_RIVER_WIDTH,
+                crate::world::SOUTH_RIVER_HEIGHT,
+            ),
         };
 
         if x >= width || y >= height {
@@ -284,6 +296,7 @@ impl GameState {
             Location::Farm => &self.farm_map,
             Location::EastPath => &self.east_path_map,
             Location::Square => &self.square_map,
+            Location::SouthRiver => &self.south_river_map,
         };
 
         let tile = map[y][x];
@@ -315,6 +328,7 @@ impl GameState {
                 Location::Farm => self.farm_map[new_y][new_x],
                 Location::EastPath => self.east_path_map[new_y][new_x],
                 Location::Square => self.square_map[new_y][new_x],
+                Location::SouthRiver => self.south_river_map[new_y][new_x],
             };
 
             if target_tile.is_transition() {
@@ -340,6 +354,7 @@ impl GameState {
             Location::Farm => self.farm_map[y][x],
             Location::EastPath => self.east_path_map[y][x],
             Location::Square => self.square_map[y][x],
+            Location::SouthRiver => self.south_river_map[y][x],
         };
 
         match (self.guest_location, tile) {
@@ -370,6 +385,20 @@ impl GameState {
                 self.guest_x = 5;
                 self.guest_y = 0;
                 self.message = String::from("Guest left Square!");
+            }
+            (Location::EastPath, TileType::PathSouthRiver) => {
+                self.guest_location = Location::SouthRiver;
+                self.location = Location::SouthRiver;
+                self.guest_x = 5;
+                self.guest_y = 1;
+                self.message = String::from("Guest entered South River!");
+            }
+            (Location::SouthRiver, TileType::PathSouthRiverGate) => {
+                self.guest_location = Location::EastPath;
+                self.location = Location::EastPath;
+                self.guest_x = 5;
+                self.guest_y = 2;
+                self.message = String::from("Guest returned to East Path!");
             }
             _ => {}
         }
@@ -408,6 +437,7 @@ impl GameState {
             Location::Farm => &self.farm_map,
             Location::EastPath => &self.east_path_map,
             Location::Square => &self.square_map,
+            Location::SouthRiver => &self.south_river_map,
         }
     }
 
@@ -416,6 +446,7 @@ impl GameState {
             Location::Farm => &mut self.farm_map,
             Location::EastPath => &mut self.east_path_map,
             Location::Square => &mut self.square_map,
+            Location::SouthRiver => &mut self.south_river_map,
         }
     }
 
@@ -424,6 +455,7 @@ impl GameState {
             Location::Farm => (FARM_WIDTH, FARM_HEIGHT),
             Location::EastPath => (EAST_PATH_WIDTH, EAST_PATH_HEIGHT),
             Location::Square => (SQUARE_WIDTH, SQUARE_HEIGHT),
+            Location::SouthRiver => (SOUTH_RIVER_WIDTH, SOUTH_RIVER_HEIGHT),
         }
     }
 
@@ -559,6 +591,22 @@ impl GameState {
                 self.player_y = 0;
                 self.direction = Direction::Down;
                 self.message = String::from("Left the Square!");
+            }
+            (Location::EastPath, TileType::PathSouthRiver) => {
+                self.location = Location::SouthRiver;
+                self.player_location = Location::SouthRiver;
+                self.player_x = 5;
+                self.player_y = 1;
+                self.direction = Direction::Down;
+                self.message = String::from("Welcome to South River!");
+            }
+            (Location::SouthRiver, TileType::PathSouthRiverGate) => {
+                self.location = Location::EastPath;
+                self.player_location = Location::EastPath;
+                self.player_x = 5;
+                self.player_y = 2;
+                self.direction = Direction::Up;
+                self.message = String::from("Back to East Path!");
             }
             _ => {}
         }
@@ -719,19 +767,25 @@ impl GameState {
         if flower_roll < 10 {
             let mut farm_positions = self.get_empty_grass_positions(&self.farm_map);
             let mut east_path_positions = self.get_empty_grass_positions(&self.east_path_map);
+            let mut south_river_positions = self.get_empty_grass_positions(&self.south_river_map);
 
-            let chosen_positions = if farm_positions.is_empty() {
-                &mut east_path_positions
-            } else if east_path_positions.is_empty() {
-                &mut farm_positions
-            } else {
-                let map_choice = (flower_seed / 100) % 2;
-                if map_choice == 0 {
-                    &mut farm_positions
-                } else {
-                    &mut east_path_positions
-                }
-            };
+            let mut all_positions: Vec<&mut Vec<(usize, usize)>> = Vec::new();
+            if !farm_positions.is_empty() {
+                all_positions.push(&mut farm_positions);
+            }
+            if !east_path_positions.is_empty() {
+                all_positions.push(&mut east_path_positions);
+            }
+            if !south_river_positions.is_empty() {
+                all_positions.push(&mut south_river_positions);
+            }
+
+            if all_positions.is_empty() {
+                return;
+            }
+
+            let map_choice = ((flower_seed / 100) % (all_positions.len() as u64)) as usize;
+            let chosen_positions = all_positions.remove(map_choice);
 
             if let Some((x, y)) =
                 self.pick_random_tile(chosen_positions, flower_seed.wrapping_add(1))
@@ -746,6 +800,8 @@ impl GameState {
                     }
                 } else if y < EAST_PATH_HEIGHT && x < EAST_PATH_WIDTH {
                     self.east_path_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                } else if y < SOUTH_RIVER_HEIGHT && x < SOUTH_RIVER_WIDTH {
+                    self.south_river_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
                 }
             }
         }
@@ -1192,8 +1248,10 @@ impl GameState {
                         self.farm_map[y][x] = TileType::Soil;
                     } else if self.location == Location::EastPath {
                         self.east_path_map[y][x] = TileType::Grass;
-                    } else {
+                    } else if self.location == Location::Square {
                         self.square_map[y][x] = TileType::Grass;
+                    } else {
+                        self.south_river_map[y][x] = TileType::Grass;
                     }
                     self.inventory.add_produce(crop);
                     self.record_crop_harvested(crop, 1);
@@ -1208,6 +1266,8 @@ impl GameState {
                 } else if let Some(map_row) = self.east_path_map.get_mut(y) {
                     map_row[x] = TileType::Grass;
                 } else if let Some(map_row) = self.square_map.get_mut(y) {
+                    map_row[x] = TileType::Grass;
+                } else if let Some(map_row) = self.south_river_map.get_mut(y) {
                     map_row[x] = TileType::Grass;
                 }
                 self.inventory.add_forage(ForageType::Mushroom);
@@ -1244,8 +1304,10 @@ impl GameState {
                         self.farm_map[y][x] = TileType::Soil;
                     } else if self.location == Location::EastPath {
                         self.east_path_map[y][x] = TileType::Grass;
-                    } else {
+                    } else if self.location == Location::Square {
                         self.square_map[y][x] = TileType::Grass;
+                    } else {
+                        self.south_river_map[y][x] = TileType::Grass;
                     }
                     self.inventory.add_produce(crop);
                     self.record_crop_harvested(crop, 1);
@@ -1262,6 +1324,8 @@ impl GameState {
                     map_row[x] = TileType::Grass;
                 } else if let Some(map_row) = self.square_map.get_mut(y) {
                     map_row[x] = TileType::Grass;
+                } else if let Some(map_row) = self.south_river_map.get_mut(y) {
+                    map_row[x] = TileType::Grass;
                 }
                 self.inventory.add_forage(ForageType::Mushroom);
                 self.record_forage_harvested(ForageType::Mushroom, 1);
@@ -1271,7 +1335,7 @@ impl GameState {
                 self.message = String::from("Nothing to harvest!");
             }
         } else {
-            self.message = String::from("Out of bounds!");
+            self.message = String::from("Nothing in front!");
         }
     }
 
@@ -2282,5 +2346,231 @@ mod tests {
         assert!(can_down, "Should be able to move down (grass)");
         assert!(can_left, "Should be able to move left (grass)");
         assert!(can_right, "Should be able to move right (grass)");
+    }
+
+    #[test]
+    fn test_south_river_map_layout_dimensions() {
+        use crate::world::{SOUTH_RIVER_HEIGHT, SOUTH_RIVER_WIDTH, create_south_river_map};
+        let south_river_map = create_south_river_map();
+
+        assert_eq!(south_river_map.len(), SOUTH_RIVER_HEIGHT);
+        assert_eq!(south_river_map[0].len(), SOUTH_RIVER_WIDTH);
+        assert_eq!(south_river_map[1].len(), SOUTH_RIVER_WIDTH);
+        assert_eq!(south_river_map[2].len(), SOUTH_RIVER_WIDTH);
+        assert_eq!(south_river_map[3].len(), SOUTH_RIVER_WIDTH);
+
+        assert_eq!(south_river_map[0][5], TileType::PathSouthRiverGate);
+        for x in 0..11 {
+            if x != 5 {
+                assert_eq!(
+                    south_river_map[0][x],
+                    TileType::Boundary,
+                    "Row 0 col {} should be Boundary",
+                    x
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_south_river_river_tiles_not_walkable() {
+        use crate::world::create_south_river_map;
+        let south_river_map = create_south_river_map();
+
+        for y in 2..4 {
+            for x in 0..11 {
+                assert!(
+                    !south_river_map[y][x].is_walkable(),
+                    "River tile at ({}, {}) should not be walkable",
+                    x,
+                    y
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_south_river_boundary_not_walkable() {
+        use crate::world::create_south_river_map;
+        let south_river_map = create_south_river_map();
+
+        assert!(!south_river_map[0][0].is_walkable());
+        assert!(!south_river_map[0][4].is_walkable());
+        assert!(!south_river_map[0][6].is_walkable());
+        assert!(!south_river_map[0][10].is_walkable());
+        assert!(!south_river_map[1][0].is_walkable());
+        assert!(!south_river_map[1][10].is_walkable());
+    }
+
+    #[test]
+    fn test_transition_east_path_to_south_river() {
+        let mut state = GameState::new();
+        state.location = Location::EastPath;
+        state.player_location = Location::EastPath;
+        state.player_x = 5;
+        state.player_y = 1;
+
+        state.move_player(Direction::Down);
+
+        assert_eq!(state.location, Location::SouthRiver);
+        assert_eq!(state.player_location, Location::SouthRiver);
+        assert_eq!(state.player_x, 5);
+        assert_eq!(state.player_y, 1);
+    }
+
+    #[test]
+    fn test_transition_south_river_to_east_path() {
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.player_x = 5;
+        state.player_y = 1;
+
+        state.move_player(Direction::Up);
+
+        assert_eq!(state.location, Location::EastPath);
+        assert_eq!(state.player_location, Location::EastPath);
+        assert_eq!(state.player_x, 5);
+        assert_eq!(state.player_y, 2);
+    }
+
+    #[test]
+    fn test_guest_transition_east_path_to_south_river() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.guest_location = Location::EastPath;
+        state.location = Location::EastPath;
+        state.guest_x = 5;
+        state.guest_y = 1;
+
+        state.move_guest(Direction::Down);
+
+        assert_eq!(state.guest_location, Location::SouthRiver);
+        assert_eq!(state.guest_x, 5);
+        assert_eq!(state.guest_y, 1);
+    }
+
+    #[test]
+    fn test_guest_transition_south_river_to_east_path() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.guest_location = Location::SouthRiver;
+        state.location = Location::SouthRiver;
+        state.guest_x = 5;
+        state.guest_y = 1;
+
+        state.move_guest(Direction::Up);
+
+        assert_eq!(state.guest_location, Location::EastPath);
+        assert_eq!(state.guest_x, 5);
+        assert_eq!(state.guest_y, 2);
+    }
+
+    #[test]
+    fn test_south_river_random_flower_spawns_on_grass_only() {
+        use crate::world::create_south_river_map;
+        let south_river_map = create_south_river_map();
+
+        let mut grass_positions = 0;
+        for y in 0..4 {
+            for x in 0..11 {
+                if south_river_map[y][x] == TileType::Grass {
+                    grass_positions += 1;
+                }
+            }
+        }
+        assert!(
+            grass_positions > 0,
+            "South River should have grass positions"
+        );
+
+        let mut river_positions = 0;
+        for y in 2..4 {
+            for x in 0..11 {
+                if south_river_map[y][x] == TileType::River {
+                    river_positions += 1;
+                }
+            }
+        }
+        assert_eq!(
+            river_positions, 22,
+            "South River should have 22 river tiles (2 rows x 11 cols)"
+        );
+    }
+
+    #[test]
+    fn test_south_river_no_mushroom_spawn() {
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.season = String::from("Spring");
+        state.weather = Weather::Rainy;
+        state.last_spawn_processed_day = 0;
+        state.day = 1;
+
+        state.spawn_random_crops();
+
+        for y in 0..SOUTH_RIVER_HEIGHT {
+            for x in 0..SOUTH_RIVER_WIDTH {
+                assert!(
+                    !matches!(state.south_river_map[y][x], TileType::Mushroom),
+                    "Mushroom should not spawn in South River"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_south_river_save_load_roundtrip() {
+        use crate::savegame::{load_game_from_path, save_game_to_path};
+
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.player_x = 5;
+        state.player_y = 1;
+
+        let test_path = std::env::temp_dir().join("shelldew_south_river_test.json");
+        save_game_to_path(&state, &test_path).expect("Save should succeed");
+
+        let loaded = load_game_from_path(&test_path).expect("Load should succeed");
+
+        assert_eq!(loaded.location, Location::SouthRiver);
+        assert_eq!(loaded.player_location, Location::SouthRiver);
+        assert_eq!(loaded.player_x, 5);
+        assert_eq!(loaded.player_y, 1);
+
+        std::fs::remove_file(&test_path).ok();
+    }
+
+    #[test]
+    fn test_print_snapshot_renders_south_river_dimensions() {
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.player_x = 5;
+        state.player_y = 1;
+
+        let (width, height) = state.get_map_size();
+        assert_eq!(width, 11);
+        assert_eq!(height, 4);
+
+        let map = state.get_current_map_ref();
+        assert_eq!(map.len(), 4);
+        assert_eq!(map[0].len(), 11);
+    }
+
+    #[test]
+    fn test_get_map_returns_south_river_dimensions() {
+        use crate::world::{SOUTH_RIVER_HEIGHT, SOUTH_RIVER_WIDTH};
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+
+        let (width, height) = state.get_map_size();
+        assert_eq!(width, SOUTH_RIVER_WIDTH);
+        assert_eq!(height, SOUTH_RIVER_HEIGHT);
+
+        let map = state.get_current_map_ref();
+        assert_eq!(map.len(), SOUTH_RIVER_HEIGHT);
+        assert_eq!(map[0].len(), SOUTH_RIVER_WIDTH);
     }
 }

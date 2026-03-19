@@ -136,10 +136,13 @@ impl GameStateManager {
             TileType::PathEast => "P".to_string(),
             TileType::PathFarm => "P".to_string(),
             TileType::PathSquare => "P".to_string(),
+            TileType::PathSouthRiver => "P".to_string(),
+            TileType::PathSouthRiverGate => "P".to_string(),
             TileType::Player => "@".to_string(),
             TileType::Mushroom => "M".to_string(),
             TileType::Fountain => "F".to_string(),
             TileType::Slide => "S".to_string(),
+            TileType::River => "R".to_string(),
         }
     }
 
@@ -162,10 +165,13 @@ impl GameStateManager {
             TileType::PathEast => "PathEast".to_string(),
             TileType::PathFarm => "PathFarm".to_string(),
             TileType::PathSquare => "PathSquare".to_string(),
+            TileType::PathSouthRiver => "PathSouthRiver".to_string(),
+            TileType::PathSouthRiverGate => "PathSouthRiverGate".to_string(),
             TileType::Player => "Player".to_string(),
             TileType::Mushroom => "Mushroom".to_string(),
             TileType::Fountain => "Fountain".to_string(),
             TileType::Slide => "Slide".to_string(),
+            TileType::River => "River".to_string(),
         }
     }
 
@@ -253,7 +259,10 @@ mod tests {
 
         assert_eq!(guest.get("x").and_then(|v| v.as_u64()), Some(4));
         assert_eq!(guest.get("y").and_then(|v| v.as_u64()), Some(2));
-        assert_eq!(guest.get("location").and_then(|v| v.as_str()), Some("Square"));
+        assert_eq!(
+            guest.get("location").and_then(|v| v.as_str()),
+            Some("Square")
+        );
         assert_eq!(guest.get("active").and_then(|v| v.as_bool()), Some(true));
     }
 

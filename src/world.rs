@@ -31,10 +31,13 @@ pub enum TileType {
     PathEast,
     PathFarm,
     PathSquare,
+    PathSouthRiver,
+    PathSouthRiverGate,
     Player,
     Mushroom,
     Fountain,
     Slide,
+    River,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -165,12 +168,15 @@ impl TileType {
             TileType::Fountain => false,
             TileType::Slide => false,
             TileType::Mushroom => false,
+            TileType::River => false,
             TileType::Grass
             | TileType::Soil
             | TileType::House
             | TileType::PathEast
             | TileType::PathFarm
             | TileType::PathSquare
+            | TileType::PathSouthRiver
+            | TileType::PathSouthRiverGate
             | TileType::Player => true,
         }
     }
@@ -178,7 +184,11 @@ impl TileType {
     pub fn is_transition(&self) -> bool {
         matches!(
             self,
-            TileType::PathEast | TileType::PathFarm | TileType::PathSquare
+            TileType::PathEast
+                | TileType::PathFarm
+                | TileType::PathSquare
+                | TileType::PathSouthRiver
+                | TileType::PathSouthRiverGate
         )
     }
 
@@ -198,10 +208,13 @@ impl TileType {
             TileType::PathEast => "🌿",
             TileType::PathFarm => "🌿",
             TileType::PathSquare => "🌿",
+            TileType::PathSouthRiver => "🌿",
+            TileType::PathSouthRiverGate => "🌿",
             TileType::Player => "🧑",
             TileType::Mushroom => "🍄",
             TileType::Fountain => "⛲",
             TileType::Slide => "🛝",
+            TileType::River => "🌊",
         }
     }
 }
@@ -339,7 +352,7 @@ pub fn create_east_path_map() -> Map {
             TileType::Grass,
             TileType::Grass,
             TileType::Grass,
-            TileType::Grass,
+            TileType::PathSouthRiver,
             TileType::Grass,
             TileType::Grass,
             TileType::Grass,
@@ -428,9 +441,68 @@ pub fn create_square_map() -> Map {
     ]
 }
 
+pub fn create_south_river_map() -> Map {
+    vec![
+        vec![
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::PathSouthRiverGate,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+        ],
+        vec![
+            TileType::Boundary,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Boundary,
+        ],
+        vec![
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+        ],
+        vec![
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+            TileType::River,
+        ],
+    ]
+}
+
 pub const FARM_WIDTH: usize = 8;
 pub const FARM_HEIGHT: usize = 8;
 pub const EAST_PATH_WIDTH: usize = 11;
 pub const EAST_PATH_HEIGHT: usize = 4;
 pub const SQUARE_WIDTH: usize = 9;
 pub const SQUARE_HEIGHT: usize = 5;
+pub const SOUTH_RIVER_WIDTH: usize = 11;
+pub const SOUTH_RIVER_HEIGHT: usize = 4;
