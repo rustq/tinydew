@@ -385,13 +385,15 @@ fn generate_text_snapshot(state: &GameState) -> String {
         }
     }
 
-    if state.guest_enabled && state.guest_location == state.location {
+    let guest_visible = state.guest_enabled
+        && state.guest_location == state.location
+        && state.active_control == crate::state::ControlTarget::Guest;
+
+    if guest_visible {
         lines.push(String::new());
         lines.push("--- Guest ---".to_string());
         lines.push(format!("Position: ({}, {})", state.guest_x, state.guest_y));
-        if state.active_control == crate::state::ControlTarget::Guest {
-            lines.push("(Active)".to_string());
-        }
+        lines.push("(Active)".to_string());
     }
 
     lines.push(String::new());
@@ -406,24 +408,12 @@ fn generate_text_snapshot(state: &GameState) -> String {
                     && x == state.player_x
                     && y == state.player_y
                 {
-                    if state.guest_enabled
-                        && state.guest_location == state.location
-                        && x == state.guest_x
-                        && y == state.guest_y
-                    {
-                        if state.active_control == crate::state::ControlTarget::Guest {
-                            "👧"
-                        } else {
-                            "🧑"
-                        }
+                    if guest_visible && x == state.guest_x && y == state.guest_y {
+                        "👧"
                     } else {
                         "🧑"
                     }
-                } else if state.guest_enabled
-                    && state.guest_location == state.location
-                    && x == state.guest_x
-                    && y == state.guest_y
-                {
+                } else if guest_visible && x == state.guest_x && y == state.guest_y {
                     "👧"
                 } else {
                     map[y][x].emoji()
@@ -1018,6 +1008,33 @@ mod tests {
         assert!(
             !map_rows.iter().any(|row| row.contains('🧑')),
             "Player marker should be hidden when player_location differs from active location"
+        );
+    }
+
+    #[test]
+    fn test_print_snapshot_hides_guest_in_player_control_mode() {
+        let mut state = GameState::new();
+        state.location = Location::Square;
+        state.player_location = Location::Square;
+        state.player_x = 3;
+        state.player_y = 3;
+
+        state.guest_enabled = true;
+        state.guest_location = Location::Square;
+        state.guest_x = 4;
+        state.guest_y = 2;
+        state.active_control = crate::state::ControlTarget::Player;
+
+        let result = execute_command(&mut state, ParsedCommand::Print);
+        let snapshot = result.snapshot_text.unwrap();
+
+        assert!(
+            !snapshot.contains("--- Guest ---"),
+            "Guest section should be hidden in player MCP mode"
+        );
+        assert!(
+            !snapshot.contains('👧'),
+            "Guest marker should be hidden in player MCP mode"
         );
     }
 
