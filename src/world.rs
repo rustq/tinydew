@@ -38,6 +38,7 @@ pub enum TileType {
     Fountain,
     Slide,
     River,
+    RiverBubble,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -77,6 +78,32 @@ pub enum CropType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ForageType {
     Mushroom,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum FishType {
+    Common,
+    Rare,
+}
+
+impl FishType {
+    pub fn emoji(&self) -> &'static str {
+        match self {
+            FishType::Common => "🐟",
+            FishType::Rare => "🐠",
+        }
+    }
+
+    pub fn sell_price(&self) -> u32 {
+        match self {
+            FishType::Common => 80,
+            FishType::Rare => 180,
+        }
+    }
+
+    pub fn all() -> [FishType; 2] {
+        [FishType::Common, FishType::Rare]
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -169,6 +196,7 @@ impl TileType {
             TileType::Slide => false,
             TileType::Mushroom => false,
             TileType::River => false,
+            TileType::RiverBubble => false,
             TileType::Grass
             | TileType::Soil
             | TileType::PathEast
@@ -215,6 +243,7 @@ impl TileType {
             TileType::Fountain => "⛲",
             TileType::Slide => "🛝",
             TileType::River => "🌊",
+            TileType::RiverBubble => "🫧",
         }
     }
 }

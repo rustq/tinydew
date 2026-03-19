@@ -1,7 +1,8 @@
 use crate::world::{
     CropState, CropType, Direction, EAST_PATH_HEIGHT, EAST_PATH_WIDTH, FARM_HEIGHT, FARM_WIDTH,
-    ForageType, Map, SOUTH_RIVER_HEIGHT, SOUTH_RIVER_WIDTH, SQUARE_HEIGHT, SQUARE_WIDTH, TileType,
-    Weather, create_east_path_map, create_farm_map, create_south_river_map, create_square_map,
+    FishType, ForageType, Map, SOUTH_RIVER_HEIGHT, SOUTH_RIVER_WIDTH, SQUARE_HEIGHT, SQUARE_WIDTH,
+    TileType, Weather, create_east_path_map, create_farm_map, create_south_river_map,
+    create_square_map,
 };
 use crossterm::event::KeyCode;
 use serde::{Deserialize, Serialize};
@@ -33,6 +34,7 @@ pub struct Inventory {
     pub seeds: HashMap<CropType, u32>,
     pub produce: HashMap<CropType, u32>,
     pub forage: HashMap<ForageType, u32>,
+    pub fish: HashMap<FishType, u32>,
 }
 
 #[allow(dead_code)]
@@ -42,6 +44,7 @@ impl Inventory {
             seeds: HashMap::new(),
             produce: HashMap::new(),
             forage: HashMap::new(),
+            fish: HashMap::new(),
         }
     }
 
@@ -88,6 +91,28 @@ impl Inventory {
     pub fn get_forage(&self, forage: ForageType) -> u32 {
         *self.forage.get(&forage).unwrap_or(&0)
     }
+
+    pub fn add_fish(&mut self, fish: FishType) {
+        *self.fish.entry(fish).or_insert(0) += 1;
+    }
+
+    pub fn get_fish(&self, fish: FishType) -> u32 {
+        *self.fish.get(&fish).unwrap_or(&0)
+    }
+
+    pub fn sell_fish(&mut self, fish: FishType) -> bool {
+        let count = self.fish.get(&fish).unwrap_or(&0);
+        if *count > 0 {
+            *self.fish.get_mut(&fish).unwrap() -= 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn fish_count(&self) -> u32 {
+        self.fish.values().sum()
+    }
 }
 
 impl Default for Inventory {
@@ -101,6 +126,7 @@ pub struct DailyIncome {
     pub money_earned: u32,
     pub crops_sold: HashMap<CropType, u32>,
     pub forage_sold: HashMap<ForageType, u32>,
+    pub fish_sold: HashMap<FishType, u32>,
     pub crops_harvested: HashMap<CropType, u32>,
     pub forage_harvested: HashMap<ForageType, u32>,
 }
@@ -617,6 +643,16 @@ impl GameState {
         self.advance_minutes(5);
     }
 
+    fn reset_bubble_tiles(&mut self) {
+        for y in 0..SOUTH_RIVER_HEIGHT {
+            for x in 0..SOUTH_RIVER_WIDTH {
+                if self.south_river_map[y][x] == TileType::RiverBubble {
+                    self.south_river_map[y][x] = TileType::River;
+                }
+            }
+        }
+    }
+
     pub fn start_new_day(&mut self) {
         if self.weather_day != self.day {
             self.roll_weather();
@@ -652,6 +688,8 @@ impl GameState {
                 }
             }
         }
+
+        self.reset_bubble_tiles();
 
         self.spawn_random_crops();
 
@@ -1339,6 +1377,78 @@ impl GameState {
         }
     }
 
+    pub fn fishing_action(&mut self) {
+        if self.home_state == HomeState::Income {
+            self.message = String::from("Sleeping... (Income calculated)");
+            return;
+        }
+
+        if let Some((x, y)) = self.tile_in_front() {
+            self.try_fishing_at(x, y);
+        } else {
+            self.message = String::from("No river nearby to fish.");
+        }
+    }
+
+    pub fn fishing_action_at(&mut self, dir: Direction) {
+        if self.home_state == HomeState::Income {
+            self.message = String::from("Sleeping... (Income calculated)");
+            return;
+        }
+
+        if let Some((x, y)) = self.tile_at_direction(dir) {
+            self.try_fishing_at(x, y);
+        } else {
+            self.message = String::from("No river nearby to fish.");
+        }
+    }
+
+    fn try_fishing_at(&mut self, x: usize, y: usize) {
+        if let Some(tile) = self.get_tile_at(x, y) {
+            match tile {
+                TileType::River | TileType::RiverBubble => {
+                    self.perform_fishing(x, y);
+                }
+                _ => {
+                    self.message = String::from("No river nearby to fish.");
+                }
+            }
+        } else {
+            self.message = String::from("No river nearby to fish.");
+        }
+    }
+
+    fn perform_fishing(&mut self, x: usize, y: usize) {
+        let roll = self.rng_seed.wrapping_add(self.total_minutes as u64);
+        let chance = roll % 100;
+
+        if chance < 20 {
+            self.inventory.add_fish(FishType::Common);
+            self.message = String::from("🎉 Nice catch! You got 🐟");
+        } else if chance < 30 {
+            self.inventory.add_fish(FishType::Rare);
+            self.message = String::from("🎉 Amazing catch! You got 🐠");
+        } else {
+            self.message = String::from("No bite this time.");
+        }
+
+        if matches!(self.get_tile_at(x, y), Some(TileType::River)) {
+            let map = self.get_current_map_mut();
+            map[y][x] = TileType::RiverBubble;
+        }
+
+        self.advance_minutes(60);
+    }
+
+    fn get_current_map_mut(&mut self) -> &mut Map {
+        match self.location {
+            Location::Farm => &mut self.farm_map,
+            Location::EastPath => &mut self.east_path_map,
+            Location::Square => &mut self.square_map,
+            Location::SouthRiver => &mut self.south_river_map,
+        }
+    }
+
     pub fn trade_action(&mut self) {
         if self.shop_state == ShopState::None {
             self.shop_state = ShopState::BuyMenu;
@@ -1382,6 +1492,10 @@ impl GameState {
 
     pub fn record_forage_sold(&mut self, forage: ForageType, count: u32) {
         *self.current_income.forage_sold.entry(forage).or_insert(0) += count;
+    }
+
+    pub fn record_fish_sold(&mut self, fish: FishType, count: u32) {
+        *self.current_income.fish_sold.entry(fish).or_insert(0) += count;
     }
 
     pub fn record_crop_harvested(&mut self, crop: CropType, count: u32) {
@@ -2572,5 +2686,132 @@ mod tests {
         let map = state.get_current_map_ref();
         assert_eq!(map.len(), SOUTH_RIVER_HEIGHT);
         assert_eq!(map[0].len(), SOUTH_RIVER_WIDTH);
+    }
+
+    #[test]
+    fn test_fishing_requires_nearby_river() {
+        let mut state = GameState::new();
+        state.location = Location::Farm;
+        state.player_x = 3;
+        state.player_y = 3;
+
+        state.fishing_action();
+        assert!(state.message.contains("No river nearby"));
+    }
+
+    #[test]
+    fn test_fishing_advances_time_by_one_hour() {
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.player_x = 5;
+        state.player_y = 1;
+        state.direction = Direction::Down;
+        state.hour = 10;
+        state.minute = 0;
+        state.total_minutes = 600;
+
+        state.fishing_action();
+
+        assert_eq!(state.hour, 11);
+        assert_eq!(state.minute, 0);
+    }
+
+    #[test]
+    fn test_river_tile_turns_into_bubble_after_fishing() {
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.player_x = 5;
+        state.player_y = 1;
+        state.direction = Direction::Down;
+
+        assert_eq!(state.south_river_map[2][5], TileType::River);
+
+        state.fishing_action();
+
+        assert_eq!(state.south_river_map[2][5], TileType::RiverBubble);
+    }
+
+    #[test]
+    fn test_river_bubble_tile_is_still_fishable() {
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.player_x = 5;
+        state.player_y = 1;
+        state.direction = Direction::Down;
+
+        state.south_river_map[2][5] = TileType::RiverBubble;
+
+        state.fishing_action();
+
+        assert_eq!(state.south_river_map[2][5], TileType::RiverBubble);
+    }
+
+    #[test]
+    fn test_sleep_cycle_resets_bubble_to_river() {
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.south_river_map[2][5] = TileType::RiverBubble;
+        state.south_river_map[3][3] = TileType::RiverBubble;
+
+        state.start_new_day();
+
+        assert_eq!(state.south_river_map[2][5], TileType::River);
+        assert_eq!(state.south_river_map[3][3], TileType::River);
+    }
+
+    #[test]
+    fn test_river_bubble_not_walkable() {
+        let bubble = TileType::RiverBubble;
+        assert!(!bubble.is_walkable());
+    }
+
+    #[test]
+    fn test_fishing_adds_items_to_inventory() {
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.player_x = 5;
+        state.player_y = 1;
+        state.direction = Direction::Down;
+        state.rng_seed = 0;
+        state.total_minutes = 0;
+
+        state.fishing_action();
+
+        assert!(state.inventory.fish_count() > 0 || state.message.contains("No bite"));
+    }
+
+    #[test]
+    fn test_fish_inventory_persists_save_load() {
+        use crate::savegame::{load_game_from_path, save_game_to_path};
+
+        let mut state = GameState::new();
+        state.inventory.fish.insert(FishType::Common, 5);
+        state.inventory.fish.insert(FishType::Rare, 2);
+
+        let test_path = std::env::temp_dir().join("shelldew_fish_test.json");
+        save_game_to_path(&state, &test_path).expect("Save should succeed");
+
+        let loaded = load_game_from_path(&test_path).expect("Load should succeed");
+        assert_eq!(loaded.inventory.fish.get(&FishType::Common), Some(&5));
+        assert_eq!(loaded.inventory.fish.get(&FishType::Rare), Some(&2));
+
+        std::fs::remove_file(&test_path).ok();
+    }
+
+    #[test]
+    fn test_fish_sell_values() {
+        assert_eq!(FishType::Common.sell_price(), 80);
+        assert_eq!(FishType::Rare.sell_price(), 180);
+    }
+
+    #[test]
+    fn test_fish_emoji() {
+        assert_eq!(FishType::Common.emoji(), "🐟");
+        assert_eq!(FishType::Rare.emoji(), "🐠");
     }
 }
