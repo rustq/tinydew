@@ -52,7 +52,7 @@ Deliverable:
 
 ## Phase 3 — Transition Wiring
 
-1. Add East Path middle-bottom transition tile into South River.
+1. Add East Path middle-bottom transition tile (`x=5, y=3`) into South River.
 2. Add South River top-center gate transition back to East Path.
 3. Update player transition handling.
 4. Update guest transition handling.

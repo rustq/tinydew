@@ -33,7 +33,7 @@ Map shape (11 columns × 4 rows):
 ## Transition Rules
 
 ### East Path -> South River
-East Path must open a **middle-bottom** transition tile that leads into South River.
+East Path must open a **middle-bottom** transition tile (`x=5, y=3`) that leads into South River.
 
 ### South River -> East Path
 South River top-center gate tile (`🌿` at row 0, col 5) transitions back to East Path.

@@ -397,7 +397,7 @@ impl GameState {
                 self.guest_location = Location::EastPath;
                 self.location = Location::EastPath;
                 self.guest_x = 5;
-                self.guest_y = 2;
+                self.guest_y = 3;
                 self.message = String::from("Guest returned to East Path!");
             }
             _ => {}
@@ -604,7 +604,7 @@ impl GameState {
                 self.location = Location::EastPath;
                 self.player_location = Location::EastPath;
                 self.player_x = 5;
-                self.player_y = 2;
+                self.player_y = 3;
                 self.direction = Direction::Up;
                 self.message = String::from("Back to East Path!");
             }
@@ -2408,7 +2408,7 @@ mod tests {
         state.location = Location::EastPath;
         state.player_location = Location::EastPath;
         state.player_x = 5;
-        state.player_y = 1;
+        state.player_y = 2;
 
         state.move_player(Direction::Down);
 
@@ -2431,7 +2431,7 @@ mod tests {
         assert_eq!(state.location, Location::EastPath);
         assert_eq!(state.player_location, Location::EastPath);
         assert_eq!(state.player_x, 5);
-        assert_eq!(state.player_y, 2);
+        assert_eq!(state.player_y, 3);
     }
 
     #[test]
@@ -2441,7 +2441,7 @@ mod tests {
         state.guest_location = Location::EastPath;
         state.location = Location::EastPath;
         state.guest_x = 5;
-        state.guest_y = 1;
+        state.guest_y = 2;
 
         state.move_guest(Direction::Down);
 
@@ -2463,7 +2463,7 @@ mod tests {
 
         assert_eq!(state.guest_location, Location::EastPath);
         assert_eq!(state.guest_x, 5);
-        assert_eq!(state.guest_y, 2);
+        assert_eq!(state.guest_y, 3);
     }
 
     #[test]
