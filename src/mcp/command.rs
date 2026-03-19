@@ -402,7 +402,10 @@ fn generate_text_snapshot(state: &GameState) -> String {
     for y in 0..height {
         let line: String = (0..width)
             .map(|x| {
-                if state.player_location == state.location && x == state.player_x && y == state.player_y {
+                if state.player_location == state.location
+                    && x == state.player_x
+                    && y == state.player_y
+                {
                     if state.guest_enabled
                         && state.guest_location == state.location
                         && x == state.guest_x
@@ -1644,6 +1647,123 @@ mod tests {
             found_crop,
             "Expected to find a mature crop after water+sleep cycles. Crop info: {}",
             crop_info
+        );
+    }
+
+    #[test]
+    fn test_print_snapshot_renders_square_dimensions() {
+        use crate::state::Location;
+
+        let mut state = GameState::new();
+        state.location = Location::Square;
+        state.player_location = Location::Square;
+        state.player_x = 5;
+        state.player_y = 1;
+
+        let result = execute_command(&mut state, ParsedCommand::Print);
+        let snapshot = result.snapshot_text.unwrap();
+
+        let map_start = snapshot
+            .lines()
+            .position(|l| l.starts_with("--- Farm Map ---"));
+        assert!(map_start.is_some(), "Map section should exist");
+        let map_start = map_start.unwrap();
+
+        let map_rows: Vec<&str> = snapshot.lines().skip(map_start + 1).take(6).collect();
+        assert_eq!(map_rows.len(), 6, "Square should have 6 rows");
+
+        for row in &map_rows {
+            assert_eq!(
+                row.chars().count(),
+                11,
+                "Each row should have 11 characters"
+            );
+        }
+    }
+
+    #[test]
+    fn test_print_snapshot_contains_fountain_icon_in_square() {
+        use crate::state::Location;
+
+        let mut state = GameState::new();
+        state.location = Location::Square;
+        state.player_location = Location::Square;
+        state.player_x = 1;
+        state.player_y = 1;
+
+        let result = execute_command(&mut state, ParsedCommand::Print);
+        let snapshot = result.snapshot_text.unwrap();
+
+        assert!(
+            snapshot.contains("⛲"),
+            "Square should render fountain icon"
+        );
+    }
+
+    #[test]
+    fn test_print_snapshot_hides_player_when_region_differs_in_square() {
+        use crate::state::Location;
+
+        let mut state = GameState::new();
+        state.location = Location::Square;
+        state.player_location = Location::Farm;
+        state.player_x = 5;
+        state.player_y = 1;
+
+        let result = execute_command(&mut state, ParsedCommand::Print);
+        let snapshot = result.snapshot_text.unwrap();
+
+        let map_start = snapshot
+            .lines()
+            .position(|l| l.starts_with("--- Farm Map ---"));
+        assert!(map_start.is_some(), "Map section should exist");
+        let map_start = map_start.unwrap();
+
+        let map_rows: Vec<&str> = snapshot.lines().skip(map_start + 1).take(6).collect();
+
+        assert!(
+            !map_rows.iter().any(|row| row.contains('🧑')),
+            "Player marker should be hidden when player_location differs from active location"
+        );
+    }
+
+    #[test]
+    fn test_get_map_returns_square_dimensions() {
+        use crate::mcp::state_manager::GameStateManager;
+        use crate::state::Location;
+
+        let mut manager = GameStateManager::new();
+        manager.state.location = Location::Square;
+        manager.state.player_location = Location::Square;
+        manager.state.player_x = 5;
+        manager.state.player_y = 1;
+
+        let map_data = manager.to_map_snapshot(false);
+
+        assert_eq!(map_data.get("width").unwrap().as_u64().unwrap(), 11);
+        assert_eq!(map_data.get("height").unwrap().as_u64().unwrap(), 6);
+    }
+
+    #[test]
+    fn test_get_map_contains_fountain_when_in_square() {
+        use crate::mcp::state_manager::GameStateManager;
+        use crate::state::Location;
+
+        let mut manager = GameStateManager::new();
+        manager.state.location = Location::Square;
+        manager.state.player_location = Location::Square;
+        manager.state.player_x = 1;
+        manager.state.player_y = 1;
+
+        let map_data = manager.to_map_snapshot(true);
+        let tiles = map_data.get("tiles").unwrap().as_array().unwrap();
+
+        let fountain_row = tiles.get(2).unwrap().as_array().unwrap();
+        let fountain_tile = fountain_row.get(5).unwrap().as_str().unwrap();
+
+        assert!(
+            fountain_tile.contains("Fountain"),
+            "Fountain tile should be present at center"
         );
     }
 }

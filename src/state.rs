@@ -1,6 +1,7 @@
 use crate::world::{
     CropState, CropType, Direction, EAST_PATH_HEIGHT, EAST_PATH_WIDTH, FARM_HEIGHT, FARM_WIDTH,
-    ForageType, Map, TileType, Weather, create_east_path_map, create_farm_map,
+    ForageType, Map, SQUARE_HEIGHT, SQUARE_WIDTH, TileType, Weather, create_east_path_map,
+    create_farm_map, create_square_map,
 };
 use crossterm::event::KeyCode;
 use serde::{Deserialize, Serialize};
@@ -17,6 +18,7 @@ pub enum HomeState {
 pub enum Location {
     Farm,
     EastPath,
+    Square,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -115,6 +117,7 @@ pub struct GameState {
     pub player_location: Location,
     pub farm_map: Map,
     pub east_path_map: Map,
+    pub square_map: Map,
     pub player_x: usize,
     pub player_y: usize,
     pub direction: Direction,
@@ -154,12 +157,14 @@ impl GameState {
         let (player_x, player_y) = find_player_start(&farm_map);
 
         let east_path_map = create_east_path_map();
+        let square_map = create_square_map();
 
         Self {
             location: Location::Farm,
             player_location: Location::Farm,
             farm_map,
             east_path_map,
+            square_map,
             player_x,
             player_y,
             direction: Direction::Down,
@@ -223,11 +228,20 @@ impl GameState {
 
     fn find_guest_spawn_location_in(&self, location: Location) -> Option<(usize, usize)> {
         let (map, width, height) = match location {
-            Location::Farm => (&self.farm_map, crate::world::FARM_WIDTH, crate::world::FARM_HEIGHT),
+            Location::Farm => (
+                &self.farm_map,
+                crate::world::FARM_WIDTH,
+                crate::world::FARM_HEIGHT,
+            ),
             Location::EastPath => (
                 &self.east_path_map,
                 crate::world::EAST_PATH_WIDTH,
                 crate::world::EAST_PATH_HEIGHT,
+            ),
+            Location::Square => (
+                &self.square_map,
+                crate::world::SQUARE_WIDTH,
+                crate::world::SQUARE_HEIGHT,
             ),
         };
 
@@ -253,13 +267,13 @@ impl GameState {
             return false;
         }
 
-        let (width, height) = if self.guest_location == Location::Farm {
-            (crate::world::FARM_WIDTH, crate::world::FARM_HEIGHT)
-        } else {
-            (
+        let (width, height) = match self.guest_location {
+            Location::Farm => (crate::world::FARM_WIDTH, crate::world::FARM_HEIGHT),
+            Location::EastPath => (
                 crate::world::EAST_PATH_WIDTH,
                 crate::world::EAST_PATH_HEIGHT,
-            )
+            ),
+            Location::Square => (crate::world::SQUARE_WIDTH, crate::world::SQUARE_HEIGHT),
         };
 
         if x >= width || y >= height {
@@ -269,6 +283,7 @@ impl GameState {
         let map = match self.guest_location {
             Location::Farm => &self.farm_map,
             Location::EastPath => &self.east_path_map,
+            Location::Square => &self.square_map,
         };
 
         let tile = map[y][x];
@@ -282,6 +297,17 @@ impl GameState {
     pub fn move_guest(&mut self, direction: Direction) -> bool {
         if !self.guest_enabled {
             return false;
+        }
+
+        let current_tile = match self.guest_location {
+            Location::Farm => self.farm_map[self.guest_y][self.guest_x],
+            Location::EastPath => self.east_path_map[self.guest_y][self.guest_x],
+            Location::Square => self.square_map[self.guest_y][self.guest_x],
+        };
+
+        if current_tile.is_transition() {
+            self.handle_guest_transition_at(self.guest_x, self.guest_y);
+            return true;
         }
 
         let (dx, dy) = direction.delta();
@@ -299,6 +325,7 @@ impl GameState {
             let target_tile = match self.guest_location {
                 Location::Farm => self.farm_map[new_y][new_x],
                 Location::EastPath => self.east_path_map[new_y][new_x],
+                Location::Square => self.square_map[new_y][new_x],
             };
 
             if target_tile.is_transition() {
@@ -319,22 +346,43 @@ impl GameState {
         }
     }
 
-    fn handle_guest_transition_at(&mut self, _x: usize, _y: usize) {
-        match self.guest_location {
-            Location::Farm => {
+    fn handle_guest_transition_at(&mut self, x: usize, y: usize) {
+        let tile = match self.guest_location {
+            Location::Farm => self.farm_map[y][x],
+            Location::EastPath => self.east_path_map[y][x],
+            Location::Square => self.square_map[y][x],
+        };
+
+        match (self.guest_location, tile) {
+            (Location::Farm, TileType::PathEast) => {
                 self.guest_location = Location::EastPath;
                 self.location = Location::EastPath;
                 self.guest_x = 1;
                 self.guest_y = 2;
                 self.message = String::from("Guest entered East Path!");
             }
-            Location::EastPath => {
+            (Location::EastPath, TileType::PathFarm) => {
                 self.guest_location = Location::Farm;
                 self.location = Location::Farm;
                 self.guest_x = 7;
                 self.guest_y = 5;
                 self.message = String::from("Guest returned to Farm!");
             }
+            (Location::EastPath, TileType::PathSquare) => {
+                self.guest_location = Location::Square;
+                self.location = Location::Square;
+                self.guest_x = 5;
+                self.guest_y = 1;
+                self.message = String::from("Guest entered Square!");
+            }
+            (Location::Square, TileType::PathSquare) => {
+                self.guest_location = Location::EastPath;
+                self.location = Location::EastPath;
+                self.guest_x = 5;
+                self.guest_y = 0;
+                self.message = String::from("Guest left Square!");
+            }
+            _ => {}
         }
     }
 
@@ -370,6 +418,7 @@ impl GameState {
         match self.location {
             Location::Farm => &self.farm_map,
             Location::EastPath => &self.east_path_map,
+            Location::Square => &self.square_map,
         }
     }
 
@@ -377,6 +426,7 @@ impl GameState {
         match self.location {
             Location::Farm => &mut self.farm_map,
             Location::EastPath => &mut self.east_path_map,
+            Location::Square => &mut self.square_map,
         }
     }
 
@@ -384,6 +434,7 @@ impl GameState {
         match self.location {
             Location::Farm => (FARM_WIDTH, FARM_HEIGHT),
             Location::EastPath => (EAST_PATH_WIDTH, EAST_PATH_HEIGHT),
+            Location::Square => (SQUARE_WIDTH, SQUARE_HEIGHT),
         }
     }
 
@@ -441,6 +492,14 @@ impl GameState {
         }
 
         self.direction = direction;
+
+        let current_tile = self.get_tile_at(self.player_x, self.player_y);
+        if let Some(tile) = current_tile {
+            if tile.is_transition() {
+                self.handle_transition(&tile);
+                return true;
+            }
+        }
 
         let (dx, dy) = direction.delta();
         let new_x = self.player_x as i32 + dx;
@@ -503,6 +562,22 @@ impl GameState {
                 self.player_y = 5;
                 self.direction = Direction::Left;
                 self.message = String::from("Back at the farm!");
+            }
+            (Location::EastPath, TileType::PathSquare) => {
+                self.location = Location::Square;
+                self.player_location = Location::Square;
+                self.player_x = 5;
+                self.player_y = 1;
+                self.direction = Direction::Down;
+                self.message = String::from("Welcome to the Square!");
+            }
+            (Location::Square, TileType::PathSquare) => {
+                self.location = Location::EastPath;
+                self.player_location = Location::EastPath;
+                self.player_x = 5;
+                self.player_y = 0;
+                self.direction = Direction::Down;
+                self.message = String::from("Left the Square!");
             }
             _ => {}
         }
@@ -887,6 +962,9 @@ impl GameState {
                     self.message = String::from("Clear Done! (Crop uprooted)");
                     self.advance_time();
                 }
+                Some(TileType::Fountain) => {
+                    self.message = String::from("Cannot clear the fountain!");
+                }
                 _ => {
                     self.message =
                         String::from("Nothing to clear! (Only weeds/crops can be cleared)");
@@ -921,6 +999,9 @@ impl GameState {
                     self.message = format!("Clear Done! (Uprooted {:?})", dir);
                     self.advance_time();
                 }
+                Some(TileType::Fountain) => {
+                    self.message = String::from("Cannot clear the fountain!");
+                }
                 _ => {
                     self.message =
                         String::from("Nothing to clear! (Only weeds/crops can be cleared)");
@@ -944,6 +1025,10 @@ impl GameState {
 
         if let Some((x, y)) = self.tile_in_front() {
             let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Fountain) = tile {
+                self.message = String::from("Cannot plant on the fountain!");
+                return;
+            }
             if let Some(TileType::Soil) = tile {
                 if self.inventory.use_seed(self.selected_seed) {
                     self.farm_map[y][x] = TileType::Crop(self.selected_seed, CropState::new());
@@ -977,6 +1062,10 @@ impl GameState {
 
         if let Some((x, y)) = self.tile_at_direction(dir) {
             let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Fountain) = tile {
+                self.message = String::from("Cannot plant on the fountain!");
+                return;
+            }
             if let Some(TileType::Soil) = tile {
                 if self.inventory.use_seed(self.selected_seed) {
                     self.farm_map[y][x] = TileType::Crop(self.selected_seed, CropState::new());
@@ -1013,6 +1102,10 @@ impl GameState {
 
         if let Some((x, y)) = self.tile_in_front() {
             let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Fountain) = tile {
+                self.message = String::from("Cannot water the fountain!");
+                return;
+            }
             if let Some(TileType::Crop(crop, state)) = tile {
                 if !state.is_mature(crop) {
                     self.farm_map[y][x] = TileType::Crop(
@@ -1048,6 +1141,10 @@ impl GameState {
 
         if let Some((x, y)) = self.tile_at_direction(dir) {
             let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Fountain) = tile {
+                self.message = String::from("Cannot water the fountain!");
+                return;
+            }
             if let Some(TileType::Crop(crop, state)) = tile {
                 if !state.is_mature(crop) {
                     self.farm_map[y][x] = TileType::Crop(
@@ -1078,12 +1175,18 @@ impl GameState {
 
         if let Some((x, y)) = self.tile_in_front() {
             let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Fountain) = tile {
+                self.message = String::from("Nothing to harvest from the fountain!");
+                return;
+            }
             if let Some(TileType::Crop(crop, state)) = tile {
                 if state.is_mature(crop) {
                     if self.location == Location::Farm {
                         self.farm_map[y][x] = TileType::Soil;
-                    } else {
+                    } else if self.location == Location::EastPath {
                         self.east_path_map[y][x] = TileType::Grass;
+                    } else {
+                        self.square_map[y][x] = TileType::Grass;
                     }
                     self.inventory.add_produce(crop);
                     self.record_crop_harvested(crop, 1);
@@ -1096,6 +1199,8 @@ impl GameState {
                 if self.player_location == Location::Farm {
                     self.farm_map[y][x] = TileType::Grass;
                 } else if let Some(map_row) = self.east_path_map.get_mut(y) {
+                    map_row[x] = TileType::Grass;
+                } else if let Some(map_row) = self.square_map.get_mut(y) {
                     map_row[x] = TileType::Grass;
                 }
                 self.inventory.add_forage(ForageType::Mushroom);
@@ -1118,12 +1223,18 @@ impl GameState {
 
         if let Some((x, y)) = self.tile_at_direction(dir) {
             let tile = self.get_tile_at(x, y);
+            if let Some(TileType::Fountain) = tile {
+                self.message = String::from("Nothing to harvest from the fountain!");
+                return;
+            }
             if let Some(TileType::Crop(crop, state)) = tile {
                 if state.is_mature(crop) {
                     if self.location == Location::Farm {
                         self.farm_map[y][x] = TileType::Soil;
-                    } else {
+                    } else if self.location == Location::EastPath {
                         self.east_path_map[y][x] = TileType::Grass;
+                    } else {
+                        self.square_map[y][x] = TileType::Grass;
                     }
                     self.inventory.add_produce(crop);
                     self.record_crop_harvested(crop, 1);
@@ -1137,6 +1248,8 @@ impl GameState {
                 if self.player_location == Location::Farm {
                     self.farm_map[y][x] = TileType::Grass;
                 } else if let Some(map_row) = self.east_path_map.get_mut(y) {
+                    map_row[x] = TileType::Grass;
+                } else if let Some(map_row) = self.square_map.get_mut(y) {
                     map_row[x] = TileType::Grass;
                 }
                 self.inventory.add_forage(ForageType::Mushroom);
@@ -1857,7 +1970,10 @@ mod tests {
         state.guest_y = 2;
 
         let moved = state.move_guest(Direction::Right);
-        assert!(moved, "Guest should move when player is in a different region");
+        assert!(
+            moved,
+            "Guest should move when player is in a different region"
+        );
         assert_eq!(state.guest_x, 2);
         assert_eq!(state.guest_y, 2);
     }
@@ -1958,5 +2074,190 @@ mod tests {
         assert_eq!(loaded.active_control, ControlTarget::Guest);
 
         std::fs::remove_file(&test_path).ok();
+    }
+
+    #[test]
+    fn test_square_map_layout_dimensions_and_fountain_position() {
+        use crate::world::create_square_map;
+        let square_map = create_square_map();
+
+        assert_eq!(square_map.len(), SQUARE_HEIGHT);
+        assert_eq!(square_map[0].len(), SQUARE_WIDTH);
+
+        assert_eq!(square_map[2][5], TileType::Fountain);
+    }
+
+    #[test]
+    fn test_square_fountain_not_walkable() {
+        assert!(!TileType::Fountain.is_walkable());
+    }
+
+    #[test]
+    fn test_square_boundary_not_walkable() {
+        assert!(!TileType::Boundary.is_walkable());
+    }
+
+    #[test]
+    fn test_square_transition_enter_from_east_path() {
+        let mut state = GameState::new();
+        state.location = Location::EastPath;
+        state.player_location = Location::EastPath;
+        state.player_x = 5;
+        state.player_y = 0;
+
+        state.move_player(Direction::Down);
+
+        assert_eq!(state.location, Location::Square);
+        assert_eq!(state.player_location, Location::Square);
+        assert_eq!(state.player_x, 5);
+        assert_eq!(state.player_y, 1);
+    }
+
+    #[test]
+    fn test_square_transition_exit_to_east_path() {
+        let mut state = GameState::new();
+        state.location = Location::Square;
+        state.player_location = Location::Square;
+        state.player_x = 5;
+        state.player_y = 4;
+
+        state.move_player(Direction::Down);
+
+        assert_eq!(state.location, Location::EastPath);
+        assert_eq!(state.player_location, Location::EastPath);
+        assert_eq!(state.player_x, 5);
+        assert_eq!(state.player_y, 0);
+    }
+
+    #[test]
+    fn test_guest_cannot_move_onto_square_fountain() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.guest_location = Location::Square;
+        state.guest_x = 5;
+        state.guest_y = 1;
+
+        let can_move = state.can_move_guest_to(5, 2);
+        assert!(!can_move, "Guest should not be able to move onto fountain");
+    }
+
+    #[test]
+    fn test_square_actions_reject_fountain_target() {
+        let mut state = GameState::new();
+        state.location = Location::Farm;
+        state.player_x = 2;
+        state.player_y = 2;
+
+        state.clear_action();
+        assert!(!state.message.contains("fountain"));
+
+        state.farm_map[2][3] = TileType::Fountain;
+        state.clear_action_at(Direction::Right);
+        assert!(state.message.contains("fountain") || state.message.contains("Cannot clear"));
+    }
+
+    #[test]
+    fn test_square_plant_forbidden_on_all_tiles() {
+        let mut state = GameState::new();
+        state.location = Location::Square;
+        state.player_location = Location::Square;
+        state.inventory.seeds.insert(CropType::Carrot, 5);
+
+        state.plant_action();
+        assert!(state.message.contains("Cannot plant here"));
+
+        state.location = Location::EastPath;
+        state.player_location = Location::EastPath;
+        state.plant_action();
+        assert!(state.message.contains("Cannot plant here"));
+    }
+
+    #[test]
+    fn test_square_clear_forbidden_on_all_tiles() {
+        let mut state = GameState::new();
+        state.location = Location::Square;
+        state.player_location = Location::Square;
+
+        state.clear_action();
+        assert!(state.message.contains("Cannot clear here"));
+
+        state.location = Location::EastPath;
+        state.player_location = Location::EastPath;
+        state.clear_action();
+        assert!(state.message.contains("Cannot clear here"));
+    }
+
+    #[test]
+    fn test_square_save_load_roundtrip() {
+        use crate::savegame::{load_game_from_path, save_game_to_path};
+
+        let mut state = GameState::new();
+        state.location = Location::Square;
+        state.player_location = Location::Square;
+        state.player_x = 5;
+        state.player_y = 2;
+
+        let test_path = std::env::temp_dir().join("shelldew_square_test.json");
+        save_game_to_path(&state, &test_path).expect("Save should succeed");
+
+        let loaded = load_game_from_path(&test_path).expect("Load should succeed");
+
+        assert_eq!(loaded.location, Location::Square);
+        assert_eq!(loaded.player_location, Location::Square);
+        assert_eq!(loaded.player_x, 5);
+        assert_eq!(loaded.player_y, 2);
+
+        std::fs::remove_file(&test_path).ok();
+    }
+
+    #[test]
+    fn test_guest_transition_square_to_east_path() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.guest_location = Location::Square;
+        state.location = Location::Square;
+        state.guest_x = 5;
+        state.guest_y = 4;
+
+        state.move_guest(Direction::Down);
+
+        assert_eq!(state.guest_location, Location::EastPath);
+        assert_eq!(state.guest_x, 5);
+        assert_eq!(state.guest_y, 0);
+    }
+
+    #[test]
+    fn test_guest_transition_east_path_to_square() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.guest_location = Location::EastPath;
+        state.location = Location::EastPath;
+        state.guest_x = 5;
+        state.guest_y = 0;
+
+        state.move_guest(Direction::Down);
+
+        assert_eq!(state.guest_location, Location::Square);
+        assert_eq!(state.guest_x, 5);
+        assert_eq!(state.guest_y, 1);
+    }
+
+    #[test]
+    fn test_fountain_blocks_all_directions() {
+        let mut state = GameState::new();
+        state.location = Location::Square;
+        state.player_location = Location::Square;
+        state.player_x = 4;
+        state.player_y = 2;
+
+        let can_up = state.can_move_to(4, 1);
+        let can_down = state.can_move_to(4, 3);
+        let can_left = state.can_move_to(3, 2);
+        let can_right = state.can_move_to(6, 2);
+
+        assert!(can_up, "Should be able to move up (grass)");
+        assert!(can_down, "Should be able to move down (grass)");
+        assert!(can_left, "Should be able to move left (grass)");
+        assert!(can_right, "Should be able to move right (grass)");
     }
 }

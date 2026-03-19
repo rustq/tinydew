@@ -30,8 +30,10 @@ pub enum TileType {
     House,
     PathEast,
     PathFarm,
+    PathSquare,
     Player,
     Mushroom,
+    Fountain,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -159,18 +161,23 @@ impl TileType {
         match self {
             TileType::Boundary => false,
             TileType::Crop(_, _) => false,
+            TileType::Fountain => false,
+            TileType::Mushroom => false,
             TileType::Grass
             | TileType::Soil
             | TileType::House
             | TileType::PathEast
             | TileType::PathFarm
+            | TileType::PathSquare
             | TileType::Player => true,
-            TileType::Mushroom => false,
         }
     }
 
     pub fn is_transition(&self) -> bool {
-        matches!(self, TileType::PathEast | TileType::PathFarm)
+        matches!(
+            self,
+            TileType::PathEast | TileType::PathFarm | TileType::PathSquare
+        )
     }
 
     pub fn emoji(&self) -> &'static str {
@@ -188,8 +195,10 @@ impl TileType {
             TileType::House => "🏠",
             TileType::PathEast => "🌿",
             TileType::PathFarm => "🌿",
+            TileType::PathSquare => "🌿",
             TileType::Player => "🧑",
             TileType::Mushroom => "🍄",
+            TileType::Fountain => "⛲",
         }
     }
 }
@@ -301,7 +310,7 @@ pub fn create_east_path_map() -> Map {
             TileType::Boundary,
             TileType::Boundary,
             TileType::Boundary,
-            TileType::Boundary,
+            TileType::PathSquare,
             TileType::Boundary,
             TileType::Boundary,
             TileType::Boundary,
@@ -350,7 +359,92 @@ pub fn create_east_path_map() -> Map {
     ]
 }
 
+pub fn create_square_map() -> Map {
+    vec![
+        vec![
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+        ],
+        vec![
+            TileType::Boundary,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Boundary,
+        ],
+        vec![
+            TileType::Boundary,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Fountain,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Boundary,
+        ],
+        vec![
+            TileType::Boundary,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Boundary,
+        ],
+        vec![
+            TileType::Boundary,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::PathSquare,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
+            TileType::Boundary,
+        ],
+        vec![
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+        ],
+    ]
+}
+
 pub const FARM_WIDTH: usize = 8;
 pub const FARM_HEIGHT: usize = 8;
 pub const EAST_PATH_WIDTH: usize = 11;
 pub const EAST_PATH_HEIGHT: usize = 4;
+pub const SQUARE_WIDTH: usize = 11;
+pub const SQUARE_HEIGHT: usize = 6;

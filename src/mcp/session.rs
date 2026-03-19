@@ -132,8 +132,10 @@ impl Session {
             TileType::House => "H".to_string(),
             TileType::PathEast => "P".to_string(),
             TileType::PathFarm => "P".to_string(),
+            TileType::PathSquare => "P".to_string(),
             TileType::Player => "@".to_string(),
             TileType::Mushroom => "M".to_string(),
+            TileType::Fountain => "F".to_string(),
         }
     }
 
@@ -154,8 +156,10 @@ impl Session {
             TileType::House => "House".to_string(),
             TileType::PathEast => "PathEast".to_string(),
             TileType::PathFarm => "PathFarm".to_string(),
+            TileType::PathSquare => "PathSquare".to_string(),
             TileType::Player => "Player".to_string(),
             TileType::Mushroom => "Mushroom".to_string(),
+            TileType::Fountain => "Fountain".to_string(),
         }
     }
 
