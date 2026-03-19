@@ -125,6 +125,13 @@ Ensure save/load serializes/deserializes Square map and `Location::Square`.
 - Must return Square width/height and tile grid when in Square.
 - Include correct tile codes/details for fountain and transition tile(s).
 
+### MCP `getState` / snapshots (entity separation)
+- State output must include both independent entities when guest is enabled:
+  - `player`: `x`, `y`, `location`
+  - `guest`: `x`, `y`, `location`, `enabled`, `active`
+- `active_control=Guest` movement must update guest coordinates/location only.
+- `active_control=Player` movement must update player coordinates/location only.
+
 ---
 
 ## Command/Action Semantics

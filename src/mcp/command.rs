@@ -445,23 +445,57 @@ fn generate_text_snapshot(state: &GameState) -> String {
 pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResult {
     match cmd {
         ParsedCommand::Move(direction) => {
-            let old_x = state.player_x;
-            let old_y = state.player_y;
-            let moved = state.move_player(direction);
-            let new_x = state.player_x;
-            let new_y = state.player_y;
+            let moving_guest = state.guest_enabled
+                && state.active_control == crate::state::ControlTarget::Guest;
+
+            let (old_x, old_y) = if moving_guest {
+                (state.guest_x, state.guest_y)
+            } else {
+                (state.player_x, state.player_y)
+            };
+
+            let moved = if moving_guest {
+                state.move_guest(direction)
+            } else {
+                state.move_player(direction)
+            };
+
+            let (new_x, new_y) = if moving_guest {
+                (state.guest_x, state.guest_y)
+            } else {
+                (state.player_x, state.player_y)
+            };
 
             let event = if moved && (old_x != new_x || old_y != new_y) {
-                format!("Moved {:?} to ({}, {})", direction, new_x, new_y)
+                if moving_guest {
+                    format!("Moved guest {:?} to ({}, {})", direction, new_x, new_y)
+                } else {
+                    format!("Moved {:?} to ({}, {})", direction, new_x, new_y)
+                }
             } else {
                 state.message.clone()
             };
 
+            let mut delta = serde_json::json!({
+                "player": {
+                    "x": state.player_x,
+                    "y": state.player_y,
+                    "location": format!("{:?}", state.player_location)
+                }
+            });
+
+            if moving_guest {
+                delta["guest"] = serde_json::json!({
+                    "x": state.guest_x,
+                    "y": state.guest_y,
+                    "location": format!("{:?}", state.guest_location)
+                });
+                delta["active_control"] = serde_json::json!("Guest");
+            }
+
             CommandResult::new(state.message.clone())
                 .with_events(vec![event])
-                .with_state_delta(serde_json::json!({
-                    "player": { "x": new_x, "y": new_y }
-                }))
+                .with_state_delta(delta)
         }
         ParsedCommand::Clear(dir) => {
             match dir {
@@ -890,6 +924,28 @@ mod tests {
         let result = execute_command(&mut state, ParsedCommand::Move(Direction::Down));
         assert!(!result.message.is_empty());
         assert!(!result.events.is_empty());
+    }
+
+    #[test]
+    fn test_execute_move_routes_to_guest_when_guest_active() {
+        let mut state = GameState::new();
+        state.guest_enabled = true;
+        state.active_control = crate::state::ControlTarget::Guest;
+        state.location = Location::Farm;
+        state.guest_location = Location::Farm;
+        state.guest_x = 1;
+        state.guest_y = 1;
+
+        state.player_x = 4;
+        state.player_y = 4;
+
+        let result = execute_command(&mut state, ParsedCommand::Move(Direction::Right));
+
+        assert!(!result.message.is_empty());
+        assert_eq!(state.guest_x, 2, "Guest should have moved right");
+        assert_eq!(state.guest_y, 1, "Guest Y should stay same");
+        assert_eq!(state.player_x, 4, "Player X should remain unchanged");
+        assert_eq!(state.player_y, 4, "Player Y should remain unchanged");
     }
 
     #[test]

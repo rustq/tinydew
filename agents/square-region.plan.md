@@ -131,8 +131,16 @@ Deliverable:
 ### 5.3 MCP `getMap` updates
 - Return correct Square dimensions + tile encoding/details (including fountain and transition tiles).
 
+### 5.4 MCP entity state separation updates
+- Ensure `getState` snapshot includes guest block when guest is enabled.
+- Ensure move command routes by `active_control`:
+  - Guest active -> move guest only
+  - Player active -> move player only
+- Add regression coverage for independent player/guest position+location updates.
+
 Deliverable:
 - All user-facing map outputs correctly show Square.
+- MCP state/control flow preserves independent player vs guest state.
 
 ---
 

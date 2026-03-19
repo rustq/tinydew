@@ -61,7 +61,7 @@ impl GameStateManager {
     }
 
     pub fn to_snapshot(&self) -> serde_json::Value {
-        serde_json::json!({
+        let mut snapshot = serde_json::json!({
             "day": self.state.day,
             "time": self.state.format_time(),
             "weather": format!("{:?}", self.state.weather),
@@ -81,7 +81,19 @@ impl GameStateManager {
                 "location": format!("{:?}", self.state.player_location),
             },
             "status": "ok"
-        })
+        });
+
+        if self.state.guest_enabled {
+            snapshot["guest"] = serde_json::json!({
+                "enabled": self.state.guest_enabled,
+                "x": self.state.guest_x,
+                "y": self.state.guest_y,
+                "location": format!("{:?}", self.state.guest_location),
+                "active": self.state.active_control == crate::state::ControlTarget::Guest,
+            });
+        }
+
+        snapshot
     }
 
     pub fn to_map_snapshot(&self, include_entities: bool) -> serde_json::Value {
@@ -221,6 +233,26 @@ mod tests {
         let snapshot = manager.to_snapshot();
         assert_eq!(snapshot.get("day").unwrap().as_u64().unwrap(), 1);
         assert_eq!(snapshot.get("status").unwrap(), "ok");
+    }
+
+    #[test]
+    fn test_to_snapshot_includes_guest_when_enabled() {
+        let mut manager = GameStateManager::new();
+        manager.state.guest_enabled = true;
+        manager.state.guest_x = 4;
+        manager.state.guest_y = 2;
+        manager.state.guest_location = crate::state::Location::Square;
+        manager.state.active_control = crate::state::ControlTarget::Guest;
+
+        let snapshot = manager.to_snapshot();
+        let guest = snapshot
+            .get("guest")
+            .expect("guest block should exist when guest is enabled");
+
+        assert_eq!(guest.get("x").and_then(|v| v.as_u64()), Some(4));
+        assert_eq!(guest.get("y").and_then(|v| v.as_u64()), Some(2));
+        assert_eq!(guest.get("location").and_then(|v| v.as_str()), Some("Square"));
+        assert_eq!(guest.get("active").and_then(|v| v.as_bool()), Some(true));
     }
 
     #[test]
