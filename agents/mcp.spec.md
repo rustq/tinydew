@@ -95,10 +95,10 @@ Execute one gameplay command.
 
 Supported command grammar:
 - `move:up|down|left|right`
-- `clear`
-- `plant:<crop>` where crop in `carrot|strawberry|cauliflower|rhubarb`
-- `water`
-- `harvest`
+- `clear` (adjacent auto-target; no facing dependency)
+- `plant:<crop>` where crop in `carrot|strawberry|cauliflower|rhubarb` (adjacent auto-target)
+- `water` (adjacent auto-target)
+- `harvest` (adjacent auto-target)
 - `buy:<item>[:<qty>]`
 - `sell:<item>[:<qty>]`
 - `print` (returns text snapshot payload)

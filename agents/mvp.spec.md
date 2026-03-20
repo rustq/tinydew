@@ -164,7 +164,12 @@ Movement restrictions:
 
 # 7. Farming Interaction
 
-All actions apply to the tile in front of the player.
+Actions target adjacent tiles and do not depend on facing direction.
+For default action commands, choose target tile from adjacent neighbors using deterministic priority:
+1. Up
+2. Right
+3. Down
+4. Left
 
 All the interaction done will show message XXX Done! at bottom ui
 

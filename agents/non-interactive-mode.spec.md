@@ -29,10 +29,10 @@ Commands are passed as `<action>[:<target>]` (or extended forms shown below):
 
 ```text
 move:<direction>             direction: up|down|left|right
-clear                        clear tile in front
-plant:<crop>                 crop required: carrot|strawberry|cauliflower|rhubarb
-water                        water tile in front
-harvest                      harvest tile in front
+clear                        clear adjacent target (auto-select: up→right→down→left)
+plant:<crop>                 crop required: carrot|strawberry|cauliflower|rhubarb; adjacent target auto-select
+water                        water adjacent target (auto-select: up→right→down→left)
+harvest                      harvest adjacent target (auto-select: up→right→down→left)
 buy:<item>[:<qty>]           buy item with optional qty (default 1)
 sell:<item>[:<qty>]          sell item with optional qty (default 1)
 sleep                        sleep (advance to next day)

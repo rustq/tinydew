@@ -415,7 +415,7 @@ impl GameState {
             (Location::EastPath, TileType::PathSouthRiver) => {
                 self.guest_location = Location::SouthRiver;
                 self.location = Location::SouthRiver;
-                self.guest_x = 5;
+                self.guest_x = 2;
                 self.guest_y = 1;
                 self.message = String::from("Guest entered South River!");
             }
@@ -511,6 +511,32 @@ impl GameState {
         } else {
             None
         }
+    }
+
+    fn adjacent_tiles_priority(&self) -> Vec<(usize, usize)> {
+        [
+            Direction::Up,
+            Direction::Right,
+            Direction::Down,
+            Direction::Left,
+        ]
+        .iter()
+        .filter_map(|dir| self.tile_at_direction(*dir))
+        .collect()
+    }
+
+    fn find_adjacent_tile<F>(&self, mut predicate: F) -> Option<(usize, usize)>
+    where
+        F: FnMut(TileType) -> bool,
+    {
+        for (x, y) in self.adjacent_tiles_priority() {
+            if let Some(tile) = self.get_tile_at(x, y)
+                && predicate(tile)
+            {
+                return Some((x, y));
+            }
+        }
+        None
     }
 
     pub fn can_move_to(&self, x: usize, y: usize) -> bool {
@@ -621,7 +647,7 @@ impl GameState {
             (Location::EastPath, TileType::PathSouthRiver) => {
                 self.location = Location::SouthRiver;
                 self.player_location = Location::SouthRiver;
-                self.player_x = 5;
+                self.player_x = 2;
                 self.player_y = 1;
                 self.direction = Direction::Down;
                 self.message = String::from("Welcome to South River!");
@@ -786,15 +812,13 @@ impl GameState {
         }
         self.last_spawn_processed_day = self.day;
 
-        if !self.spring_forced_flower_6_2_done {
-            if self.farm_map[2][6] == TileType::Grass {
-                let mature_state = CropState {
-                    days_grown: 16,
-                    watered_today: false,
-                };
-                self.farm_map[2][6] = TileType::Crop(CropType::Rhubarb, mature_state);
-                self.spring_forced_flower_6_2_done = true;
-            }
+        if !self.spring_forced_flower_6_2_done && self.farm_map[2][6] == TileType::Grass {
+            let mature_state = CropState {
+                days_grown: 16,
+                watered_today: false,
+            };
+            self.farm_map[2][6] = TileType::Crop(CropType::Rhubarb, mature_state);
+            self.spring_forced_flower_6_2_done = true;
         }
 
         let flower_seed = self
@@ -980,6 +1004,8 @@ impl GameState {
         let mut remaining = minutes;
         while remaining > 0 {
             self.minute += 1;
+            self.total_minutes = (self.total_minutes + 1) % 1440;
+
             if self.minute >= 60 {
                 self.minute = 0;
                 self.hour += 1;
@@ -1024,7 +1050,9 @@ impl GameState {
             return;
         }
 
-        if let Some((x, y)) = self.tile_in_front() {
+        if let Some((x, y)) =
+            self.find_adjacent_tile(|tile| matches!(tile, TileType::Grass | TileType::Crop(_, _)))
+        {
             let tile = self.get_tile_at(x, y);
             match tile {
                 Some(TileType::Grass) => {
@@ -1049,7 +1077,7 @@ impl GameState {
                 }
             }
         } else {
-            self.message = String::from("Nothing in front!");
+            self.message = String::from("Nothing to clear! (Only weeds/crops can be cleared)");
         }
     }
 
@@ -1104,33 +1132,19 @@ impl GameState {
             return;
         }
 
-        if let Some((x, y)) = self.tile_in_front() {
-            let tile = self.get_tile_at(x, y);
-            if let Some(TileType::Fountain) = tile {
-                self.message = String::from("Cannot plant on the fountain!");
-                return;
-            }
-            if let Some(TileType::Slide) = tile {
-                self.message = String::from("Cannot plant on the slide!");
-                return;
-            }
-            if let Some(TileType::Soil) = tile {
-                if self.inventory.use_seed(self.selected_seed) {
-                    self.farm_map[y][x] = TileType::Crop(self.selected_seed, CropState::new());
-                    self.message =
-                        format!("Plant Done! (Planted {})", self.selected_seed.seed_name());
-                    self.advance_time();
-                } else {
-                    self.message = format!(
-                        "No {} seeds! Press T to buy seeds.",
-                        self.selected_seed.seed_name()
-                    );
-                }
+        if let Some((x, y)) = self.find_adjacent_tile(|tile| matches!(tile, TileType::Soil)) {
+            if self.inventory.use_seed(self.selected_seed) {
+                self.farm_map[y][x] = TileType::Crop(self.selected_seed, CropState::new());
+                self.message = format!("Plant Done! (Planted {})", self.selected_seed.seed_name());
+                self.advance_time();
             } else {
-                self.message = String::from("Cannot plant there! (Need cleared soil)");
+                self.message = format!(
+                    "No {} seeds! Press T to buy seeds.",
+                    self.selected_seed.seed_name()
+                );
             }
         } else {
-            self.message = String::from("Nothing in front!");
+            self.message = String::from("Cannot plant there! (Need cleared soil)");
         }
     }
 
@@ -1189,16 +1203,8 @@ impl GameState {
             return;
         }
 
-        if let Some((x, y)) = self.tile_in_front() {
+        if let Some((x, y)) = self.find_adjacent_tile(|tile| matches!(tile, TileType::Crop(_, _))) {
             let tile = self.get_tile_at(x, y);
-            if let Some(TileType::Fountain) = tile {
-                self.message = String::from("Cannot water the fountain!");
-                return;
-            }
-            if let Some(TileType::Slide) = tile {
-                self.message = String::from("Cannot water the slide!");
-                return;
-            }
             if let Some(TileType::Crop(crop, state)) = tile {
                 if !state.is_mature(crop) {
                     self.farm_map[y][x] = TileType::Crop(
@@ -1217,7 +1223,7 @@ impl GameState {
                 self.message = String::from("Nothing to water! (Need a crop)");
             }
         } else {
-            self.message = String::from("Nothing in front!");
+            self.message = String::from("Nothing to water! (Need a crop)");
         }
     }
 
@@ -1270,16 +1276,10 @@ impl GameState {
             return;
         }
 
-        if let Some((x, y)) = self.tile_in_front() {
+        if let Some((x, y)) = self
+            .find_adjacent_tile(|tile| matches!(tile, TileType::Crop(_, _) | TileType::Mushroom))
+        {
             let tile = self.get_tile_at(x, y);
-            if let Some(TileType::Fountain) = tile {
-                self.message = String::from("Nothing to harvest from the fountain!");
-                return;
-            }
-            if let Some(TileType::Slide) = tile {
-                self.message = String::from("Nothing to harvest from the slide!");
-                return;
-            }
             if let Some(TileType::Crop(crop, state)) = tile {
                 if state.is_mature(crop) {
                     if self.location == Location::Farm {
@@ -1316,7 +1316,7 @@ impl GameState {
                 self.message = String::from("Nothing to harvest!");
             }
         } else {
-            self.message = String::from("Nothing in front!");
+            self.message = String::from("Nothing to harvest!");
         }
     }
 
@@ -1383,7 +1383,9 @@ impl GameState {
             return;
         }
 
-        if let Some((x, y)) = self.tile_in_front() {
+        if let Some((x, y)) =
+            self.find_adjacent_tile(|tile| matches!(tile, TileType::River | TileType::RiverBubble))
+        {
             self.try_fishing_at(x, y);
         } else {
             self.message = String::from("No river nearby to fish.");
@@ -1404,15 +1406,8 @@ impl GameState {
     }
 
     fn try_fishing_at(&mut self, x: usize, y: usize) {
-        if let Some(tile) = self.get_tile_at(x, y) {
-            match tile {
-                TileType::River | TileType::RiverBubble => {
-                    self.perform_fishing(x, y);
-                }
-                _ => {
-                    self.message = String::from("No river nearby to fish.");
-                }
-            }
+        if let Some(TileType::River | TileType::RiverBubble) = self.get_tile_at(x, y) {
+            self.perform_fishing(x, y);
         } else {
             self.message = String::from("No river nearby to fish.");
         }
@@ -2473,9 +2468,9 @@ mod tests {
         assert_eq!(south_river_map[2].len(), SOUTH_RIVER_WIDTH);
         assert_eq!(south_river_map[3].len(), SOUTH_RIVER_WIDTH);
 
-        assert_eq!(south_river_map[0][5], TileType::PathSouthRiverGate);
-        for x in 0..11 {
-            if x != 5 {
+        assert_eq!(south_river_map[0][2], TileType::PathSouthRiverGate);
+        for x in 0..13 {
+            if x != 2 {
                 assert_eq!(
                     south_river_map[0][x],
                     TileType::Boundary,
@@ -2492,7 +2487,7 @@ mod tests {
         let south_river_map = create_south_river_map();
 
         for y in 2..4 {
-            for x in 0..11 {
+            for x in 0..13 {
                 assert!(
                     !south_river_map[y][x].is_walkable(),
                     "River tile at ({}, {}) should not be walkable",
@@ -2509,11 +2504,11 @@ mod tests {
         let south_river_map = create_south_river_map();
 
         assert!(!south_river_map[0][0].is_walkable());
-        assert!(!south_river_map[0][4].is_walkable());
-        assert!(!south_river_map[0][6].is_walkable());
-        assert!(!south_river_map[0][10].is_walkable());
+        assert!(!south_river_map[0][1].is_walkable());
+        assert!(!south_river_map[0][3].is_walkable());
+        assert!(!south_river_map[0][12].is_walkable());
         assert!(!south_river_map[1][0].is_walkable());
-        assert!(!south_river_map[1][10].is_walkable());
+        assert!(!south_river_map[1][12].is_walkable());
     }
 
     #[test]
@@ -2528,7 +2523,7 @@ mod tests {
 
         assert_eq!(state.location, Location::SouthRiver);
         assert_eq!(state.player_location, Location::SouthRiver);
-        assert_eq!(state.player_x, 5);
+        assert_eq!(state.player_x, 2);
         assert_eq!(state.player_y, 1);
     }
 
@@ -2537,7 +2532,7 @@ mod tests {
         let mut state = GameState::new();
         state.location = Location::SouthRiver;
         state.player_location = Location::SouthRiver;
-        state.player_x = 5;
+        state.player_x = 2;
         state.player_y = 1;
 
         state.move_player(Direction::Up);
@@ -2560,7 +2555,7 @@ mod tests {
         state.move_guest(Direction::Down);
 
         assert_eq!(state.guest_location, Location::SouthRiver);
-        assert_eq!(state.guest_x, 5);
+        assert_eq!(state.guest_x, 2);
         assert_eq!(state.guest_y, 1);
     }
 
@@ -2570,7 +2565,7 @@ mod tests {
         state.enable_guest_for_interactive();
         state.guest_location = Location::SouthRiver;
         state.location = Location::SouthRiver;
-        state.guest_x = 5;
+        state.guest_x = 2;
         state.guest_y = 1;
 
         state.move_guest(Direction::Up);
@@ -2587,7 +2582,7 @@ mod tests {
 
         let mut grass_positions = 0;
         for y in 0..4 {
-            for x in 0..11 {
+            for x in 0..13 {
                 if south_river_map[y][x] == TileType::Grass {
                     grass_positions += 1;
                 }
@@ -2600,15 +2595,15 @@ mod tests {
 
         let mut river_positions = 0;
         for y in 2..4 {
-            for x in 0..11 {
+            for x in 0..13 {
                 if south_river_map[y][x] == TileType::River {
                     river_positions += 1;
                 }
             }
         }
         assert_eq!(
-            river_positions, 22,
-            "South River should have 22 river tiles (2 rows x 11 cols)"
+            river_positions, 26,
+            "South River should have 26 river tiles (2 rows x 13 cols)"
         );
     }
 
@@ -2665,12 +2660,12 @@ mod tests {
         state.player_y = 1;
 
         let (width, height) = state.get_map_size();
-        assert_eq!(width, 11);
+        assert_eq!(width, 13);
         assert_eq!(height, 4);
 
         let map = state.get_current_map_ref();
         assert_eq!(map.len(), 4);
-        assert_eq!(map[0].len(), 11);
+        assert_eq!(map[0].len(), 13);
     }
 
     #[test]
@@ -2813,5 +2808,93 @@ mod tests {
     fn test_fish_emoji() {
         assert_eq!(FishType::Common.emoji(), "🐟");
         assert_eq!(FishType::Rare.emoji(), "🐠");
+    }
+
+    #[test]
+    fn test_fishing_outcome_common_fish() {
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.player_x = 5;
+        state.player_y = 1;
+        state.direction = Direction::Down;
+        state.rng_seed = 0;
+        state.total_minutes = 0;
+
+        state.fishing_action();
+
+        assert!(state.inventory.get_fish(FishType::Common) > 0);
+        assert!(state.message.contains("🐟"));
+    }
+
+    #[test]
+    fn test_fishing_outcome_rare_fish() {
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.player_x = 5;
+        state.player_y = 1;
+        state.direction = Direction::Down;
+        state.rng_seed = 25;
+        state.total_minutes = 0;
+
+        state.fishing_action();
+
+        assert!(state.inventory.get_fish(FishType::Rare) > 0);
+        assert!(state.message.contains("🐠"));
+    }
+
+    #[test]
+    fn test_fishing_outcome_nothing() {
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.player_x = 5;
+        state.player_y = 1;
+        state.direction = Direction::Down;
+        state.rng_seed = 35;
+        state.total_minutes = 0;
+
+        state.fishing_action();
+
+        assert_eq!(state.inventory.fish_count(), 0);
+        assert!(state.message.contains("No bite"));
+    }
+
+    #[test]
+    fn test_fishing_success_shows_congrats_message() {
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.player_x = 5;
+        state.player_y = 1;
+        state.direction = Direction::Down;
+        state.rng_seed = 0;
+        state.total_minutes = 0;
+
+        state.fishing_action();
+
+        assert!(state.message.contains("🎉") || state.message.contains("catch"));
+    }
+
+    #[test]
+    fn test_river_bubble_state_persists_save_load() {
+        use crate::savegame::{load_game_from_path, save_game_to_path};
+
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.south_river_map[2][5] = TileType::RiverBubble;
+        state.south_river_map[3][3] = TileType::RiverBubble;
+
+        let test_path = std::env::temp_dir().join("shelldew_bubble_test.json");
+        save_game_to_path(&state, &test_path).expect("Save should succeed");
+
+        let loaded = load_game_from_path(&test_path).expect("Load should succeed");
+
+        assert_eq!(loaded.south_river_map[2][5], TileType::RiverBubble);
+        assert_eq!(loaded.south_river_map[3][3], TileType::RiverBubble);
+
+        std::fs::remove_file(&test_path).ok();
     }
 }

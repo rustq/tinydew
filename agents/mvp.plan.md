@@ -105,7 +105,7 @@ n- NPC town systems
 ### A3. Movement controls
 
 - Arrow key movement only for MVP mode.
-- Keep facing direction for “tile in front” interactions.
+- Remove facing dependency for default interactions; use adjacent auto-target priority (up→right→down→left).
 
 Acceptance:
 - Player moves correctly and cannot pass boundaries.
@@ -138,7 +138,7 @@ Acceptance:
 
 ### C1. Clear action (`C`)
 
-- Target tile in front.
+- Target adjacent tile by deterministic auto-selection (up→right→down→left).
 - Transform `🌿 -> ▪️` on Farm only.
 
 ### C2. Plant action (`P`)

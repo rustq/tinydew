@@ -7,23 +7,23 @@ South River is a transition-connected map with:
 - boundary trees (`🌳`) on top/side edges,
 - walkable grass (`🌿`) in upper rows,
 - a river band (`🌊`) across the lower area,
-- one top-center entry/exit tile for transition routing.
+- one top entry/exit tile at row 0, col 2 (0-based) for transition routing.
 
 ---
 
 ## Canonical South River Layout
 
-Map shape (11 columns × 4 rows):
+Map shape (13 columns × 4 rows):
 
 ```text
-🌳🌳🌳🌳🌳🌿🌳🌳🌳🌳🌳
-🌳🌿🌿🌿🌿🌿🌿🌿🌿🌿🌳
-🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+🌳🌳🌿🌳🌳🌳🌳🌳🌳🌳🌳🌳🌳
+🌳🌿🌿🌿🌿🌿🌿🌿🌿🌿🌿🌿🌳
+🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 ```
 
 ### Notes
-- Top opening is at row 0, col 5 (0-based indexing): this is the **South River gate tile**.
+- Top opening is at row 0, col 2 (0-based indexing): this is the **South River gate tile**.
 - All `🌳` tiles are boundaries and non-walkable.
 - All `🌊` river tiles are non-walkable.
 - Grass `🌿` is walkable.
@@ -36,10 +36,10 @@ Map shape (11 columns × 4 rows):
 East Path must open a **middle-bottom** transition tile (`x=5, y=3`) that leads into South River.
 
 ### South River -> East Path
-South River top-center gate tile (`🌿` at row 0, col 5) transitions back to East Path.
+South River gate tile (`🌿` at row 0, col 2) transitions back to East Path.
 
 ### Transition Behavior
-- Entering South River places player/guest at the South River top-center entry area.
+- Entering South River places player/guest at the South River gate-adjacent entry area.
 - Exiting South River returns to East Path at the paired middle-bottom transition tile.
 - Transition updates:
   - active `location`
@@ -83,7 +83,7 @@ Add:
 
 ### Map constants
 Add:
-- `SOUTH_RIVER_WIDTH = 11`
+- `SOUTH_RIVER_WIDTH = 13`}},{
 - `SOUTH_RIVER_HEIGHT = 4`
 
 ### Tile semantics
@@ -108,7 +108,7 @@ Ensure save/load supports:
 ### Interactive / print rendering
 - `get_current_map_ref()` / `get_map_size()` support `SouthRiver`.
 - River tiles render as `🌊`.
-- Top-center gate tile renders as `🌿`.
+- Gate tile at row 0, col 2 renders as `🌿`.
 - Player/guest markers remain region-aware.
 
 ### MCP `getMap`
@@ -120,11 +120,11 @@ Ensure save/load supports:
 ## Acceptance Criteria
 
 1. **Map correctness**
-   - South River layout matches canonical 11×4 map.
+   - South River layout matches canonical 13×4 map.
 
 2. **Transitions**
    - East Path middle-bottom tile enters South River.
-   - South River top-center tile exits to East Path.
+   - South River gate tile at row 0, col 2 exits to East Path.
 
 3. **Collision**
    - River tiles block movement for player/guest.
@@ -156,3 +156,6 @@ Ensure save/load supports:
 - `test_south_river_save_load_roundtrip`
 - `test_print_snapshot_renders_south_river_dimensions`
 - `test_get_map_returns_south_river_dimensions`
+ons`
+ns_south_river_dimensions`
+er_dimensions`

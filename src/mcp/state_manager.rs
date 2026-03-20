@@ -143,6 +143,7 @@ impl GameStateManager {
             TileType::Fountain => "F".to_string(),
             TileType::Slide => "S".to_string(),
             TileType::River => "R".to_string(),
+            TileType::RiverBubble => "B".to_string(),
         }
     }
 
@@ -172,6 +173,7 @@ impl GameStateManager {
             TileType::Fountain => "Fountain".to_string(),
             TileType::Slide => "Slide".to_string(),
             TileType::River => "River".to_string(),
+            TileType::RiverBubble => "RiverBubble".to_string(),
         }
     }
 
@@ -180,6 +182,7 @@ impl GameStateManager {
             "seeds": self.state.inventory.seeds,
             "produce": self.state.inventory.produce,
             "forage": self.state.inventory.forage,
+            "fish": self.state.inventory.fish,
             "money": self.state.money,
             "selected_seed": format!("{:?}", self.state.selected_seed),
         })

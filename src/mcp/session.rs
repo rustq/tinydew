@@ -140,6 +140,7 @@ impl Session {
             TileType::Fountain => "F".to_string(),
             TileType::Slide => "S".to_string(),
             TileType::River => "R".to_string(),
+            TileType::RiverBubble => "B".to_string(),
         }
     }
 
@@ -168,6 +169,7 @@ impl Session {
             TileType::Fountain => "Fountain".to_string(),
             TileType::Slide => "Slide".to_string(),
             TileType::River => "River".to_string(),
+            TileType::RiverBubble => "RiverBubble".to_string(),
         }
     }
 
@@ -176,6 +178,7 @@ impl Session {
             "seeds": self.game_state.inventory.seeds,
             "produce": self.game_state.inventory.produce,
             "forage": self.game_state.inventory.forage,
+            "fish": self.game_state.inventory.fish,
             "money": self.game_state.money,
             "selected_seed": format!("{:?}", self.game_state.selected_seed),
         })

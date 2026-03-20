@@ -212,8 +212,10 @@ fn print_map<W: Write>(w: &mut W, game: &GameState) {
     for y in 0..height {
         for x in 0..width {
             // Always render player at stored coordinates, even while guest is on another map.
-            let is_player_tile = game.player_location == game.location && x == game.player_x && y == game.player_y;
-            let is_guest_tile = game.is_guest_on_current_map() && x == game.guest_x && y == game.guest_y;
+            let is_player_tile =
+                game.player_location == game.location && x == game.player_x && y == game.player_y;
+            let is_guest_tile =
+                game.is_guest_on_current_map() && x == game.guest_x && y == game.guest_y;
 
             let tile = if is_player_tile {
                 if is_guest_tile {
@@ -247,7 +249,12 @@ fn print_message<W: Write>(w: &mut W, game: &GameState) {
         write!(w, "{}{}", game.message, EOL).unwrap();
         write!(w, "{}", EOL).unwrap();
         if game.is_guest_active() {
-            write!(w, "Arrow keys: Move Guest | Space: Greet | Esc: Quit{}", EOL).unwrap();
+            write!(
+                w,
+                "Arrow keys: Move Guest | Space: Greet | Esc: Quit{}",
+                EOL
+            )
+            .unwrap();
         } else {
             write!(
                 w,
@@ -445,16 +452,13 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
     #[cfg(feature = "interactive")]
     {
         use crossterm::terminal::{
-            enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+            EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
         };
         use std::io::Read;
 
         enable_raw_mode().map_err(|e| InteractiveError::Other(e.to_string()))?;
 
-        let mut game = match crate::savegame::load_game() {
-            Ok(state) => state,
-            Err(_) => GameState::new(),
-        };
+        let mut game = crate::savegame::load_game().unwrap_or_default();
         game.enable_guest_for_interactive();
 
         let _ = crossterm::execute!(std::io::stdout(), EnterAlternateScreen);
@@ -478,7 +482,8 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
             }
             stdout.flush().ok();
 
-            if let Event::Key(key) = event::read().map_err(|e| InteractiveError::Other(e.to_string()))?
+            if let Event::Key(key) =
+                event::read().map_err(|e| InteractiveError::Other(e.to_string()))?
             {
                 if key.kind == KeyEventKind::Press {
                     if game.in_home() {
@@ -722,7 +727,7 @@ mod tests {
 
         game.clear_action();
 
-        let tile = game.get_tile_at(5, 3);
+        let tile = game.get_tile_at(4, 2);
         assert_eq!(tile, Some(crate::world::TileType::Soil));
     }
 
@@ -736,7 +741,7 @@ mod tests {
         game.inventory.add_seeds(crate::world::CropType::Carrot, 5);
         game.plant_action();
 
-        let tile = game.get_tile_at(5, 3);
+        let tile = game.get_tile_at(4, 2);
         if let Some(crate::world::TileType::Crop(crop, _)) = tile {
             assert_eq!(crop, crate::world::CropType::Carrot);
         } else {
@@ -755,7 +760,7 @@ mod tests {
 
         game.water_action();
 
-        if let Some(crate::world::TileType::Crop(_, state)) = game.get_tile_at(5, 3) {
+        if let Some(crate::world::TileType::Crop(_, state)) = game.get_tile_at(4, 2) {
             assert!(state.watered_today);
         } else {
             panic!("Expected Crop tile");
@@ -796,14 +801,14 @@ mod tests {
 
         game.start_new_day();
 
-        if let Some(crate::world::TileType::Crop(_, state)) = game.get_tile_at(5, 3) {
+        if let Some(crate::world::TileType::Crop(_, state)) = game.get_tile_at(4, 2) {
             assert_eq!(state.days_grown, 0);
         }
 
         game.water_action();
         game.start_new_day();
 
-        if let Some(crate::world::TileType::Crop(_, state)) = game.get_tile_at(5, 3) {
+        if let Some(crate::world::TileType::Crop(_, state)) = game.get_tile_at(4, 2) {
             assert_eq!(state.days_grown, 1);
         }
     }

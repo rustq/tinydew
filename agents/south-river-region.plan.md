@@ -4,9 +4,9 @@
 Implement a new region: **South River**.
 
 Requirements from spec:
-- Add South River map (11×4) with top-center gate, grass area, and blocking river rows.
+- Add South River map (13×4) with gate at row 0, col 2, grass area, and blocking river rows.
 - Add East Path middle-bottom transition into South River.
-- Add South River top-center transition back to East Path.
+- Add South River gate transition at row 0, col 2 back to East Path.
 - River (`🌊`) is non-walkable.
 - Random flower generation is allowed on South River grass tiles.
 - Random crop/mushroom generation must not happen in South River.
@@ -25,8 +25,8 @@ Requirements from spec:
 
 1. Add `Location::SouthRiver`.
 2. Add constants:
-   - `SOUTH_RIVER_WIDTH = 11`
-   - `SOUTH_RIVER_HEIGHT = 4`
+   - `SOUTH_RIVER_WIDTH = 13`
+   - `SOUTH_RIVER_HEIGHT = 4
 3. Add river tile type (`River`) with emoji `🌊` and non-walkable behavior.
 4. Add `create_south_river_map()` with exact canonical layout.
 
@@ -53,7 +53,7 @@ Deliverable:
 ## Phase 3 — Transition Wiring
 
 1. Add East Path middle-bottom transition tile (`x=5, y=3`) into South River.
-2. Add South River top-center gate transition back to East Path.
+2. Add South River gate transition at row 0, col 2 back to East Path.
 3. Update player transition handling.
 4. Update guest transition handling.
 
@@ -126,7 +126,7 @@ Manual MCP flow:
 2. Move to East Path.
 3. Enter South River via East Path middle-bottom transition.
 4. Verify river blocks movement.
-5. Exit South River via top-center gate back to East Path.
+5. Exit South River via gate at row 0, col 2 back to East Path.
 6. Save/load and re-check position + map.
 
 ---
@@ -140,3 +140,4 @@ Manual MCP flow:
 5. `feat(mcp): render and expose SouthRiver map/state`
 6. `test(south-river): add transitions/collision/spawn/save coverage`
 7. `docs(south-river): finalize spec and plan alignment`
+ent`

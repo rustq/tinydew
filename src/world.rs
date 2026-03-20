@@ -475,15 +475,17 @@ pub fn create_south_river_map() -> Map {
         vec![
             TileType::Boundary,
             TileType::Boundary,
-            TileType::Boundary,
-            TileType::Boundary,
-            TileType::Boundary,
             TileType::PathSouthRiverGate,
             TileType::Boundary,
             TileType::Boundary,
             TileType::Boundary,
             TileType::Boundary,
             TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
         ],
         vec![
             TileType::Boundary,
@@ -496,6 +498,8 @@ pub fn create_south_river_map() -> Map {
             TileType::Grass,
             TileType::Grass,
             TileType::Grass,
+            TileType::Grass,
+            TileType::Grass,
             TileType::Boundary,
         ],
         vec![
@@ -510,8 +514,12 @@ pub fn create_south_river_map() -> Map {
             TileType::River,
             TileType::River,
             TileType::River,
+            TileType::River,
+            TileType::River,
         ],
         vec![
+            TileType::River,
+            TileType::River,
             TileType::River,
             TileType::River,
             TileType::River,
@@ -533,5 +541,5 @@ pub const EAST_PATH_WIDTH: usize = 11;
 pub const EAST_PATH_HEIGHT: usize = 4;
 pub const SQUARE_WIDTH: usize = 9;
 pub const SQUARE_HEIGHT: usize = 5;
-pub const SOUTH_RIVER_WIDTH: usize = 11;
+pub const SOUTH_RIVER_WIDTH: usize = 13;
 pub const SOUTH_RIVER_HEIGHT: usize = 4;

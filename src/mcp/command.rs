@@ -1,7 +1,7 @@
 use crate::mcp::errors::{ErrorCode, McpError};
 use crate::savegame;
 use crate::state::{GameState, Location};
-use crate::world::{CropState, CropType, Direction};
+use crate::world::{CropState, CropType, Direction, FishType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,10 +49,12 @@ pub enum ParsedCommand {
     Harvest(Option<Direction>),
     Buy(CropType, u32),
     Sell(CropType, u32),
+    SellFish(FishType, u32),
     Sleep,
     Print,
     Save,
     Load,
+    Fishing(Option<Direction>),
 }
 
 pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
@@ -130,8 +132,24 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
         }
         "sell" => {
             let (item_str, qty) = parse_item_with_qty(arg.unwrap_or(""))?;
-            let crop = parse_crop(item_str)?;
-            Ok(ParsedCommand::Sell(crop, qty))
+            if let Ok(fish) = parse_fish(item_str) {
+                Ok(ParsedCommand::SellFish(fish, qty))
+            } else if let Ok(crop) = parse_crop(item_str) {
+                Ok(ParsedCommand::Sell(crop, qty))
+            } else {
+                Err(McpError::validation_error(
+                    format!("invalid item '{}' for sell", item_str),
+                    vec![
+                        "carrot",
+                        "strawberry",
+                        "cauliflower",
+                        "rhubarb",
+                        "fish",
+                        "common",
+                        "rare",
+                    ],
+                ))
+            }
         }
         "sleep" => Err(McpError::validation_error(
             "sleep command is disabled in MCP API",
@@ -140,6 +158,10 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
         "print" => Ok(ParsedCommand::Print),
         "save" => Ok(ParsedCommand::Save),
         "load" => Ok(ParsedCommand::Load),
+        "fishing" => {
+            let direction = arg.map(parse_direction).transpose()?;
+            Ok(ParsedCommand::Fishing(direction))
+        }
         _ => Err(McpError::invalid_command(format!(
             "unknown command '{}'. Valid commands: move:up|down|left|right, clear[:<dir>], plant:<crop>[:<dir>], water[:<dir>], harvest[:<dir>], buy:<item>[:<qty>], sell:<item>[:<qty>], print, save, load",
             cmd
@@ -156,6 +178,17 @@ fn parse_crop(s: &str) -> Result<CropType, McpError> {
         _ => Err(McpError::validation_error(
             format!("invalid crop '{}'", s),
             vec!["carrot", "strawberry", "cauliflower", "rhubarb"],
+        )),
+    }
+}
+
+fn parse_fish(s: &str) -> Result<FishType, McpError> {
+    match s {
+        "fish" | "common" | "🐟" => Ok(FishType::Common),
+        "rare" | "tropical" | "🐠" => Ok(FishType::Rare),
+        _ => Err(McpError::validation_error(
+            format!("invalid fish '{}'", s),
+            vec!["fish", "common", "rare"],
         )),
     }
 }
@@ -211,6 +244,7 @@ fn capture_state_snapshot(state: &GameState) -> serde_json::Value {
             "seeds": state.inventory.seeds,
             "produce": state.inventory.produce,
             "forage": state.inventory.forage,
+            "fish": state.inventory.fish,
         },
         "player": {
             "x": state.player_x,
@@ -315,6 +349,12 @@ fn generate_text_snapshot(state: &GameState) -> String {
             }
         }
 
+        for (fish, count) in &state.current_income.fish_sold {
+            if *count > 0 {
+                lines.push(format!("{} sold * {}", fish.emoji(), count));
+            }
+        }
+
         for (crop, count) in &state.current_income.crops_harvested {
             if *count > 0 {
                 lines.push(format!("{} harvested * {}", crop.produce_emoji(), count));
@@ -360,6 +400,7 @@ fn generate_text_snapshot(state: &GameState) -> String {
     if state.inventory.seeds.is_empty()
         && state.inventory.produce.is_empty()
         && state.inventory.forage.is_empty()
+        && state.inventory.fish.is_empty()
     {
         lines.push("(empty)".to_string());
     } else {
@@ -381,6 +422,11 @@ fn generate_text_snapshot(state: &GameState) -> String {
         for (forage, count) in &state.inventory.forage {
             if *count > 0 {
                 lines.push(format!("  Forage: {} x{}", forage.emoji(), count));
+            }
+        }
+        for (fish, count) in &state.inventory.fish {
+            if *count > 0 {
+                lines.push(format!("  Fish: {} x{}", fish.emoji(), count));
             }
         }
     }
@@ -435,8 +481,8 @@ fn generate_text_snapshot(state: &GameState) -> String {
 pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResult {
     match cmd {
         ParsedCommand::Move(direction) => {
-            let moving_guest = state.guest_enabled
-                && state.active_control == crate::state::ControlTarget::Guest;
+            let moving_guest =
+                state.guest_enabled && state.active_control == crate::state::ControlTarget::Guest;
 
             let (old_x, old_y) = if moving_guest {
                 (state.guest_x, state.guest_y)
@@ -574,6 +620,41 @@ pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResu
                     "money": state.money,
                     "produce": state.inventory.produce
                 }))
+        }
+        ParsedCommand::SellFish(fish, qty) => {
+            let mut sold_count = 0;
+            for _ in 0..qty {
+                if state.inventory.sell_fish(fish) {
+                    sold_count += 1;
+                } else {
+                    break;
+                }
+            }
+
+            if sold_count > 0 {
+                let revenue = fish.sell_price() * sold_count;
+                state.money += revenue;
+                state.record_income(revenue);
+                state.record_fish_sold(fish, sold_count);
+                state.message = format!("Sold {} x{} for ${}!", fish.emoji(), sold_count, revenue);
+            } else {
+                state.message = format!("No {} to sell!", fish.emoji());
+            }
+
+            CommandResult::new(state.message.clone())
+                .with_events(vec![format!("Sold {} fish", sold_count)])
+                .with_state_delta(serde_json::json!({
+                    "money": state.money,
+                    "fish": state.inventory.fish
+                }))
+        }
+        ParsedCommand::Fishing(dir) => {
+            match dir {
+                Some(d) => state.fishing_action_at(d),
+                None => state.fishing_action(),
+            }
+            CommandResult::new(state.message.clone())
+                .with_events(vec!["Fishing attempt".to_string()])
         }
         ParsedCommand::Sleep => {
             advance_to_morning(state);
@@ -1746,11 +1827,7 @@ mod tests {
         assert_eq!(map_rows.len(), 5, "Square should have 5 rows");
 
         for row in &map_rows {
-            assert_eq!(
-                row.chars().count(),
-                9,
-                "Each row should have 9 characters"
-            );
+            assert_eq!(row.chars().count(), 9, "Each row should have 9 characters");
         }
     }
 
@@ -1838,5 +1915,143 @@ mod tests {
             fountain_tile.contains("Fountain"),
             "Fountain tile should be present at center"
         );
+    }
+
+    #[test]
+    fn test_parse_fishing() {
+        let result = parse_command("fishing");
+        assert!(matches!(result, Ok(ParsedCommand::Fishing(None))));
+    }
+
+    #[test]
+    fn test_parse_fishing_with_direction() {
+        let result = parse_command("fishing:up");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Fishing(Some(Direction::Up)))
+        ));
+
+        let result = parse_command("fishing:down");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Fishing(Some(Direction::Down)))
+        ));
+
+        let result = parse_command("fishing:left");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Fishing(Some(Direction::Left)))
+        ));
+
+        let result = parse_command("fishing:right");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::Fishing(Some(Direction::Right)))
+        ));
+    }
+
+    #[test]
+    fn test_parse_sell_fish() {
+        let result = parse_command("sell:fish");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::SellFish(FishType::Common, 1))
+        ));
+
+        let result = parse_command("sell:fish:5");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::SellFish(FishType::Common, 5))
+        ));
+
+        let result = parse_command("sell:rare");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::SellFish(FishType::Rare, 1))
+        ));
+
+        let result = parse_command("sell:rare:3");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::SellFish(FishType::Rare, 3))
+        ));
+    }
+
+    #[test]
+    fn test_execute_fishing_near_river() {
+        use crate::state::Location;
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.player_x = 5;
+        state.player_y = 1;
+        state.direction = Direction::Down;
+
+        let _original_time = state.format_time();
+        let result = execute_command(&mut state, ParsedCommand::Fishing(None));
+        assert!(!result.message.is_empty());
+        assert!(result.events.contains(&"Fishing attempt".to_string()));
+    }
+
+    #[test]
+    fn test_execute_fishing_no_river_nearby() {
+        let mut state = GameState::new();
+        state.location = Location::Farm;
+        state.player_x = 3;
+        state.player_y = 3;
+
+        let result = execute_command(&mut state, ParsedCommand::Fishing(None));
+        assert!(result.message.contains("No river nearby"));
+    }
+
+    #[test]
+    fn test_execute_fishing_advances_time() {
+        use crate::state::Location;
+        let mut state = GameState::new();
+        state.location = Location::SouthRiver;
+        state.player_location = Location::SouthRiver;
+        state.player_x = 5;
+        state.player_y = 1;
+        state.direction = Direction::Down;
+        state.hour = 10;
+        state.minute = 0;
+
+        let result = execute_command(&mut state, ParsedCommand::Fishing(None));
+        assert!(!result.message.is_empty());
+    }
+
+    #[test]
+    fn test_execute_sell_fish() {
+        let mut state = GameState::new();
+        state.inventory.fish.insert(FishType::Common, 5);
+        state.money = 0;
+
+        let result = execute_command(&mut state, ParsedCommand::SellFish(FishType::Common, 2));
+        assert!(result.message.contains("$"));
+        assert_eq!(state.money, 160);
+    }
+
+    #[test]
+    fn test_execute_sell_rare_fish() {
+        let mut state = GameState::new();
+        state.inventory.fish.insert(FishType::Rare, 3);
+        state.money = 0;
+
+        let result = execute_command(&mut state, ParsedCommand::SellFish(FishType::Rare, 1));
+        assert!(result.message.contains("$180"));
+        assert_eq!(state.money, 180);
+    }
+
+    #[test]
+    fn test_print_snapshot_contains_fish_inventory() {
+        let mut state = GameState::new();
+        state.inventory.fish.insert(FishType::Common, 3);
+        state.inventory.fish.insert(FishType::Rare, 1);
+
+        let result = execute_command(&mut state, ParsedCommand::Print);
+        let snapshot = result.snapshot_text.unwrap();
+
+        assert!(snapshot.contains("🐟"));
+        assert!(snapshot.contains("🐠"));
     }
 }

@@ -73,7 +73,7 @@ Deliverable:
 ### Phase 3: Command Tools
 - Implement `shelldew.command` for single command execution.
 - Implement command grammar and validation:
-  - `move:*`, `clear`, `plant:<crop>`, `water`, `harvest`, `buy`, `sell`, `sleep`, `print`
+  - `move:*`, `clear`(adjacent auto-target), `plant:<crop>`(adjacent auto-target), `water`(adjacent auto-target), `harvest`(adjacent auto-target), `buy`, `sell`, `sleep`, `print`
 - Implement `shelldew.command_batch`:
   - Ordered execution
   - `stop_on_error` behavior

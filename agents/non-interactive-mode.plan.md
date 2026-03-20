@@ -36,10 +36,10 @@ Behavior decisions:
 - Create runner module (e.g., `src/non_interactive.rs`)
 - Parse commands:
   - `move:<direction>`
-  - `clear`
-  - `plant:<crop>` (required crop)
-  - `water`
-  - `harvest`
+  - `clear` (adjacent auto-target)
+  - `plant:<crop>` (required crop; adjacent auto-target)
+  - `water` (adjacent auto-target)
+  - `harvest` (adjacent auto-target)
   - `buy:<item>[:<qty>]`
   - `sell:<item>[:<qty>]`
   - `sleep`
