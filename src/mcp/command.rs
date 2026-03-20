@@ -329,7 +329,7 @@ fn generate_text_snapshot(state: &GameState) -> String {
     if state.home_state == crate::state::HomeState::Income {
         let mut lines = vec![
             format!(
-                "=== Shelldew Day {} {} {} ===",
+                "=== Tinydew Day {} {} {} ===",
                 state.day,
                 state.format_time(),
                 state.get_weather_icon()
@@ -387,7 +387,7 @@ fn generate_text_snapshot(state: &GameState) -> String {
 
     let mut lines = vec![
         format!(
-            "=== Shelldew Day {} {} {} ===",
+            "=== Tinydew Day {} {} {} ===",
             state.day,
             state.format_time(),
             state.get_weather_icon()

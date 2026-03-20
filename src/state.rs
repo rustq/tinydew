@@ -198,7 +198,7 @@ impl GameState {
             player_x,
             player_y,
             direction: Direction::Down,
-            message: String::from("Welcome to Shelldew!"),
+            message: String::from("Welcome to Tinydew!"),
             day: 1,
             hour: 6,
             minute: 0,
@@ -2042,7 +2042,7 @@ mod tests {
         state.spring_forced_flower_6_2_done = true;
         state.last_spawn_processed_day = 5;
 
-        let test_path = std::env::temp_dir().join("shelldew_random_crop_test.json");
+        let test_path = std::env::temp_dir().join("tinydew_random_crop_test.json");
 
         save_game_to_path(&state, &test_path).expect("Save should succeed");
 
@@ -2326,7 +2326,7 @@ mod tests {
         state.guest_y = 5;
         state.guest_location = Location::EastPath;
 
-        let test_path = std::env::temp_dir().join("shelldew_guest_test.json");
+        let test_path = std::env::temp_dir().join("tinydew_guest_test.json");
         save_game_to_path(&state, &test_path).expect("Save should succeed");
 
         let loaded = load_game_from_path(&test_path).expect("Load should succeed");
@@ -2555,7 +2555,7 @@ mod tests {
         state.player_x = 5;
         state.player_y = 2;
 
-        let test_path = std::env::temp_dir().join("shelldew_square_test.json");
+        let test_path = std::env::temp_dir().join("tinydew_square_test.json");
         save_game_to_path(&state, &test_path).expect("Save should succeed");
 
         let loaded = load_game_from_path(&test_path).expect("Load should succeed");
@@ -2800,7 +2800,7 @@ mod tests {
         state.player_x = 5;
         state.player_y = 1;
 
-        let test_path = std::env::temp_dir().join("shelldew_south_river_test.json");
+        let test_path = std::env::temp_dir().join("tinydew_south_river_test.json");
         save_game_to_path(&state, &test_path).expect("Save should succeed");
 
         let loaded = load_game_from_path(&test_path).expect("Load should succeed");
@@ -2950,7 +2950,7 @@ mod tests {
         state.inventory.fish.insert(FishType::Common, 5);
         state.inventory.fish.insert(FishType::Rare, 2);
 
-        let test_path = std::env::temp_dir().join("shelldew_fish_test.json");
+        let test_path = std::env::temp_dir().join("tinydew_fish_test.json");
         save_game_to_path(&state, &test_path).expect("Save should succeed");
 
         let loaded = load_game_from_path(&test_path).expect("Load should succeed");
@@ -3049,7 +3049,7 @@ mod tests {
         state.south_river_map[2][5] = TileType::RiverBubble;
         state.south_river_map[3][3] = TileType::RiverBubble;
 
-        let test_path = std::env::temp_dir().join("shelldew_bubble_test.json");
+        let test_path = std::env::temp_dir().join("tinydew_bubble_test.json");
         save_game_to_path(&state, &test_path).expect("Save should succeed");
 
         let loaded = load_game_from_path(&test_path).expect("Load should succeed");

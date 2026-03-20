@@ -1,11 +1,11 @@
-# Shelldew MCP Server
+# Tinydew MCP Server
 
 ## Starting the MCP Server
 
-To run Shelldew as an MCP server process:
+To run Tinydew as an MCP server process:
 
 ```bash
-shelldew --mcp
+tinydew --mcp
 ```
 
 This starts the server using stdio transport for local-only communication.

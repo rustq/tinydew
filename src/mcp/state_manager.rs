@@ -282,7 +282,7 @@ mod tests {
     #[test]
     fn test_autosave_persists_state() {
         let test_path: std::path::PathBuf =
-            std::env::temp_dir().join("shelldew_autosave_test.json");
+            std::env::temp_dir().join("tinydew_autosave_test.json");
 
         let mut state = GameState::new();
         state.day = 5;
@@ -303,7 +303,7 @@ mod tests {
 
     #[test]
     fn test_corrupt_save_fallback() {
-        let test_path: std::path::PathBuf = std::env::temp_dir().join("shelldew_corrupt_test.json");
+        let test_path: std::path::PathBuf = std::env::temp_dir().join("tinydew_corrupt_test.json");
 
         std::fs::write(&test_path, "not valid json{{{").ok();
 
@@ -316,7 +316,7 @@ mod tests {
     #[test]
     fn test_save_and_load_roundtrip() {
         let test_path: std::path::PathBuf =
-            std::env::temp_dir().join("shelldew_roundtrip_test.json");
+            std::env::temp_dir().join("tinydew_roundtrip_test.json");
 
         let mut state = GameState::new();
         state.day = 10;

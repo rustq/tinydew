@@ -18,7 +18,7 @@ use crossterm::{
 use std::io::{BufRead, Write, stdin, stdout};
 
 #[derive(Parser, Debug)]
-#[command(name = "shelldew")]
+#[command(name = "tinydew")]
 #[command(version = "0.1.0")]
 #[command(about = "A cozy farming game", long_about = None)]
 struct Args {}
@@ -34,7 +34,7 @@ fn run_mcp_server() -> Result<(), Box<dyn std::error::Error>> {
         GetStatsInput, GetWorldTimeInput, StartSessionInput,
     };
 
-    println!("[MCP] Starting Shelldew MCP server on stdio...");
+    println!("[MCP] Starting Tinydew MCP server on stdio...");
     initialize_mcp_server();
 
     let stdin = stdin();
@@ -639,7 +639,7 @@ mod tests {
         println!("{}", output);
         assert!(output.contains("Spring Day 1"));
         assert!(output.contains("🧑"));
-        assert!(output.contains("Welcome to Shelldew!"));
+        assert!(output.contains("Welcome to Tinydew!"));
     }
 
     #[test]
@@ -890,18 +890,18 @@ mod tests {
 
     #[test]
     fn test_cli_args_no_flags() {
-        let _args = Args::parse_from(["shelldew"]);
+        let _args = Args::parse_from(["tinydew"]);
     }
 
     #[test]
     fn test_cli_args_reject_mcp_flag() {
-        let result = Args::try_parse_from(["shelldew", "--mcp"]);
+        let result = Args::try_parse_from(["tinydew", "--mcp"]);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_cli_args_help() {
-        let result = Args::try_parse_from(["shelldew", "--help"]);
+        let result = Args::try_parse_from(["tinydew", "--help"]);
         assert!(result.is_err());
     }
 }

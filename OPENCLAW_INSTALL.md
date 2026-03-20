@@ -1,6 +1,6 @@
-# Shelldew Installation (OpenClaw one-doc guide)
+# Tinydew Installation (OpenClaw one-doc guide)
 
-This document is a single, copy-paste setup guide for getting **Shelldew** running in an OpenClaw environment.
+This document is a single, copy-paste setup guide for getting **Tinydew** running in an OpenClaw environment.
 
 ---
 
@@ -29,14 +29,14 @@ source "$HOME/.cargo/env"
 
 ---
 
-## 2) Clone Shelldew
+## 2) Clone Tinydew
 
 ```bash
-git clone https://github.com/shelldew/shelldew.git
-cd shelldew
+git clone https://github.com/tinydew/tinydew.git
+cd tinydew
 ```
 
-(If already cloned, just `cd shelldew`.)
+(If already cloned, just `cd tinydew`.)
 
 ---
 
@@ -66,7 +66,7 @@ Run without interactive feature:
 cargo run --quiet
 ```
 
-- In non-TTY context, Shelldew falls back to MCP stdio server.
+- In non-TTY context, Tinydew falls back to MCP stdio server.
 - OpenClaw can send JSON requests to stdin (`startSession`, `getState`, `command`, etc.).
 
 ### B) Interactive mode (guest/player keyboard control)
@@ -85,16 +85,16 @@ Controls:
 
 ## 5) Save File Location
 
-Shelldew save path:
+Tinydew save path:
 
 ```text
-~/.local/share/shelldew/savegame.json
+~/.local/share/tinydew/savegame.json
 ```
 
 Reset save (fresh Day 1):
 
 ```bash
-rm -f ~/.local/share/shelldew/savegame.json
+rm -f ~/.local/share/tinydew/savegame.json
 ```
 
 ---

@@ -15,7 +15,7 @@ pub struct RequestLog {
 }
 
 pub fn initialize_mcp_server() {
-    info!("Initializing MCP server 'shelldew'");
+    info!("Initializing MCP server 'tinydew'");
     info!("Registered tools:");
     for tool in McpTools::get_tool_definitions() {
         info!("  - {}: {}", tool.name, tool.description);

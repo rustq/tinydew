@@ -17,7 +17,7 @@ impl SaveGameData {
 
 fn get_default_save_dir() -> PathBuf {
     if let Some(data_dir) = dirs::data_local_dir() {
-        return data_dir.join("shelldew");
+        return data_dir.join("tinydew");
     }
     PathBuf::from(".")
 }
@@ -32,7 +32,7 @@ pub fn get_save_path() -> PathBuf {
 #[cfg(test)]
 fn get_test_save_path() -> PathBuf {
     let mut path = std::env::temp_dir();
-    path.push("shelldew_test");
+    path.push("tinydew_test");
     fs::create_dir_all(&path).ok();
     path.push("savegame.json");
     path

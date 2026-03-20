@@ -66,7 +66,7 @@ impl McpTools {
     pub fn get_tool_definitions() -> Vec<ToolDefinition> {
         vec![
             ToolDefinition {
-                name: "shelldew.start_session".to_string(),
+                name: "tinydew.start_session".to_string(),
                 description: "Create a new game session".to_string(),
                 input_schema: json!({
                     "type": "object",
@@ -83,7 +83,7 @@ impl McpTools {
                 }),
             },
             ToolDefinition {
-                name: "shelldew.command".to_string(),
+                name: "tinydew.command".to_string(),
                 description: "Execute one gameplay command".to_string(),
                 input_schema: json!({
                     "type": "object",
@@ -95,7 +95,7 @@ impl McpTools {
                 }),
             },
             ToolDefinition {
-                name: "shelldew.command_batch".to_string(),
+                name: "tinydew.command_batch".to_string(),
                 description: "Execute multiple commands in order".to_string(),
                 input_schema: json!({
                     "type": "object",
@@ -108,7 +108,7 @@ impl McpTools {
                 }),
             },
             ToolDefinition {
-                name: "shelldew.get_state".to_string(),
+                name: "tinydew.get_state".to_string(),
                 description: "Return current structured game state".to_string(),
                 input_schema: json!({
                     "type": "object",
@@ -119,7 +119,7 @@ impl McpTools {
                 }),
             },
             ToolDefinition {
-                name: "shelldew.get_map".to_string(),
+                name: "tinydew.get_map".to_string(),
                 description: "Return current map view/state".to_string(),
                 input_schema: json!({
                     "type": "object",
@@ -131,7 +131,7 @@ impl McpTools {
                 }),
             },
             ToolDefinition {
-                name: "shelldew.get_stats".to_string(),
+                name: "tinydew.get_stats".to_string(),
                 description: "Return final/summary stats".to_string(),
                 input_schema: json!({
                     "type": "object",
@@ -142,7 +142,7 @@ impl McpTools {
                 }),
             },
             ToolDefinition {
-                name: "shelldew.end_session".to_string(),
+                name: "tinydew.end_session".to_string(),
                 description: "Gracefully close session and release resources".to_string(),
                 input_schema: json!({
                     "type": "object",

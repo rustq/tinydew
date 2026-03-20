@@ -4,7 +4,7 @@
 Implemented.
 
 ## Behavior
-- Shelldew runs with one authoritative game state.
+- Tinydew runs with one authoritative game state.
 - MCP `startSession` returns a compatibility id (`singleton`) and does not create isolated worlds.
 - Multiple calls continue the same world state.
 - `endSession` is a compatibility no-op.
