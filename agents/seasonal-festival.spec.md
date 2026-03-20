@@ -10,7 +10,8 @@ Implemented.
 - Weather forced Sunny.
 - Default bottom line:
   `Today is Butterfly Festival, enjoy it!`
-- Wonder tile (`🦋`) appears at Square `(2,2)`.
+- Wonder tile (`🦋`) appears at Square `(2,2)` on Day 28.
+- After sleeping/day-transition beyond the festival day, Wonder is reset back to Grass at `(2,2)`.
 - Wonder is non-walkable for both player and guest.
 - Attempting to step onto Wonder shows:
   `That is so beautiful. Let human enjoy it together in interactive mode.`
