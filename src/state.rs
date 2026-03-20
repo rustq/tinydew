@@ -769,6 +769,8 @@ impl GameState {
         if self.season == "Spring" && self.day == 28 {
             self.square_map[2][2] = TileType::Wonder;
             self.message = String::from("Today is Butterfly Festival, enjoy it!");
+        } else if self.square_map[2][2] == TileType::Wonder {
+            self.square_map[2][2] = TileType::Grass;
         }
     }
 
@@ -2446,6 +2448,18 @@ mod tests {
     #[test]
     fn test_wonder_tile_renders_butterfly_emoji() {
         assert_eq!(TileType::Wonder.emoji(), "🦋");
+    }
+
+    #[test]
+    fn test_wonder_clears_after_festival_day_transition() {
+        let mut state = GameState::new();
+        state.square_map[2][2] = TileType::Wonder;
+        state.season = String::from("Spring");
+        state.day = 29;
+
+        state.start_new_day();
+
+        assert_eq!(state.square_map[2][2], TileType::Grass);
     }
 
     #[test]
