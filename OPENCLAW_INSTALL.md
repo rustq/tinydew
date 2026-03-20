@@ -32,7 +32,7 @@ source "$HOME/.cargo/env"
 ## 2) Clone Tinydew
 
 ```bash
-git clone https://github.com/tinydew/tinydew.git
+git clone https://github.com/rustq/tinydew.git
 cd tinydew
 ```
 
@@ -68,6 +68,7 @@ cargo run --quiet
 
 - In non-TTY context, Tinydew falls back to MCP stdio server.
 - OpenClaw can send JSON requests to stdin (`startSession`, `getState`, `command`, etc.).
+- Everytime user->openclaw interact will lead to tinydew print and show game ui to user.
 
 ### B) Interactive mode (guest/player keyboard control)
 
