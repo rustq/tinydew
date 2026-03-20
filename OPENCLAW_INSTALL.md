@@ -68,7 +68,7 @@ cargo run --quiet
 
 - In non-TTY context, Tinydew falls back to MCP stdio server.
 - OpenClaw can send JSON requests to stdin (`startSession`, `getState`, `command`, etc.).
-- Everytime user->openclaw interact will lead to tinydew print and show game ui to user.
+- Recommended chat behavior: for every user message during game sessions, call `print` and include the latest Tinydew UI snapshot in the assistant reply.
 
 ### B) Interactive mode (guest/player keyboard control)
 
@@ -110,3 +110,21 @@ For OpenClaw automation, prefer MCP mode and send tool-style commands:
 - `print` for text UI snapshots
 
 This gives deterministic, scriptable game control.
+
+### Suggested response format for chat
+
+When replying in game flow:
+1. One short status line (what happened).
+2. A fenced code block with the latest `print` snapshot UI.
+3. Optional one-line next prompt (e.g., "move where?").
+
+Example:
+
+```text
+Done — moved to Square.
+
+=== Tinydew Day 3 09:10 ☀️ ===
+Location: Square
+...
+> Welcome to the Square!
+```
