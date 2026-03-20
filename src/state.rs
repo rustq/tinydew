@@ -469,6 +469,10 @@ impl GameState {
     }
 
     pub fn guest_greeting_message(&self) -> String {
+        if self.season == "Spring" && self.day == 28 {
+            return "✨ Happy Butterfly Festival!".to_string();
+        }
+
         match self.weather {
             Weather::Rainy => "It’s rainy today, stay dry out there.".to_string(),
             Weather::Cloudy => "It’s cloudy today, a calm day to stroll.".to_string(),
@@ -2483,6 +2487,17 @@ mod tests {
         assert_eq!(state.guest_x, 2);
         assert_eq!(state.guest_y, 1);
         assert!(state.message.contains("That is so beautiful"));
+    }
+
+    #[test]
+    fn test_guest_greeting_message_on_butterfly_festival() {
+        let mut state = GameState::new();
+        state.season = String::from("Spring");
+        state.day = 28;
+
+        let msg = state.guest_greeting_message();
+
+        assert_eq!(msg, "✨ Happy Butterfly Festival!");
     }
 
     #[test]
