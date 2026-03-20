@@ -141,6 +141,7 @@ impl Session {
             TileType::Slide => "S".to_string(),
             TileType::River => "R".to_string(),
             TileType::RiverBubble => "B".to_string(),
+            TileType::Wonder => "W".to_string(),
         }
     }
 
@@ -170,6 +171,7 @@ impl Session {
             TileType::Slide => "Slide".to_string(),
             TileType::River => "River".to_string(),
             TileType::RiverBubble => "RiverBubble".to_string(),
+            TileType::Wonder => "Wonder".to_string(),
         }
     }
 

@@ -246,7 +246,11 @@ fn print_message<W: Write>(w: &mut W, game: &GameState) {
     } else if game.in_shop() {
         print_shop_menu(w, game);
     } else {
-        write!(w, "{}{}", game.message, EOL).unwrap();
+        if game.season == "Spring" && game.day == 28 {
+            write!(w, "Today is Butterfly Festival, enjoy it!{}", EOL).unwrap();
+        } else {
+            write!(w, "{}{}", game.message, EOL).unwrap();
+        }
         write!(w, "{}", EOL).unwrap();
         if game.is_guest_active() {
             write!(

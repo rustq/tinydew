@@ -39,6 +39,7 @@ pub enum TileType {
     Slide,
     River,
     RiverBubble,
+    Wonder,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -197,6 +198,7 @@ impl TileType {
             TileType::Mushroom => false,
             TileType::River => false,
             TileType::RiverBubble => false,
+            TileType::Wonder => false,
             TileType::Grass
             | TileType::Soil
             | TileType::PathEast
@@ -244,6 +246,7 @@ impl TileType {
             TileType::Slide => "🛝",
             TileType::River => "🌊",
             TileType::RiverBubble => "🫧",
+            TileType::Wonder => "🦋",
         }
     }
 }

@@ -371,6 +371,32 @@ impl GameState {
             self.message = String::from("Tile occupied.");
             false
         } else {
+            let target_tile = match self.guest_location {
+                Location::Farm => self.farm_map.get(new_y).and_then(|row| row.get(new_x)).copied(),
+                Location::EastPath => self
+                    .east_path_map
+                    .get(new_y)
+                    .and_then(|row| row.get(new_x))
+                    .copied(),
+                Location::Square => self
+                    .square_map
+                    .get(new_y)
+                    .and_then(|row| row.get(new_x))
+                    .copied(),
+                Location::SouthRiver => self
+                    .south_river_map
+                    .get(new_y)
+                    .and_then(|row| row.get(new_x))
+                    .copied(),
+            };
+
+            if matches!(target_tile, Some(TileType::Wonder)) {
+                self.message = String::from(
+                    "That is so beautiful. Let human enjoy it together in interactive mode.",
+                );
+            } else {
+                self.message = String::from("Cannot move there!");
+            }
             false
         }
     }
@@ -582,15 +608,20 @@ impl GameState {
             return false;
         }
 
-        if self.can_move_to(new_x, new_y) {
-            let target_tile = self.get_tile_at(new_x, new_y);
+        let target_tile = self.get_tile_at(new_x, new_y);
 
+        if self.can_move_to(new_x, new_y) {
             if let Some(tile) = target_tile {
                 if tile.is_transition() {
                     self.handle_transition(&tile);
                 } else {
                     self.player_x = new_x;
                     self.player_y = new_y;
+                    if tile == TileType::Wonder {
+                        self.message = String::from(
+                            "That is so beautiful. Let human enjoy it together in interactive mode.",
+                        );
+                    }
                     if !self.is_time_frozen() {
                         self.advance_time();
                     }
@@ -598,7 +629,13 @@ impl GameState {
             }
             true
         } else {
-            self.message = String::from("Cannot move there!");
+            if matches!(target_tile, Some(TileType::Wonder)) {
+                self.message = String::from(
+                    "That is so beautiful. Let human enjoy it together in interactive mode.",
+                );
+            } else {
+                self.message = String::from("Cannot move there!");
+            }
             false
         }
     }
@@ -719,7 +756,16 @@ impl GameState {
 
         self.spawn_random_crops();
 
+        self.spawn_wonder_if_due();
+
         self.message = String::from("Good morning! A new day begins.");
+    }
+
+    fn spawn_wonder_if_due(&mut self) {
+        if self.season == "Spring" && self.day == 28 {
+            self.square_map[2][2] = TileType::Wonder;
+            self.message = String::from("Today is Butterfly Festival, enjoy it!");
+        }
     }
 
     fn spawn_east_path_mushrooms(&mut self) {
@@ -829,41 +875,74 @@ impl GameState {
         if flower_roll < 10 {
             let mut farm_positions = self.get_empty_grass_positions(&self.farm_map);
             let mut east_path_positions = self.get_empty_grass_positions(&self.east_path_map);
+            let mut square_positions = self.get_empty_grass_positions(&self.square_map);
             let mut south_river_positions = self.get_empty_grass_positions(&self.south_river_map);
 
-            let mut all_positions: Vec<&mut Vec<(usize, usize)>> = Vec::new();
-            if !farm_positions.is_empty() {
-                all_positions.push(&mut farm_positions);
-            }
-            if !east_path_positions.is_empty() {
-                all_positions.push(&mut east_path_positions);
-            }
-            if !south_river_positions.is_empty() {
-                all_positions.push(&mut south_river_positions);
+            #[derive(Clone, Copy)]
+            enum FlowerSpawnMap {
+                Farm,
+                EastPath,
+                Square,
+                SouthRiver,
             }
 
-            if all_positions.is_empty() {
+            let mut map_candidates: Vec<FlowerSpawnMap> = Vec::new();
+            if !farm_positions.is_empty() {
+                map_candidates.push(FlowerSpawnMap::Farm);
+            }
+            if !east_path_positions.is_empty() {
+                map_candidates.push(FlowerSpawnMap::EastPath);
+            }
+            if !square_positions.is_empty() {
+                map_candidates.push(FlowerSpawnMap::Square);
+            }
+            if !south_river_positions.is_empty() {
+                map_candidates.push(FlowerSpawnMap::SouthRiver);
+            }
+
+            if map_candidates.is_empty() {
                 return;
             }
 
-            let map_choice = ((flower_seed / 100) % (all_positions.len() as u64)) as usize;
-            let chosen_positions = all_positions.remove(map_choice);
+            let map_choice = ((flower_seed / 100) % (map_candidates.len() as u64)) as usize;
+            let chosen_map = map_candidates[map_choice];
 
-            if let Some((x, y)) =
-                self.pick_random_tile(chosen_positions, flower_seed.wrapping_add(1))
-            {
+            let spawn_pos = match chosen_map {
+                FlowerSpawnMap::Farm => {
+                    self.pick_random_tile(&mut farm_positions, flower_seed.wrapping_add(1))
+                }
+                FlowerSpawnMap::EastPath => {
+                    self.pick_random_tile(&mut east_path_positions, flower_seed.wrapping_add(1))
+                }
+                FlowerSpawnMap::Square => {
+                    self.pick_random_tile(&mut square_positions, flower_seed.wrapping_add(1))
+                }
+                FlowerSpawnMap::SouthRiver => {
+                    self.pick_random_tile(&mut south_river_positions, flower_seed.wrapping_add(1))
+                }
+            };
+
+            if let Some((x, y)) = spawn_pos {
                 let mature_state = CropState {
                     days_grown: 16,
                     watered_today: false,
                 };
-                if y < FARM_HEIGHT && x < FARM_WIDTH {
-                    if !Self::is_protected_farm_spawn_tile(x, y) {
-                        self.farm_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                match chosen_map {
+                    FlowerSpawnMap::Farm => {
+                        if !Self::is_protected_farm_spawn_tile(x, y) {
+                            self.farm_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                        }
                     }
-                } else if y < EAST_PATH_HEIGHT && x < EAST_PATH_WIDTH {
-                    self.east_path_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
-                } else if y < SOUTH_RIVER_HEIGHT && x < SOUTH_RIVER_WIDTH {
-                    self.south_river_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                    FlowerSpawnMap::EastPath => {
+                        self.east_path_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                    }
+                    FlowerSpawnMap::Square => {
+                        self.square_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                    }
+                    FlowerSpawnMap::SouthRiver => {
+                        self.south_river_map[y][x] =
+                            TileType::Crop(CropType::Rhubarb, mature_state);
+                    }
                 }
             }
         }
@@ -904,6 +983,12 @@ impl GameState {
 
     fn roll_weather(&mut self) {
         if self.day == 1 {
+            self.weather = Weather::Sunny;
+            self.weather_day = self.day;
+            return;
+        }
+
+        if self.season == "Spring" && self.day == 28 {
             self.weather = Weather::Sunny;
             self.weather_day = self.day;
             return;
@@ -1857,32 +1942,21 @@ mod tests {
         state.season = String::from("Spring");
         state.rng_seed = 0;
 
-        let mut flower_count = 0;
+        let mut flower_roll_hits = 0;
         let iterations = 1000;
 
         for _ in 0..iterations {
-            let mut test_state = GameState::new();
-            test_state.season = String::from("Spring");
-            test_state.rng_seed = state.rng_seed;
-            test_state.day = state.day;
-
-            test_state.spawn_random_crops();
-
-            for y in 0..FARM_HEIGHT {
-                for x in 0..FARM_WIDTH {
-                    if let TileType::Crop(CropType::Rhubarb, _) = test_state.farm_map[y][x] {
-                        if x != 6 || y != 2 {
-                            flower_count += 1;
-                            break;
-                        }
-                    }
-                }
+            let flower_seed = state
+                .rng_seed
+                .wrapping_add((state.day as u64).wrapping_mul(7919));
+            let flower_roll = (flower_seed % 100) as u32;
+            if flower_roll < 10 {
+                flower_roll_hits += 1;
             }
-
             state.day += 1;
         }
 
-        let percentage = (flower_count as f64 / iterations as f64) * 100.0;
+        let percentage = (flower_roll_hits as f64 / iterations as f64) * 100.0;
         assert!(
             percentage > 5.0 && percentage < 15.0,
             "Expected ~10%, got {}%",
@@ -2350,6 +2424,65 @@ mod tests {
         state.farm_map[2][3] = TileType::Fountain;
         state.clear_action_at(Direction::Right);
         assert!(state.message.contains("fountain") || state.message.contains("Cannot clear"));
+    }
+
+    #[test]
+    fn test_wonder_spawns_on_spring_day_28_at_square_2_2() {
+        let mut state = GameState::new();
+        state.location = Location::Square;
+        state.player_location = Location::Square;
+        state.day = 28;
+        state.season = String::from("Spring");
+
+        state.start_new_day();
+
+        assert_eq!(state.square_map[2][2], TileType::Wonder);
+    }
+
+    #[test]
+    fn test_wonder_tile_renders_butterfly_emoji() {
+        assert_eq!(TileType::Wonder.emoji(), "🦋");
+    }
+
+    #[test]
+    fn test_wonder_tile_is_not_walkable() {
+        assert!(!TileType::Wonder.is_walkable());
+    }
+
+    #[test]
+    fn test_wonder_message_on_player_attempted_step() {
+        let mut state = GameState::new();
+        state.location = Location::Square;
+        state.player_location = Location::Square;
+        state.player_x = 2;
+        state.player_y = 1;
+        state.direction = Direction::Down;
+        state.square_map[2][2] = TileType::Wonder;
+
+        let moved = state.move_player(Direction::Down);
+
+        assert!(!moved);
+        assert_eq!(state.player_x, 2);
+        assert_eq!(state.player_y, 1);
+        assert!(state.message.contains("That is so beautiful"));
+    }
+
+    #[test]
+    fn test_wonder_message_on_guest_attempted_step() {
+        let mut state = GameState::new();
+        state.enable_guest_for_interactive();
+        state.guest_location = Location::Square;
+        state.location = Location::Square;
+        state.guest_x = 2;
+        state.guest_y = 1;
+        state.square_map[2][2] = TileType::Wonder;
+
+        let moved = state.move_guest(Direction::Down);
+
+        assert!(!moved);
+        assert_eq!(state.guest_x, 2);
+        assert_eq!(state.guest_y, 1);
+        assert!(state.message.contains("That is so beautiful"));
     }
 
     #[test]

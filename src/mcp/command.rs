@@ -293,6 +293,10 @@ fn advance_to_morning(state: &mut GameState) {
 }
 
 fn display_message_for_snapshot(state: &GameState) -> String {
+    if state.season == "Spring" && state.day == 28 {
+        return "Today is Butterfly Festival, enjoy it!".to_string();
+    }
+
     let is_generic_day_greeting = state.message == "Good morning! Ready for another day."
         || state.message == "Good morning! A new day begins.";
 
