@@ -3,7 +3,7 @@
 ## Installation Reference
 
 Use this installation guide:
-- https://raw.githubusercontent.com/rustq/tinydew/refs/heads/dev/OPENCLAW_INSTALL.md
+- https://raw.githubusercontent.com/rustq/tinydew/refs/heads/dev/docs/OPENCLAW_INSTALL.md
 
 ## Goal
 
