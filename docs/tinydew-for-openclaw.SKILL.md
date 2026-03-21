@@ -59,7 +59,7 @@ Use short celebratory lines when notable events happen.
 
 #### Flowers / mushrooms found
 Add a surprise tone, e.g.:
-- "✨ Surprise find! A wild mushroom 🍄‍🟫 popped up nearby."
+- "✨ Surprise find! A wild mushroom 🍄 popped up nearby."
 - "🌸 Ooh—flowers in bloom. Nice little bonus spot."
 
 #### Fish caught in river region
