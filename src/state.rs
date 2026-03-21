@@ -871,6 +871,15 @@ impl GameState {
         Some(positions.remove(idx))
     }
 
+    fn region_has_flower_or_mushroom(map: &Map) -> bool {
+        map.iter().flatten().any(|tile| {
+            matches!(
+                tile,
+                TileType::Mushroom | TileType::Crop(CropType::Flower, _)
+            )
+        })
+    }
+
     pub fn spawn_random_crops(&mut self) {
         if self.season != "Spring" {
             return;
@@ -910,16 +919,24 @@ impl GameState {
             }
 
             let mut map_candidates: Vec<FlowerSpawnMap> = Vec::new();
-            if !farm_positions.is_empty() {
+            if !farm_positions.is_empty()
+                && !Self::region_has_flower_or_mushroom(&self.farm_map)
+            {
                 map_candidates.push(FlowerSpawnMap::Farm);
             }
-            if !east_path_positions.is_empty() {
+            if !east_path_positions.is_empty()
+                && !Self::region_has_flower_or_mushroom(&self.east_path_map)
+            {
                 map_candidates.push(FlowerSpawnMap::EastPath);
             }
-            if !square_positions.is_empty() {
+            if !square_positions.is_empty()
+                && !Self::region_has_flower_or_mushroom(&self.square_map)
+            {
                 map_candidates.push(FlowerSpawnMap::Square);
             }
-            if !south_river_positions.is_empty() {
+            if !south_river_positions.is_empty()
+                && !Self::region_has_flower_or_mushroom(&self.south_river_map)
+            {
                 map_candidates.push(FlowerSpawnMap::SouthRiver);
             }
 
@@ -986,17 +1003,24 @@ impl GameState {
             let mut farm_positions = self.get_empty_grass_positions(&self.farm_map);
             let mut east_path_positions = self.get_empty_grass_positions(&self.east_path_map);
 
-            let chosen_positions = if farm_positions.is_empty() {
-                &mut east_path_positions
-            } else if east_path_positions.is_empty() {
+            let farm_allowed = !farm_positions.is_empty()
+                && !Self::region_has_flower_or_mushroom(&self.farm_map);
+            let east_allowed = !east_path_positions.is_empty()
+                && !Self::region_has_flower_or_mushroom(&self.east_path_map);
+
+            let chosen_positions = if farm_allowed && !east_allowed {
                 &mut farm_positions
-            } else {
+            } else if east_allowed && !farm_allowed {
+                &mut east_path_positions
+            } else if farm_allowed && east_allowed {
                 let map_choice = (mushroom_seed / 100) % 2;
                 if map_choice == 0 {
                     &mut farm_positions
                 } else {
                     &mut east_path_positions
                 }
+            } else {
+                return;
             };
 
             if let Some((x, y)) =
@@ -1989,10 +2013,27 @@ mod tests {
     }
 
     #[test]
-    fn test_rainy_day_mushroom_spawns() {
+    fn test_rainy_day_mushroom_spawns_if_region_has_no_flower_or_mushroom() {
         let mut state = GameState::new();
         state.season = String::from("Spring");
         state.weather = Weather::Rainy;
+
+        // disable forced flower and clear any existing blockers so a region is eligible
+        state.spring_forced_flower_6_2_done = true;
+        for y in 0..FARM_HEIGHT {
+            for x in 0..FARM_WIDTH {
+                if matches!(state.farm_map[y][x], TileType::Mushroom | TileType::Crop(CropType::Flower, _)) {
+                    state.farm_map[y][x] = TileType::Grass;
+                }
+            }
+        }
+        for y in 0..EAST_PATH_HEIGHT {
+            for x in 0..EAST_PATH_WIDTH {
+                if matches!(state.east_path_map[y][x], TileType::Mushroom | TileType::Crop(CropType::Flower, _)) {
+                    state.east_path_map[y][x] = TileType::Grass;
+                }
+            }
+        }
 
         let initial_mushrooms = count_mushrooms(&state);
 
