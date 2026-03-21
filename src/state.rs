@@ -643,6 +643,14 @@ impl GameState {
                 self.message = String::from(
                     "That is so beautiful. Let human enjoy it together in interactive mode.",
                 );
+            } else if let Some(TileType::Crop(crop, state)) = target_tile {
+                if state.is_mature(crop) {
+                    self.message =
+                        String::from("Cannot move there. Mature crop ahead — try harvest.");
+                } else {
+                    self.message =
+                        String::from("Cannot move there. Try walking around to find a path.");
+                }
             } else {
                 self.message = String::from("Cannot move there. Try walking around to find a path.");
             }
