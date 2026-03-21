@@ -100,6 +100,16 @@ impl Inventory {
         *self.fish.get(&fish).unwrap_or(&0)
     }
 
+    pub fn sell_forage(&mut self, forage: ForageType) -> bool {
+        let count = self.forage.get(&forage).unwrap_or(&0);
+        if *count > 0 {
+            *self.forage.get_mut(&forage).unwrap() -= 1;
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn sell_fish(&mut self, fish: FishType) -> bool {
         let count = self.fish.get(&fish).unwrap_or(&0);
         if *count > 0 {

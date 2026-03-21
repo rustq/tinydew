@@ -130,6 +130,18 @@ impl ForageType {
             ForageType::Mushroom => "🍄",
         }
     }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            ForageType::Mushroom => "Mushroom",
+        }
+    }
+
+    pub fn sell_price(&self) -> u32 {
+        match self {
+            ForageType::Mushroom => 25,
+        }
+    }
 }
 
 impl CropType {

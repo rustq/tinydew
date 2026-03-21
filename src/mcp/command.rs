@@ -1,7 +1,7 @@
 use crate::mcp::errors::{ErrorCode, McpError};
 use crate::savegame;
 use crate::state::{GameState, Location};
-use crate::world::{CropState, CropType, Direction, FishType};
+use crate::world::{CropState, CropType, Direction, FishType, ForageType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,6 +50,7 @@ pub enum ParsedCommand {
     Buy(CropType, u32),
     Sell(CropType, u32),
     SellFish(FishType, u32),
+    SellForage(ForageType, u32),
     Sleep,
     Print,
     Save,
@@ -134,6 +135,8 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
             let (item_str, qty) = parse_item_with_qty(arg.unwrap_or(""))?;
             if let Ok(fish) = parse_fish(item_str) {
                 Ok(ParsedCommand::SellFish(fish, qty))
+            } else if let Ok(forage) = parse_forage(item_str) {
+                Ok(ParsedCommand::SellForage(forage, qty))
             } else if let Ok(crop) = parse_crop(item_str) {
                 Ok(ParsedCommand::Sell(crop, qty))
             } else {
@@ -144,6 +147,7 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
                         "strawberry",
                         "cauliflower",
                         "rhubarb",
+                        "mushroom",
                         "fish",
                         "common",
                         "rare",
@@ -178,6 +182,16 @@ fn parse_crop(s: &str) -> Result<CropType, McpError> {
         _ => Err(McpError::validation_error(
             format!("invalid crop '{}'", s),
             vec!["carrot", "strawberry", "cauliflower", "rhubarb"],
+        )),
+    }
+}
+
+fn parse_forage(s: &str) -> Result<ForageType, McpError> {
+    match s {
+        "mushroom" | "🍄" => Ok(ForageType::Mushroom),
+        _ => Err(McpError::validation_error(
+            format!("invalid forage '{}'", s),
+            vec!["mushroom"],
         )),
     }
 }
@@ -650,6 +664,33 @@ pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResu
                 .with_state_delta(serde_json::json!({
                     "money": state.money,
                     "fish": state.inventory.fish
+                }))
+        }
+        ParsedCommand::SellForage(forage, qty) => {
+            let mut sold_count = 0;
+            for _ in 0..qty {
+                if state.inventory.sell_forage(forage) {
+                    sold_count += 1;
+                } else {
+                    break;
+                }
+            }
+
+            if sold_count > 0 {
+                let revenue = forage.sell_price() * sold_count;
+                state.money += revenue;
+                state.record_income(revenue);
+                state.record_forage_sold(forage, sold_count);
+                state.message = format!("Sold {} x{} for ${}!", forage.emoji(), sold_count, revenue);
+            } else {
+                state.message = format!("No {} to sell!", forage.emoji());
+            }
+
+            CommandResult::new(state.message.clone())
+                .with_events(vec![format!("Sold {} forage", sold_count)])
+                .with_state_delta(serde_json::json!({
+                    "money": state.money,
+                    "forage": state.inventory.forage
                 }))
         }
         ParsedCommand::Fishing(dir) => {
@@ -1982,6 +2023,21 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_sell_mushroom() {
+        let result = parse_command("sell:mushroom");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::SellForage(ForageType::Mushroom, 1))
+        ));
+
+        let result = parse_command("sell:mushroom:2");
+        assert!(matches!(
+            result,
+            Ok(ParsedCommand::SellForage(ForageType::Mushroom, 2))
+        ));
+    }
+
+    #[test]
     fn test_execute_fishing_near_river() {
         use crate::state::Location;
         let mut state = GameState::new();
@@ -2044,6 +2100,21 @@ mod tests {
         let result = execute_command(&mut state, ParsedCommand::SellFish(FishType::Rare, 1));
         assert!(result.message.contains("$180"));
         assert_eq!(state.money, 180);
+    }
+
+    #[test]
+    fn test_execute_sell_mushroom() {
+        let mut state = GameState::new();
+        state.inventory.forage.insert(ForageType::Mushroom, 2);
+        state.money = 0;
+
+        let result = execute_command(
+            &mut state,
+            ParsedCommand::SellForage(ForageType::Mushroom, 1),
+        );
+        assert!(result.message.contains("$25"));
+        assert_eq!(state.money, 25);
+        assert_eq!(state.inventory.get_forage(ForageType::Mushroom), 1);
     }
 
     #[test]

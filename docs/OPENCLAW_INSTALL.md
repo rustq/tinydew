@@ -113,7 +113,9 @@ Common MCP command strings:
 - `move:up|down|left|right`
 - `clear`, `plant:<crop>`, `water`, `harvest`
 - `fish` or `fish:up|down|left|right`
-- `buy:<item>[:<qty>]`, `sell:<item>[:<qty>]`, `print`, `save`, `load
+- `buy:<item>[:<qty>]`, `sell:<item>[:<qty>]`, `print`, `save`, `load`
+- Sell examples: `sell:mushroom:1`, `sell:carrot:2`, `sell:fish:1`
+  - Mushroom sell value: $25 each
 
 This gives deterministic, scriptable game control.
 

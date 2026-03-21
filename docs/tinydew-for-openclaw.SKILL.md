@@ -96,7 +96,7 @@ Moved east into SouthRiver.
 <snapshot_text>
 
 Game says: You caught a Sardine!
-Next: fish again | move:left | print inventory
+Next: fish | move:left | sell:mushroom:1 | print
 ```
 
 ---
@@ -147,4 +147,6 @@ If ambiguous, take safest single step and show UI immediately.
 This is a draft spec. Final skill can later split into:
 - `SKILL.md` (core workflow)
 - `references/reply-templates.md` (message templates)
+- `references/event-triggers.md` (surprise trigger rules)
+es)
 - `references/event-triggers.md` (surprise trigger rules)
