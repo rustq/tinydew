@@ -126,5 +126,5 @@ Done — moved to Square.
 === Tinydew Day 3 09:10 ☀️ ===
 Location: Square
 ...
-> Welcome to the Square!
+> Entered Square.
 ```
