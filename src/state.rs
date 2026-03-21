@@ -1230,7 +1230,7 @@ impl GameState {
                 self.advance_time();
             } else {
                 self.message = format!(
-                    "No {} seeds! Press T to buy seeds.",
+                    "No {} seeds! Buy seeds from the shop.",
                     self.selected_seed.seed_name()
                 );
             }
@@ -1271,7 +1271,7 @@ impl GameState {
                     self.advance_time();
                 } else {
                     self.message = format!(
-                        "No {} seeds! Press T to buy seeds.",
+                        "No {} seeds! Buy seeds from the shop.",
                         self.selected_seed.seed_name()
                     );
                 }
