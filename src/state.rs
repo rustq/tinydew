@@ -395,7 +395,7 @@ impl GameState {
                     "That is so beautiful. Let human enjoy it together in interactive mode.",
                 );
             } else {
-                self.message = String::from("Cannot move there!");
+                self.message = String::from("Cannot move there. Try walking around to find a path.");
             }
             false
         }
@@ -415,42 +415,42 @@ impl GameState {
                 self.location = Location::EastPath;
                 self.guest_x = 1;
                 self.guest_y = 2;
-                self.message = String::from("Guest entered East Path!");
+                self.message = String::from("Guest moved to East Path.");
             }
             (Location::EastPath, TileType::PathFarm) => {
                 self.guest_location = Location::Farm;
                 self.location = Location::Farm;
                 self.guest_x = 7;
                 self.guest_y = 5;
-                self.message = String::from("Guest returned to Farm!");
+                self.message = String::from("Guest returned to Farm.");
             }
             (Location::EastPath, TileType::PathSquare) => {
                 self.guest_location = Location::Square;
                 self.location = Location::Square;
                 self.guest_x = 4;
                 self.guest_y = 4;
-                self.message = String::from("Guest entered Square!");
+                self.message = String::from("Guest moved to Square.");
             }
             (Location::Square, TileType::PathSquare) => {
                 self.guest_location = Location::EastPath;
                 self.location = Location::EastPath;
                 self.guest_x = 5;
                 self.guest_y = 0;
-                self.message = String::from("Guest left Square!");
+                self.message = String::from("Guest left Square.");
             }
             (Location::EastPath, TileType::PathSouthRiver) => {
                 self.guest_location = Location::SouthRiver;
                 self.location = Location::SouthRiver;
                 self.guest_x = 2;
                 self.guest_y = 1;
-                self.message = String::from("Guest entered South River!");
+                self.message = String::from("Guest moved to South River.");
             }
             (Location::SouthRiver, TileType::PathSouthRiverGate) => {
                 self.guest_location = Location::EastPath;
                 self.location = Location::EastPath;
                 self.guest_x = 5;
                 self.guest_y = 3;
-                self.message = String::from("Guest returned to East Path!");
+                self.message = String::from("Guest returned to East Path.");
             }
             _ => {}
         }
@@ -638,7 +638,7 @@ impl GameState {
                     "That is so beautiful. Let human enjoy it together in interactive mode.",
                 );
             } else {
-                self.message = String::from("Cannot move there!");
+                self.message = String::from("Cannot move there. Try walking around to find a path.");
             }
             false
         }
@@ -659,7 +659,7 @@ impl GameState {
                 self.player_x = 1;
                 self.player_y = 2;
                 self.direction = Direction::Right;
-                self.message = String::from("Welcome to East Path!");
+                self.message = String::from("Entered East Path.");
             }
             (Location::EastPath, TileType::PathFarm) => {
                 self.location = Location::Farm;
@@ -667,7 +667,7 @@ impl GameState {
                 self.player_x = 7;
                 self.player_y = 5;
                 self.direction = Direction::Left;
-                self.message = String::from("Back at the farm!");
+                self.message = String::from("Returned to Farm.");
             }
             (Location::EastPath, TileType::PathSquare) => {
                 self.location = Location::Square;
@@ -675,7 +675,7 @@ impl GameState {
                 self.player_x = 4;
                 self.player_y = 4;
                 self.direction = Direction::Up;
-                self.message = String::from("Welcome to the Square!");
+                self.message = String::from("Entered Square.");
             }
             (Location::Square, TileType::PathSquare) => {
                 self.location = Location::EastPath;
@@ -683,7 +683,7 @@ impl GameState {
                 self.player_x = 5;
                 self.player_y = 0;
                 self.direction = Direction::Down;
-                self.message = String::from("Left the Square!");
+                self.message = String::from("Returned to East Path.");
             }
             (Location::EastPath, TileType::PathSouthRiver) => {
                 self.location = Location::SouthRiver;
@@ -691,7 +691,7 @@ impl GameState {
                 self.player_x = 2;
                 self.player_y = 1;
                 self.direction = Direction::Down;
-                self.message = String::from("Welcome to South River!");
+                self.message = String::from("Entered South River.");
             }
             (Location::SouthRiver, TileType::PathSouthRiverGate) => {
                 self.location = Location::EastPath;
@@ -699,7 +699,7 @@ impl GameState {
                 self.player_x = 5;
                 self.player_y = 3;
                 self.direction = Direction::Up;
-                self.message = String::from("Back to East Path!");
+                self.message = String::from("Returned to East Path.");
             }
             _ => {}
         }
@@ -762,13 +762,13 @@ impl GameState {
 
         self.spawn_wonder_if_due();
 
-        self.message = String::from("Good morning! A new day begins.");
+        self.message = String::from("A new day begins.");
     }
 
     fn spawn_wonder_if_due(&mut self) {
         if self.season == "Spring" && self.day == 28 {
             self.square_map[2][2] = TileType::Wonder;
-            self.message = String::from("Today is Butterfly Festival, enjoy it!");
+            self.message = String::from("Butterfly Festival is happening today.");
         } else if self.square_map[2][2] == TileType::Wonder {
             self.square_map[2][2] = TileType::Grass;
         }
@@ -1069,7 +1069,7 @@ impl GameState {
 
         self.home_state = HomeState::None;
         self.current_income = DailyIncome::default();
-        self.message = String::from("Good morning! Ready for another day.");
+        self.message = String::from("Ready for a new day.");
     }
 
     pub fn tick(&mut self, current_time_ms: u64) {
@@ -1137,7 +1137,7 @@ impl GameState {
         }
 
         if self.location != Location::Farm {
-            self.message = String::from("Cannot clear here! (Farming only on farm)");
+            self.message = String::from("Cannot clear here (farm only).");
             return;
         }
 
@@ -1148,12 +1148,12 @@ impl GameState {
             match tile {
                 Some(TileType::Grass) => {
                     self.farm_map[y][x] = TileType::Soil;
-                    self.message = String::from("Clear Done! (Weeds cleared)");
+                    self.message = String::from("Cleared weeds.");
                     self.advance_time();
                 }
                 Some(TileType::Crop(_, _)) => {
                     self.farm_map[y][x] = TileType::Soil;
-                    self.message = String::from("Clear Done! (Crop uprooted)");
+                    self.message = String::from("Cleared crop tile.");
                     self.advance_time();
                 }
                 Some(TileType::Fountain) => {
@@ -1164,11 +1164,11 @@ impl GameState {
                 }
                 _ => {
                     self.message =
-                        String::from("Nothing to clear! (Only weeds/crops can be cleared)");
+                        String::from("Nothing clearable nearby.");
                 }
             }
         } else {
-            self.message = String::from("Nothing to clear! (Only weeds/crops can be cleared)");
+            self.message = String::from("Nothing clearable nearby.");
         }
     }
 
@@ -1179,7 +1179,7 @@ impl GameState {
         }
 
         if self.location != Location::Farm {
-            self.message = String::from("Cannot clear here! (Farming only on farm)");
+            self.message = String::from("Cannot clear here (farm only).");
             return;
         }
 
@@ -1204,7 +1204,7 @@ impl GameState {
                 }
                 _ => {
                     self.message =
-                        String::from("Nothing to clear! (Only weeds/crops can be cleared)");
+                        String::from("Nothing clearable nearby.");
                 }
             }
         } else {
@@ -1219,7 +1219,7 @@ impl GameState {
         }
 
         if self.location != Location::Farm {
-            self.message = String::from("Cannot plant here! (Farming only on farm)");
+            self.message = String::from("Cannot plant here (farm only).");
             return;
         }
 
@@ -1230,12 +1230,12 @@ impl GameState {
                 self.advance_time();
             } else {
                 self.message = format!(
-                    "No {} seeds! Buy seeds from the shop.",
+                    "No {} seeds available. Buy more from the shop.",
                     self.selected_seed.seed_name()
                 );
             }
         } else {
-            self.message = String::from("Cannot plant there! (Need cleared soil)");
+            self.message = String::from("Cannot plant there! Needs cleared soil.");
         }
     }
 
@@ -1246,7 +1246,7 @@ impl GameState {
         }
 
         if self.location != Location::Farm {
-            self.message = String::from("Cannot plant here! (Farming only on farm)");
+            self.message = String::from("Cannot plant here (farm only).");
             return;
         }
 
@@ -1271,12 +1271,12 @@ impl GameState {
                     self.advance_time();
                 } else {
                     self.message = format!(
-                        "No {} seeds! Buy seeds from the shop.",
+                        "No {} seeds available. Buy more from the shop.",
                         self.selected_seed.seed_name()
                     );
                 }
             } else {
-                self.message = String::from("Cannot plant there! (Need cleared soil)");
+                self.message = String::from("Cannot plant there! Needs cleared soil.");
             }
         } else {
             self.message = String::from("Out of bounds!");
@@ -1290,7 +1290,7 @@ impl GameState {
         }
 
         if self.location != Location::Farm {
-            self.message = String::from("Cannot water here! (Farming only on farm)");
+            self.message = String::from("Cannot water here (farm only).");
             return;
         }
 
@@ -1305,16 +1305,16 @@ impl GameState {
                             watered_today: true,
                         },
                     );
-                    self.message = String::from("Water Done! (Crop watered)");
+                    self.message = String::from("Crop watered.");
                     self.advance_time();
                 } else {
-                    self.message = String::from("Already mature! (Harvest ready)");
+                    self.message = String::from("Crop is already mature and ready to harvest.");
                 }
             } else {
-                self.message = String::from("Nothing to water! (Need a crop)");
+                self.message = String::from("Nothing to water nearby.");
             }
         } else {
-            self.message = String::from("Nothing to water! (Need a crop)");
+            self.message = String::from("Nothing to water nearby.");
         }
     }
 
@@ -1325,7 +1325,7 @@ impl GameState {
         }
 
         if self.location != Location::Farm {
-            self.message = String::from("Cannot water here! (Farming only on farm)");
+            self.message = String::from("Cannot water here (farm only).");
             return;
         }
 
@@ -1351,10 +1351,10 @@ impl GameState {
                     self.message = format!("Water Done! (Watered {:?})", dir);
                     self.advance_time();
                 } else {
-                    self.message = String::from("Already mature! (Harvest ready)");
+                    self.message = String::from("Crop is already mature and ready to harvest.");
                 }
             } else {
-                self.message = String::from("Nothing to water! (Need a crop)");
+                self.message = String::from("Nothing to water nearby.");
             }
         } else {
             self.message = String::from("Out of bounds!");
@@ -1387,7 +1387,7 @@ impl GameState {
                     self.message = format!("Harvest Done! (Got {})", crop.produce_emoji());
                     self.advance_time();
                 } else {
-                    self.message = String::from("Not ready yet! (Needs more time)");
+                    self.message = String::from("Not ready yet (needs more time).");
                 }
             } else if let Some(TileType::Mushroom) = tile {
                 if self.player_location == Location::Farm {
@@ -1401,7 +1401,7 @@ impl GameState {
                 }
                 self.inventory.add_forage(ForageType::Mushroom);
                 self.record_forage_harvested(ForageType::Mushroom, 1);
-                self.message = String::from("Harvest Done! (Got 🍄)");
+                self.message = String::from("Harvested 🍄.");
                 self.advance_time();
             } else {
                 self.message = String::from("Nothing to harvest!");
@@ -1444,7 +1444,7 @@ impl GameState {
                         format!("Harvest Done! (Got {} at {:?})", crop.produce_emoji(), dir);
                     self.advance_time();
                 } else {
-                    self.message = String::from("Not ready yet! (Needs more time)");
+                    self.message = String::from("Not ready yet (needs more time).");
                 }
             } else if let Some(TileType::Mushroom) = tile {
                 if self.player_location == Location::Farm {
@@ -1458,7 +1458,7 @@ impl GameState {
                 }
                 self.inventory.add_forage(ForageType::Mushroom);
                 self.record_forage_harvested(ForageType::Mushroom, 1);
-                self.message = String::from("Harvest Done! (Got 🍄)");
+                self.message = String::from("Harvested 🍄.");
                 self.advance_time();
             } else {
                 self.message = String::from("Nothing to harvest!");
@@ -1539,7 +1539,7 @@ impl GameState {
         if self.shop_state == ShopState::None {
             self.shop_state = ShopState::BuyMenu;
             self.shop_cursor = 0;
-            self.message = String::from("Shop opened!");
+            self.message = String::from("Shop opened.");
         } else {
             self.close_shop();
         }
@@ -1564,7 +1564,7 @@ impl GameState {
         if self.home_state == HomeState::None && self.hour == 0 && self.location == Location::Farm {
             self.home_state = HomeState::Alert;
             self.home_cursor = 0;
-            self.message = String::from("It's late. You should rest.");
+            self.message = String::from("It's late. Time to rest.");
         }
     }
 
@@ -1668,7 +1668,7 @@ impl GameState {
                     if self.money >= price {
                         self.money -= price;
                         self.inventory.add_seeds(crop, 1);
-                        self.message = format!("Bought 🫙 {}!", crop.seed_name());
+                        self.message = format!("Bought {}.", crop.seed_name());
                     } else {
                         self.message = String::from("Not enough money!");
                     }
@@ -1699,7 +1699,7 @@ impl GameState {
                 } else {
                     self.shop_state = ShopState::BuyMenu;
                     self.shop_cursor = 0;
-                    self.message = String::from("Back to buy menu.");
+                    self.message = String::from("Returned to buy menu.");
                 }
             }
             ShopState::None => {}
@@ -1761,7 +1761,7 @@ impl GameState {
         self.current_income = DailyIncome::default();
         self.home_state = HomeState::None;
         self.home_cursor = 0;
-        self.message = String::from("Good morning! Ready for another day.");
+        self.message = String::from("Ready for a new day.");
     }
 }
 
