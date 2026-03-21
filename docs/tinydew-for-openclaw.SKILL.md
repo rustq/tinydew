@@ -39,6 +39,7 @@ When planting succeeds, include growth timing:
 - Crop name
 - Days to mature
 - Expected ready day (current day + growth days)
+- Note: planted crop tiles (🌱) are walkable in current build
 
 Example style:
 - "🌱 Carrot planted! It needs 4 watered days to mature (ready around Day 5)."

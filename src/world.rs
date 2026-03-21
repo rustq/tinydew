@@ -204,7 +204,7 @@ impl TileType {
     pub fn is_walkable(&self) -> bool {
         match self {
             TileType::Boundary => false,
-            TileType::Crop(_, _) => false,
+            TileType::Crop(_, _) => true,
             TileType::Fountain => false,
             TileType::Slide => false,
             TileType::Mushroom => false,

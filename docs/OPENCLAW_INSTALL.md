@@ -112,6 +112,7 @@ For OpenClaw automation, prefer MCP mode and send tool-style commands:
 Common MCP command strings:
 - `move:up|down|left|right`
 - `clear`, `plant:<crop>`, `water`, `harvest`
+  - Crop tiles (🌱) are walkable in current build
 - `fish` or `fish:up|down|left|right`
 - `buy:<item>[:<qty>]`, `sell:<item>[:<qty>]`, `print`, `save`, `load`
 - Sell examples: `sell:mushroom:1`, `sell:carrot:2`, `sell:fish:1`

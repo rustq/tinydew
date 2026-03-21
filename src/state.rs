@@ -1790,16 +1790,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_crop_tile_is_not_walkable() {
+    fn test_crop_tile_is_walkable() {
         let crop_seedling = TileType::Crop(CropType::Carrot, CropState::new());
-        assert!(!crop_seedling.is_walkable());
+        assert!(crop_seedling.is_walkable());
 
         let mature_state = CropState {
             days_grown: 10,
             watered_today: false,
         };
         let crop_mature = TileType::Crop(CropType::Carrot, mature_state);
-        assert!(!crop_mature.is_walkable());
+        assert!(crop_mature.is_walkable());
     }
 
     #[test]
@@ -1814,17 +1814,16 @@ mod tests {
     }
 
     #[test]
-    fn test_move_blocked_by_crop() {
+    fn test_move_allowed_on_crop_tile() {
         let mut state = GameState::new();
         state.player_x = 3;
         state.player_y = 3;
         state.farm_map[4][3] = TileType::Crop(CropType::Carrot, CropState::new());
 
         let result = state.move_player(Direction::Down);
-        assert!(!result);
+        assert!(result);
         assert_eq!(state.player_x, 3);
-        assert_eq!(state.player_y, 3);
-        assert!(state.message.contains("Cannot move there"));
+        assert_eq!(state.player_y, 4);
     }
 
     #[test]
