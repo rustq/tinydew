@@ -122,7 +122,7 @@ fn should_autosave_after_command(cmd: &super::command::ParsedCommand) -> bool {
             | ParsedCommand::Plant(_, _)
             | ParsedCommand::Water(_)
             | ParsedCommand::Harvest(_)
-            | ParsedCommand::Buy(_, _)
+            | ParsedCommand::BuySeed(_)
             | ParsedCommand::Sell(_, _)
     )
 }

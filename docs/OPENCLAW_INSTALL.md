@@ -112,12 +112,12 @@ For OpenClaw automation, prefer MCP mode and send tool-style commands:
 Common MCP command strings:
 - `move:up|down|left|right`
 - `clear`, `plant:seed`, `water`, `harvest`
-  - Crop tiles (🌱) are walkable in current build
+  - Mature crop tiles are non-walkable (blocked until harvested)
   - `plant:seed` consumes one generic seed and rolls a random crop type
 - `fish` or `fish:up|down|left|right`
 - `buy:<item>[:<qty>]`, `sell:<item>[:<qty>]`, `print`, `save`, `load`
 - Sell examples: `sell:mushroom:1`, `sell:carrot:2`, `sell:fish:1`
-  - Mushroom (🍄‍🟫) sell value: $25 each
+  - Mushroom (🍄) sell value: $25 each
 - Spec inventory convention for seeds: show as `🫙 xN`
 
 This gives deterministic, scriptable game control.

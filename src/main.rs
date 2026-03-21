@@ -746,12 +746,18 @@ mod tests {
         game.player_x = 4;
         game.clear_action();
 
-        game.inventory.add_seeds(crate::world::CropType::Carrot, 5);
+        game.inventory.add_seed(5);
         game.plant_action();
 
         let tile = game.get_tile_at(4, 2);
         if let Some(crate::world::TileType::Crop(crop, _)) = tile {
-            assert_eq!(crop, crate::world::CropType::Carrot);
+            assert!(matches!(
+                crop,
+                crate::world::CropType::Carrot
+                    | crate::world::CropType::Strawberry
+                    | crate::world::CropType::Cauliflower
+                    | crate::world::CropType::Rhubarb
+            ));
         } else {
             panic!("Expected Crop tile");
         }
@@ -763,7 +769,7 @@ mod tests {
         game.direction = crate::world::Direction::Right;
         game.player_x = 4;
         game.clear_action();
-        game.inventory.add_seeds(crate::world::CropType::Carrot, 5);
+        game.inventory.add_seed(5);
         game.plant_action();
 
         game.water_action();
@@ -780,9 +786,19 @@ mod tests {
         let mut game = GameState::new();
         game.direction = crate::world::Direction::Right;
         game.player_x = 4;
-        game.clear_action();
-        game.inventory.add_seeds(crate::world::CropType::Carrot, 5);
-        game.plant_action();
+
+        // Keep planting until we roll a carrot (4-day growth) for deterministic timing.
+        loop {
+            game.clear_action();
+            game.inventory.add_seed(1);
+            game.plant_action();
+            if let Some(crate::world::TileType::Crop(crate::world::CropType::Carrot, _)) =
+                game.get_tile_at(4, 2)
+            {
+                break;
+            }
+            game.clear_action();
+        }
 
         for _ in 0..4 {
             game.direction = crate::world::Direction::Right;
@@ -791,11 +807,11 @@ mod tests {
             game.start_new_day();
         }
 
-        let produce_count_before = game.inventory.get_produce(crate::world::CropType::Carrot);
+        let produce_before: u32 = game.inventory.produce.values().sum();
         game.harvest_action();
-        let produce_count_after = game.inventory.get_produce(crate::world::CropType::Carrot);
+        let produce_after: u32 = game.inventory.produce.values().sum();
 
-        assert_eq!(produce_count_after, produce_count_before + 1);
+        assert_eq!(produce_after, produce_before + 1);
     }
 
     #[test]
@@ -804,7 +820,7 @@ mod tests {
         game.direction = crate::world::Direction::Right;
         game.player_x = 4;
         game.clear_action();
-        game.inventory.add_seeds(crate::world::CropType::Carrot, 5);
+        game.inventory.add_seed(5);
         game.plant_action();
 
         game.start_new_day();

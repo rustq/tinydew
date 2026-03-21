@@ -48,18 +48,19 @@ impl Inventory {
         }
     }
 
-    pub fn get_seeds(&self, crop: CropType) -> u32 {
-        *self.seeds.get(&crop).unwrap_or(&0)
+    // Generic seed model: keep count under Carrot key for backward-compatible saves.
+    pub fn seed_count(&self) -> u32 {
+        *self.seeds.get(&CropType::Carrot).unwrap_or(&0)
     }
 
-    pub fn add_seeds(&mut self, crop: CropType, count: u32) {
-        *self.seeds.entry(crop).or_insert(0) += count;
+    pub fn add_seed(&mut self, count: u32) {
+        *self.seeds.entry(CropType::Carrot).or_insert(0) += count;
     }
 
-    pub fn use_seed(&mut self, crop: CropType) -> bool {
-        let count = self.seeds.get(&crop).unwrap_or(&0);
+    pub fn use_seed(&mut self) -> bool {
+        let count = self.seeds.get(&CropType::Carrot).unwrap_or(&0);
         if *count > 0 {
-            *self.seeds.get_mut(&crop).unwrap() -= 1;
+            *self.seeds.get_mut(&CropType::Carrot).unwrap() -= 1;
             true
         } else {
             false
@@ -1234,15 +1235,13 @@ impl GameState {
         }
 
         if let Some((x, y)) = self.find_adjacent_tile(|tile| matches!(tile, TileType::Soil)) {
-            if self.inventory.use_seed(self.selected_seed) {
-                self.farm_map[y][x] = TileType::Crop(self.selected_seed, CropState::new());
-                self.message = format!("Plant Done! (Planted {})", self.selected_seed.seed_name());
+            if self.inventory.use_seed() {
+                let crop = self.random_crop_from_seed();
+                self.farm_map[y][x] = TileType::Crop(crop, CropState::new());
+                self.message = format!("Plant Done! (Seed rolled into {})", crop.seed_name());
                 self.advance_time();
             } else {
-                self.message = format!(
-                    "No {} seeds available. Buy more from the shop.",
-                    self.selected_seed.seed_name()
-                );
+                self.message = String::from("No seeds available. Buy more from the shop.");
             }
         } else {
             self.message = String::from("Cannot plant there! Needs cleared soil.");
@@ -1271,19 +1270,17 @@ impl GameState {
                 return;
             }
             if let Some(TileType::Soil) = tile {
-                if self.inventory.use_seed(self.selected_seed) {
-                    self.farm_map[y][x] = TileType::Crop(self.selected_seed, CropState::new());
+                if self.inventory.use_seed() {
+                    let crop = self.random_crop_from_seed();
+                    self.farm_map[y][x] = TileType::Crop(crop, CropState::new());
                     self.message = format!(
-                        "Plant Done! (Planted {} at {:?})",
-                        self.selected_seed.seed_name(),
+                        "Plant Done! (Seed rolled into {} at {:?})",
+                        crop.seed_name(),
                         dir
                     );
                     self.advance_time();
                 } else {
-                    self.message = format!(
-                        "No {} seeds available. Buy more from the shop.",
-                        self.selected_seed.seed_name()
-                    );
+                    self.message = String::from("No seeds available. Buy more from the shop.");
                 }
             } else {
                 self.message = String::from("Cannot plant there! Needs cleared soil.");
@@ -1411,7 +1408,7 @@ impl GameState {
                 }
                 self.inventory.add_forage(ForageType::Mushroom);
                 self.record_forage_harvested(ForageType::Mushroom, 1);
-                self.message = String::from("Harvested 🍄‍🟫.");
+                self.message = String::from("Harvested 🍄.");
                 self.advance_time();
             } else {
                 self.message = String::from("Nothing to harvest!");
@@ -1468,7 +1465,7 @@ impl GameState {
                 }
                 self.inventory.add_forage(ForageType::Mushroom);
                 self.record_forage_harvested(ForageType::Mushroom, 1);
-                self.message = String::from("Harvested 🍄‍🟫.");
+                self.message = String::from("Harvested 🍄.");
                 self.advance_time();
             } else {
                 self.message = String::from("Nothing to harvest!");
@@ -1598,6 +1595,16 @@ impl GameState {
         *self.current_income.crops_harvested.entry(crop).or_insert(0) += count;
     }
 
+    fn random_crop_from_seed(&mut self) -> CropType {
+        let roll = self.rng_seed.wrapping_add(self.total_minutes as u64) % 4;
+        match roll {
+            0 => CropType::Carrot,
+            1 => CropType::Strawberry,
+            2 => CropType::Cauliflower,
+            _ => CropType::Rhubarb,
+        }
+    }
+
     pub fn record_forage_harvested(&mut self, forage: ForageType, count: u32) {
         *self
             .current_income
@@ -1610,10 +1617,7 @@ impl GameState {
         match self.shop_state {
             ShopState::BuyMenu => {
                 let mut items = Vec::new();
-                for crop in CropType::all() {
-                    let price = crop.seed_price();
-                    items.push(format!("Buy 🫙 {} (${})", crop.seed_name(), price));
-                }
+                items.push(String::from("Buy 🫙 Seed ($20)"));
                 items.push(String::from("Sell Crops"));
                 items.push(String::from("Exit"));
                 items
@@ -1671,18 +1675,16 @@ impl GameState {
     fn handle_shop_selection(&mut self) {
         match self.shop_state {
             ShopState::BuyMenu => {
-                let crop_options = CropType::all();
-                if self.shop_cursor < 4 {
-                    let crop = crop_options[self.shop_cursor];
-                    let price = crop.seed_price();
+                if self.shop_cursor == 0 {
+                    let price = 20;
                     if self.money >= price {
                         self.money -= price;
-                        self.inventory.add_seeds(crop, 1);
-                        self.message = format!("Bought {}.", crop.seed_name());
+                        self.inventory.add_seed(1);
+                        self.message = String::from("Bought 🫙 Seed.");
                     } else {
                         self.message = String::from("Not enough money!");
                     }
-                } else if self.shop_cursor == 4 {
+                } else if self.shop_cursor == 1 {
                     self.shop_state = ShopState::SellMenu;
                     self.shop_cursor = 0;
                     self.message = String::from("Sell menu opened.");
@@ -1790,7 +1792,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_crop_tile_is_walkable() {
+    fn test_crop_tile_walkability_depends_on_maturity() {
         let crop_seedling = TileType::Crop(CropType::Carrot, CropState::new());
         assert!(crop_seedling.is_walkable());
 
@@ -1799,7 +1801,7 @@ mod tests {
             watered_today: false,
         };
         let crop_mature = TileType::Crop(CropType::Carrot, mature_state);
-        assert!(crop_mature.is_walkable());
+        assert!(!crop_mature.is_walkable());
     }
 
     #[test]
@@ -1814,7 +1816,7 @@ mod tests {
     }
 
     #[test]
-    fn test_move_allowed_on_crop_tile() {
+    fn test_move_allowed_on_growing_crop_tile() {
         let mut state = GameState::new();
         state.player_x = 3;
         state.player_y = 3;
@@ -1824,6 +1826,26 @@ mod tests {
         assert!(result);
         assert_eq!(state.player_x, 3);
         assert_eq!(state.player_y, 4);
+    }
+
+    #[test]
+    fn test_move_blocked_on_mature_crop_tile() {
+        let mut state = GameState::new();
+        state.player_x = 3;
+        state.player_y = 3;
+        state.farm_map[4][3] = TileType::Crop(
+            CropType::Carrot,
+            CropState {
+                days_grown: 10,
+                watered_today: false,
+            },
+        );
+
+        let result = state.move_player(Direction::Down);
+        assert!(!result);
+        assert_eq!(state.player_x, 3);
+        assert_eq!(state.player_y, 3);
+        assert!(state.message.contains("Cannot move there"));
     }
 
     #[test]

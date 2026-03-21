@@ -14,9 +14,9 @@ Implemented (stdio JSON-RPC style).
 
 ## Commands (current)
 - Move: `move:up|down|left|right`
-- Farm: `clear[:dir]`, `plant:<crop>[:dir]`, `water[:dir]`, `harvest[:dir]`
-- Trade: `buy:<item>[:qty]`, `sell:<item>[:qty]`
-- Fishing: `fishing[:dir]`, `sell:fish[:qty]`, `sell:rare[:qty]`
+- Farm: `clear[:dir]`, `plant:seed[:dir]`, `water[:dir]`, `harvest[:dir]`
+- Trade: `buy:seed[:qty]`, `sell:<item>[:qty]`
+- Fishing: `fish[:dir]`, `sell:fish[:qty]`, `sell:rare[:qty]`
 - Utility: `print`, `save`, `load`
 - `sleep` is intentionally rejected in MCP API.
 

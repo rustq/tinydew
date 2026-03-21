@@ -45,7 +45,7 @@ When planting succeeds, include growth timing:
 - Rolled crop name (the randomized result)
 - Days to mature
 - Expected ready day (current day + growth days)
-- Note: planted crop tiles (🌱) are walkable in current build
+- Note: mature crop tiles are non-walkable (blocked until harvested)
 
 Example style:
 - "🌱 Seed planted! It rolled into Carrot. Needs 4 watered days to mature (ready around Day 5)."
@@ -128,7 +128,7 @@ Natural language → Tinydew command examples:
 - "water" → `water`
 - "harvest" → `harvest`
 - "fish" → `fish` (or directional `fish:up|down|left|right`)
-- "sell mushroom" → `sell:mushroom` (each 🍄‍🟫 sells for $25)
+- "sell mushroom" → `sell:mushroom` (each 🍄 sells for $25)
 - "show map" / "where am I" → `print`
 
 If ambiguous, take safest single step and show UI immediately.

@@ -10,8 +10,9 @@ Implemented.
 - Fish
 
 ## Seeds/Crops
-- Seeds are bought and tracked by crop type.
-- Planting consumes seeds.
+- Shop sells one generic seed item (`seed`).
+- Seed inventory is tracked as a generic seed count (displayed as 🫙 xN in MCP snapshot UI).
+- Planting consumes one seed and randomly rolls a crop type.
 - Crops grow via day transitions when watered.
 - Mature crops harvest into produce inventory.
 
@@ -23,6 +24,7 @@ Implemented.
 ## Money
 - Buying decreases money by price × qty.
 - Selling increases money by value × qty.
+- Mushroom sells for $25 each (`sell:mushroom`).
 - Daily income summary fields are tracked for day reporting.
 
 ## Persistence/Output

@@ -10,6 +10,7 @@ Implemented.
 ## Movement
 - Directional movement uses up/down/left/right.
 - Blocked by out-of-bounds, non-walkable tiles, and same-region occupancy.
+- Mature crop tiles are non-walkable until harvested.
 - Successful moves advance time per runtime rules.
 
 ## Guest Control

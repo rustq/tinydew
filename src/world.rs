@@ -204,7 +204,7 @@ impl TileType {
     pub fn is_walkable(&self) -> bool {
         match self {
             TileType::Boundary => false,
-            TileType::Crop(_, _) => true,
+            TileType::Crop(crop, state) => !state.is_mature(*crop),
             TileType::Fountain => false,
             TileType::Slide => false,
             TileType::Mushroom => false,
@@ -253,7 +253,7 @@ impl TileType {
             TileType::PathSouthRiver => "🌿",
             TileType::PathSouthRiverGate => "🌿",
             TileType::Player => "🧑",
-            TileType::Mushroom => "🍄‍🟫",
+            TileType::Mushroom => "🍄",
             TileType::Fountain => "⛲",
             TileType::Slide => "🛝",
             TileType::River => "🌊",

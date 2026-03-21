@@ -47,7 +47,7 @@ pub enum ParsedCommand {
     Plant(CropType, Option<Direction>),
     Water(Option<Direction>),
     Harvest(Option<Direction>),
-    Buy(CropType, u32),
+    BuySeed(u32),
     Sell(CropType, u32),
     SellFish(FishType, u32),
     SellForage(ForageType, u32),
@@ -114,7 +114,7 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
             } else {
                 crop_str
             };
-            let crop = parse_crop(crop_str)?;
+            let crop = parse_seed_item(crop_str)?;
             let direction = dir_str.map(parse_direction).transpose()?;
             Ok(ParsedCommand::Plant(crop, direction))
         }
@@ -128,8 +128,14 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
         }
         "buy" => {
             let (item_str, qty) = parse_item_with_qty(arg.unwrap_or(""))?;
-            let crop = parse_crop(item_str)?;
-            Ok(ParsedCommand::Buy(crop, qty))
+            if item_str == "seed" || item_str == "seeds" || item_str == "🫙" {
+                Ok(ParsedCommand::BuySeed(qty))
+            } else {
+                Err(McpError::validation_error(
+                    format!("invalid item '{}' for buy", item_str),
+                    vec!["seed"],
+                ))
+            }
         }
         "sell" => {
             let (item_str, qty) = parse_item_with_qty(arg.unwrap_or(""))?;
@@ -167,7 +173,7 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
             Ok(ParsedCommand::Fishing(direction))
         }
         _ => Err(McpError::invalid_command(format!(
-            "unknown command '{}'. Valid commands: move:up|down|left|right, clear[:<dir>], plant:<crop>[:<dir>], water[:<dir>], harvest[:<dir>], fish[:<dir>], buy:<item>[:<qty>], sell:<item>[:<qty>], print, save, load",
+            "unknown command '{}'. Valid commands: move:up|down|left|right, clear[:<dir>], plant:seed[:<dir>], water[:<dir>], harvest[:<dir>], fish[:<dir>], buy:seed[:<qty>], sell:<item>[:<qty>], print, save, load",
             cmd
         ))),
     }
@@ -186,9 +192,19 @@ fn parse_crop(s: &str) -> Result<CropType, McpError> {
     }
 }
 
+fn parse_seed_item(s: &str) -> Result<CropType, McpError> {
+    match s {
+        "seed" | "seeds" | "🫙" => Ok(CropType::Carrot),
+        _ => Err(McpError::validation_error(
+            format!("invalid plant item '{}'", s),
+            vec!["seed"],
+        )),
+    }
+}
+
 fn parse_forage(s: &str) -> Result<ForageType, McpError> {
     match s {
-        "mushroom" | "🍄" | "🍄‍🟫" => Ok(ForageType::Mushroom),
+        "mushroom" | "🍄" => Ok(ForageType::Mushroom),
         _ => Err(McpError::validation_error(
             format!("invalid forage '{}'", s),
             vec!["mushroom"],
@@ -422,10 +438,9 @@ fn generate_text_snapshot(state: &GameState) -> String {
     {
         lines.push("(empty)".to_string());
     } else {
-        for (crop, count) in &state.inventory.seeds {
-            if *count > 0 {
-                lines.push(format!("  Seeds: {} x{}", crop.seed_name(), count));
-            }
+        let seed_count = state.inventory.seed_count();
+        if seed_count > 0 {
+            lines.push(format!("  Seeds: 🫙 x{}", seed_count));
         }
         for (crop, count) in &state.inventory.produce {
             if *count > 0 {
@@ -558,16 +573,15 @@ pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResu
             };
             CommandResult::new(state.message.clone()).with_events(vec!["Cleared tile".to_string()])
         }
-        ParsedCommand::Plant(crop, dir) => {
+        ParsedCommand::Plant(_crop, dir) => {
             let original_message = state.message.clone();
-            state.selected_seed = crop;
             match dir {
                 Some(d) => state.plant_action_at(d),
                 None => state.plant_action(),
             };
 
-            let events = if state.message.contains("Done") || original_message != state.message {
-                vec![format!("Planted {}", crop.seed_name())]
+            let events = if state.message.contains("Plant Done") || original_message != state.message {
+                vec!["Planted seed".to_string()]
             } else {
                 vec![]
             };
@@ -575,7 +589,8 @@ pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResu
             CommandResult::new(state.message.clone())
                 .with_events(events)
                 .with_state_delta(serde_json::json!({
-                    "selected_seed": crop.seed_name()
+                    "seeds": state.inventory.seed_count(),
+                    "selected_seed": "Seed"
                 }))
         }
         ParsedCommand::Water(dir) => {
@@ -592,21 +607,22 @@ pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResu
             };
             CommandResult::new(state.message.clone()).with_events(vec!["Harvested".to_string()])
         }
-        ParsedCommand::Buy(crop, qty) => {
-            let price = crop.seed_price() * qty;
+        ParsedCommand::BuySeed(qty) => {
+            let price_per_seed = 20;
+            let price = price_per_seed * qty;
             if state.money >= price {
                 state.money -= price;
-                state.inventory.add_seeds(crop, qty);
-                state.message = format!("Bought {} x{} for ${}!", crop.seed_name(), qty, price);
+                state.inventory.add_seed(qty);
+                state.message = format!("Bought 🫙 Seed x{} for ${}!", qty, price);
             } else {
                 state.message = format!("Not enough money! Need ${}, have ${}", price, state.money);
             }
 
             CommandResult::new(state.message.clone())
-                .with_events(vec![format!("Bought {} seeds", crop.seed_name())])
+                .with_events(vec![format!("Bought {} seed(s)", qty)])
                 .with_state_delta(serde_json::json!({
                     "money": state.money,
-                    "seeds": state.inventory.seeds
+                    "seeds": state.inventory.seed_count()
                 }))
         }
         ParsedCommand::Sell(crop, qty) => {
@@ -802,7 +818,7 @@ mod tests {
 
     #[test]
     fn test_parse_plant() {
-        let result = parse_command("plant:carrot");
+        let result = parse_command("plant:seed");
         assert!(matches!(
             result,
             Ok(ParsedCommand::Plant(CropType::Carrot, None))
@@ -811,37 +827,28 @@ mod tests {
 
     #[test]
     fn test_parse_plant_with_direction() {
-        let result = parse_command("plant:carrot:up");
+        let result = parse_command("plant:seed:up");
         assert!(matches!(
             result,
             Ok(ParsedCommand::Plant(CropType::Carrot, Some(Direction::Up)))
         ));
 
-        let result = parse_command("plant:strawberry:down");
+        let result = parse_command("plant:seed:down");
         assert!(matches!(
             result,
-            Ok(ParsedCommand::Plant(
-                CropType::Strawberry,
-                Some(Direction::Down)
-            ))
+            Ok(ParsedCommand::Plant(CropType::Carrot, Some(Direction::Down)))
         ));
 
-        let result = parse_command("plant:cauliflower:left");
+        let result = parse_command("plant:seed:left");
         assert!(matches!(
             result,
-            Ok(ParsedCommand::Plant(
-                CropType::Cauliflower,
-                Some(Direction::Left)
-            ))
+            Ok(ParsedCommand::Plant(CropType::Carrot, Some(Direction::Left)))
         ));
 
-        let result = parse_command("plant:rhubarb:right");
+        let result = parse_command("plant:seed:right");
         assert!(matches!(
             result,
-            Ok(ParsedCommand::Plant(
-                CropType::Rhubarb,
-                Some(Direction::Right)
-            ))
+            Ok(ParsedCommand::Plant(CropType::Carrot, Some(Direction::Right)))
         ));
     }
 
@@ -931,7 +938,7 @@ mod tests {
             })
         ));
 
-        let result = parse_command("plant:carrot:east");
+        let result = parse_command("plant:seed:east");
         assert!(matches!(
             result,
             Err(McpError {
@@ -952,19 +959,19 @@ mod tests {
 
     #[test]
     fn test_parse_buy() {
-        let result = parse_command("buy:carrot");
+        let result = parse_command("buy:seed");
         assert!(matches!(
             result,
-            Ok(ParsedCommand::Buy(CropType::Carrot, 1))
+            Ok(ParsedCommand::BuySeed(1))
         ));
     }
 
     #[test]
     fn test_parse_buy_with_qty() {
-        let result = parse_command("buy:carrot:5");
+        let result = parse_command("buy:seed:5");
         assert!(matches!(
             result,
-            Ok(ParsedCommand::Buy(CropType::Carrot, 5))
+            Ok(ParsedCommand::BuySeed(5))
         ));
     }
 
@@ -1202,7 +1209,7 @@ mod tests {
         let result = parse_command("Move:Down");
         assert!(matches!(result, Ok(ParsedCommand::Move(Direction::Down))));
 
-        let result = parse_command("plant:CARROT");
+        let result = parse_command("plant:SEED");
         assert!(matches!(
             result,
             Ok(ParsedCommand::Plant(CropType::Carrot, None))
@@ -1223,41 +1230,23 @@ mod tests {
 
     #[test]
     fn test_parse_buy_zero_quantity() {
-        let result = parse_command("buy:carrot:0");
+        let result = parse_command("buy:seed:0");
         assert!(result.is_err());
         assert_eq!(result.unwrap_err().code, ErrorCode::ValidationError);
     }
 
     #[test]
     fn test_parse_invalid_quantity() {
-        let result = parse_command("buy:carrot:abc");
+        let result = parse_command("buy:seed:abc");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_parse_all_crop_types() {
-        let result = parse_command("plant:carrot");
+        let result = parse_command("plant:seed");
         assert!(matches!(
             result,
             Ok(ParsedCommand::Plant(CropType::Carrot, None))
-        ));
-
-        let result = parse_command("plant:strawberry");
-        assert!(matches!(
-            result,
-            Ok(ParsedCommand::Plant(CropType::Strawberry, None))
-        ));
-
-        let result = parse_command("plant:cauliflower");
-        assert!(matches!(
-            result,
-            Ok(ParsedCommand::Plant(CropType::Cauliflower, None))
-        ));
-
-        let result = parse_command("plant:rhubarb");
-        assert!(matches!(
-            result,
-            Ok(ParsedCommand::Plant(CropType::Rhubarb, None))
         ));
     }
 
@@ -1560,7 +1549,7 @@ mod tests {
     fn test_execute_buy() {
         let mut state = GameState::new();
         state.money = 100;
-        let result = execute_command(&mut state, ParsedCommand::Buy(CropType::Carrot, 5));
+        let result = execute_command(&mut state, ParsedCommand::BuySeed(5));
         assert!(!result.message.is_empty());
     }
 
@@ -1589,7 +1578,7 @@ mod tests {
 
         let cmd_plant = CommandInput {
             session_id: SINGLETON_SESSION_ID.to_string(),
-            command: "plant:carrot".to_string(),
+            command: "plant:seed".to_string(),
         };
         let plant_resp = handle_command(cmd_plant);
 
@@ -1621,8 +1610,8 @@ mod tests {
             commands: vec![
                 "move:down".to_string(),
                 "clear".to_string(),
-                "buy:carrot:5".to_string(),
-                "plant:carrot".to_string(),
+                "buy:seed:5".to_string(),
+                "plant:seed".to_string(),
             ],
             stop_on_error: true,
         };
@@ -1770,13 +1759,13 @@ mod tests {
 
         let cmd_buy = CommandInput {
             session_id: SINGLETON_SESSION_ID.to_string(),
-            command: "buy:carrot:5".to_string(),
+            command: "buy:seed:5".to_string(),
         };
         let _ = handle_command(cmd_buy);
 
         let cmd_plant = CommandInput {
             session_id: SINGLETON_SESSION_ID.to_string(),
-            command: "plant:carrot".to_string(),
+            command: "plant:seed".to_string(),
         };
         let _ = handle_command(cmd_plant);
 
