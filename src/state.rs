@@ -949,19 +949,28 @@ impl GameState {
                 };
                 match chosen_map {
                     FlowerSpawnMap::Farm => {
-                        if !Self::is_protected_farm_spawn_tile(x, y) {
+                        if !Self::is_protected_farm_spawn_tile(x, y)
+                            && self.farm_map[y][x] == TileType::Grass
+                        {
                             self.farm_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
                         }
                     }
                     FlowerSpawnMap::EastPath => {
-                        self.east_path_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                        if self.east_path_map[y][x] == TileType::Grass {
+                            self.east_path_map[y][x] =
+                                TileType::Crop(CropType::Rhubarb, mature_state);
+                        }
                     }
                     FlowerSpawnMap::Square => {
-                        self.square_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                        if self.square_map[y][x] == TileType::Grass {
+                            self.square_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                        }
                     }
                     FlowerSpawnMap::SouthRiver => {
-                        self.south_river_map[y][x] =
-                            TileType::Crop(CropType::Rhubarb, mature_state);
+                        if self.south_river_map[y][x] == TileType::Grass {
+                            self.south_river_map[y][x] =
+                                TileType::Crop(CropType::Rhubarb, mature_state);
+                        }
                     }
                 }
             }
@@ -991,10 +1000,15 @@ impl GameState {
                 self.pick_random_tile(chosen_positions, mushroom_seed.wrapping_add(2))
             {
                 if y < FARM_HEIGHT && x < FARM_WIDTH {
-                    if !Self::is_protected_farm_spawn_tile(x, y) {
+                    if !Self::is_protected_farm_spawn_tile(x, y)
+                        && self.farm_map[y][x] == TileType::Grass
+                    {
                         self.farm_map[y][x] = TileType::Mushroom;
                     }
-                } else if y < EAST_PATH_HEIGHT && x < EAST_PATH_WIDTH {
+                } else if y < EAST_PATH_HEIGHT
+                    && x < EAST_PATH_WIDTH
+                    && self.east_path_map[y][x] == TileType::Grass
+                {
                     self.east_path_map[y][x] = TileType::Mushroom;
                 }
             }
