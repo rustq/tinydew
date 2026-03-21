@@ -19,6 +19,7 @@ Implemented (stdio JSON-RPC style).
 - Fishing: `fish[:dir]`, `sell:fish[:qty]`, `sell:rare[:qty]`
 - Utility: `print`, `save`, `load`, `sleep`
 - `sleep` advances to the next morning checkpoint at `06:00`.
+- `sleep` wake-up state is normalized to Farm `(3,3)` with synced player location metadata.
 
 ## Non-Interactive Mode
 - Full gameplay loop can be advanced via MCP commands without TUI key input.
