@@ -161,10 +161,7 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
                 ))
             }
         }
-        "sleep" => Err(McpError::validation_error(
-            "sleep command is disabled in MCP API",
-            vec!["Go home and let auto-sleep handle day transition"],
-        )),
+        "sleep" => Ok(ParsedCommand::Sleep),
         "print" => Ok(ParsedCommand::Print),
         "save" => Ok(ParsedCommand::Save),
         "load" => Ok(ParsedCommand::Load),
@@ -982,9 +979,9 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_sleep_is_rejected() {
+    fn test_parse_sleep() {
         let result = parse_command("sleep");
-        assert!(result.is_err());
+        assert!(matches!(result, Ok(ParsedCommand::Sleep)));
     }
 
     #[test]

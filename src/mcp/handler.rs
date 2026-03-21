@@ -127,9 +127,6 @@ fn should_autosave_after_command(cmd: &super::command::ParsedCommand) -> bool {
     )
 }
 
-fn is_sleep_api_forbidden(cmd: &super::command::ParsedCommand) -> bool {
-    matches!(cmd, super::command::ParsedCommand::Sleep)
-}
 
 pub fn handle_start_session(_input: StartSessionInput) -> ToolResponse {
     let state = match GAME_STATE.lock() {
@@ -239,13 +236,6 @@ pub fn handle_command(input: CommandInput) -> ToolResponse {
         Err(e) => return ToolResponse::from_mcp_error(e),
     };
 
-    if is_sleep_api_forbidden(&parsed) {
-        return ToolResponse::error(
-            ErrorCode::ValidationError,
-            "sleep command is disabled in MCP API.".to_string(),
-        );
-    }
-
     let should_autosave = should_autosave_after_command(&parsed);
     let result = execute_command(&mut state.state, parsed);
     state.mark_dirty();
@@ -317,23 +307,6 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
             }
         };
 
-
-        if is_sleep_api_forbidden(&parsed) {
-            let error_obj = serde_json::json!({
-                "code": "VALIDATION_ERROR",
-                "message": "sleep command is disabled in MCP API.",
-                "details": ["Use movement/gameplay commands only; do not call sleep directly."],
-            });
-            results.push(serde_json::json!({
-                "command": cmd_str,
-                "ok": false,
-                "error": error_obj,
-            }));
-            if input.stop_on_error {
-                break;
-            }
-            continue;
-        }
 
         let result = execute_command(&mut state.state, parsed);
 
@@ -833,7 +806,7 @@ mod tests {
     }
 
     #[test]
-    fn test_sleep_command_is_disabled_in_mcp_api() {
+    fn test_sleep_command_in_mcp_api_wakes_to_0600() {
         use crate::mcp::state_manager::SINGLETON_SESSION_ID;
 
         reset_for_tests();
@@ -844,14 +817,19 @@ mod tests {
         };
         let response = handle_command(cmd_sleep);
 
-        assert!(!response.ok);
-        let err = response.error.unwrap();
-        assert_eq!(err.code, ErrorCode::ValidationError);
-        assert!(err.message.contains("sleep command is disabled"));
+        assert!(response.ok);
+
+        let state = handle_get_state(GetStateInput {
+            session_id: SINGLETON_SESSION_ID.to_string(),
+        })
+        .result
+        .unwrap();
+
+        assert_eq!(state.get("time").and_then(|v| v.as_str()), Some("06:00"));
     }
 
     #[test]
-    fn test_sleep_in_batch_is_rejected() {
+    fn test_sleep_in_batch_is_allowed() {
         use crate::mcp::state_manager::SINGLETON_SESSION_ID;
 
         reset_for_tests();
@@ -873,14 +851,6 @@ mod tests {
             .cloned()
             .unwrap_or_default();
 
-        assert_eq!(first.get("ok").and_then(|v| v.as_bool()), Some(false));
-        assert!(
-            first
-                .get("error")
-                .and_then(|e| e.get("message"))
-                .and_then(|m| m.as_str())
-                .unwrap_or("")
-                .contains("sleep command is disabled")
-        );
+        assert_eq!(first.get("ok").and_then(|v| v.as_bool()), Some(true));
     }
 }

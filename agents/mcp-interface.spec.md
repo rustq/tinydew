@@ -17,8 +17,8 @@ Implemented (stdio JSON-RPC style).
 - Farm: `clear[:dir]`, `plant:seed[:dir]`, `water[:dir]`, `harvest[:dir]`
 - Trade: `buy:seed[:qty]`, `sell:<item>[:qty]`
 - Fishing: `fish[:dir]`, `sell:fish[:qty]`, `sell:rare[:qty]`
-- Utility: `print`, `save`, `load`
-- `sleep` is intentionally rejected in MCP API.
+- Utility: `print`, `save`, `load`, `sleep`
+- `sleep` advances to the next morning checkpoint at `06:00`.
 
 ## Non-Interactive Mode
 - Full gameplay loop can be advanced via MCP commands without TUI key input.
