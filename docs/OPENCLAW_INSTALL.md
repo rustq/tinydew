@@ -109,6 +109,12 @@ For OpenClaw automation, prefer MCP mode and send tool-style commands:
 - `command` / `commandBatch`
 - `print` for text UI snapshots
 
+Common MCP command strings:
+- `move:up|down|left|right`
+- `clear`, `plant:<crop>`, `water`, `harvest`
+- `fish` or `fish:up|down|left|right`
+- `buy:<item>[:<qty>]`, `sell:<item>[:<qty>]`, `print`, `save`, `load
+
 This gives deterministic, scriptable game control.
 
 ### Suggested response format for chat

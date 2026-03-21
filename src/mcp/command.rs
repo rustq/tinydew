@@ -158,12 +158,12 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
         "print" => Ok(ParsedCommand::Print),
         "save" => Ok(ParsedCommand::Save),
         "load" => Ok(ParsedCommand::Load),
-        "fishing" => {
+        "fish" => {
             let direction = arg.map(parse_direction).transpose()?;
             Ok(ParsedCommand::Fishing(direction))
         }
         _ => Err(McpError::invalid_command(format!(
-            "unknown command '{}'. Valid commands: move:up|down|left|right, clear[:<dir>], plant:<crop>[:<dir>], water[:<dir>], harvest[:<dir>], buy:<item>[:<qty>], sell:<item>[:<qty>], print, save, load",
+            "unknown command '{}'. Valid commands: move:up|down|left|right, clear[:<dir>], plant:<crop>[:<dir>], water[:<dir>], harvest[:<dir>], fish[:<dir>], buy:<item>[:<qty>], sell:<item>[:<qty>], print, save, load",
             cmd
         ))),
     }
@@ -1923,31 +1923,31 @@ mod tests {
 
     #[test]
     fn test_parse_fishing() {
-        let result = parse_command("fishing");
+        let result = parse_command("fish");
         assert!(matches!(result, Ok(ParsedCommand::Fishing(None))));
     }
 
     #[test]
     fn test_parse_fishing_with_direction() {
-        let result = parse_command("fishing:up");
+        let result = parse_command("fish:up");
         assert!(matches!(
             result,
             Ok(ParsedCommand::Fishing(Some(Direction::Up)))
         ));
 
-        let result = parse_command("fishing:down");
+        let result = parse_command("fish:down");
         assert!(matches!(
             result,
             Ok(ParsedCommand::Fishing(Some(Direction::Down)))
         ));
 
-        let result = parse_command("fishing:left");
+        let result = parse_command("fish:left");
         assert!(matches!(
             result,
             Ok(ParsedCommand::Fishing(Some(Direction::Left)))
         ));
 
-        let result = parse_command("fishing:right");
+        let result = parse_command("fish:right");
         assert!(matches!(
             result,
             Ok(ParsedCommand::Fishing(Some(Direction::Right)))

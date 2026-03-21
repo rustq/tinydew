@@ -120,7 +120,7 @@ Natural language → Tinydew command examples:
 - "plant carrot" → `plant:carrot`
 - "water" → `water`
 - "harvest" → `harvest`
-- "fish" → `command` with fishing action supported by game build
+- "fish" → `fish` (or directional `fish:up|down|left|right`)
 - "show map" / "where am I" → `print`
 
 If ambiguous, take safest single step and show UI immediately.
