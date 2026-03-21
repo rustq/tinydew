@@ -1422,9 +1422,9 @@ impl GameState {
                 } else if let Some(map_row) = self.south_river_map.get_mut(y) {
                     map_row[x] = TileType::Grass;
                 }
-                self.inventory.add_produce(CropType::Flower);
-                self.record_crop_harvested(CropType::Flower, 1);
-                self.message = String::from("Harvested 🍄 as 🌺 Flower.");
+                self.inventory.add_forage(ForageType::Mushroom);
+                self.record_forage_harvested(ForageType::Mushroom, 1);
+                self.message = String::from("Harvested 🍄.");
                 self.advance_time();
             } else {
                 self.message = String::from("Nothing to harvest!");
@@ -1479,9 +1479,9 @@ impl GameState {
                 } else if let Some(map_row) = self.south_river_map.get_mut(y) {
                     map_row[x] = TileType::Grass;
                 }
-                self.inventory.add_produce(CropType::Flower);
-                self.record_crop_harvested(CropType::Flower, 1);
-                self.message = String::from("Harvested 🍄 as 🌺 Flower.");
+                self.inventory.add_forage(ForageType::Mushroom);
+                self.record_forage_harvested(ForageType::Mushroom, 1);
+                self.message = String::from("Harvested 🍄.");
                 self.advance_time();
             } else {
                 self.message = String::from("Nothing to harvest!");
