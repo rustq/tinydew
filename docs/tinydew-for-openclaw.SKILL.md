@@ -34,17 +34,23 @@ For every Tinydew-related user message:
 
 ---
 
-### 2) Planting feedback (required)
+### 2) Planting & seed model (required)
+Seed/shop model for this spec:
+- Shop sells a single generic seed item: `seed`
+- Inventory should show seed count as `🫙 xN` (no per-crop seed split)
+- Planting consumes one `seed`
+- After planting, crop type is randomized to one of the crop types (Carrot / Strawberry / Cauliflower / Rhubarb)
+
 When planting succeeds, include growth timing:
-- Crop name
+- Rolled crop name (the randomized result)
 - Days to mature
 - Expected ready day (current day + growth days)
 - Note: planted crop tiles (🌱) are walkable in current build
 
 Example style:
-- "🌱 Carrot planted! It needs 4 watered days to mature (ready around Day 5)."
+- "🌱 Seed planted! It rolled into Carrot. Needs 4 watered days to mature (ready around Day 5)."
 
-If crop was already planted or cannot be planted, explain clearly.
+If planting fails (no seed / invalid tile), explain clearly.
 
 ---
 
@@ -118,10 +124,11 @@ Use `command: print` after actions to ensure user sees updated UI each turn.
 
 Natural language → Tinydew command examples:
 - "go right" → `move:right`
-- "plant carrot" → `plant:carrot`
+- "plant" / "plant seed" → `plant:seed` (random crop outcome)
 - "water" → `water`
 - "harvest" → `harvest`
 - "fish" → `fish` (or directional `fish:up|down|left|right`)
+- "sell mushroom" → `sell:mushroom` (each 🍄‍🟫 sells for $25)
 - "show map" / "where am I" → `print`
 
 If ambiguous, take safest single step and show UI immediately.
@@ -148,6 +155,4 @@ If ambiguous, take safest single step and show UI immediately.
 This is a draft spec. Final skill can later split into:
 - `SKILL.md` (core workflow)
 - `references/reply-templates.md` (message templates)
-- `references/event-triggers.md` (surprise trigger rules)
-es)
 - `references/event-triggers.md` (surprise trigger rules)
