@@ -25,7 +25,7 @@ Implemented.
 - Buying decreases money by price × qty.
 - Selling increases money by value × qty.
 - Mushroom sells for $25 each (`sell:mushroom`).
-- Daily income summary fields are tracked for day reporting.
+- Daily income summary fields remain in state for compatibility, but no forced end-of-day income screen is used.
 
 ## Persistence/Output
 - Inventory and money persist via save/load.
