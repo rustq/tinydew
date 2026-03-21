@@ -76,10 +76,10 @@ cargo run --quiet
 cargo run --quiet --features interactive
 ```
 
-Controls:
+Controls (interactive):
 
-- Arrow keys: move
-- Space: guest greet (in guest mode)
+- Guest mode hint line: `move: ↑↓←→ | greet: [SPACE]`
+- Player mode hint line: `move: ↑↓←→ | clear: [C] | plant: [P] | water: [W] | harvest: [H] | trade: [T]`
 - Esc: quit
 
 ---

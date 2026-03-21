@@ -185,19 +185,12 @@ const EOL: &str = "\r\n";
 
 #[allow(dead_code)]
 fn print_header<W: Write>(w: &mut W, game: &GameState) {
-    let control_str = if game.guest_enabled {
-        " | Control: Guest".to_string()
-    } else {
-        String::new()
-    };
     write!(
         w,
-        "🌸 {} Day {} {} {}{}{}",
-        game.season,
+        "tinydew day {} {} {}{}",
         game.day,
         game.get_weather_icon(),
         game.format_time(),
-        control_str,
         EOL
     )
     .unwrap();
@@ -248,28 +241,18 @@ fn print_message<W: Write>(w: &mut W, game: &GameState) {
     } else {
         if game.season == "Spring" && game.day == 28 {
             if game.message == "✨ Happy Butterfly Festival!" {
-                write!(w, "{}{}", game.message, EOL).unwrap();
+                write!(w, "> {}{}", game.message, EOL).unwrap();
             } else {
-                write!(w, "Today is Butterfly Festival, enjoy it!{}", EOL).unwrap();
+                write!(w, "> Today is Butterfly Festival, enjoy it!{}", EOL).unwrap();
             }
         } else {
-            write!(w, "{}{}", game.message, EOL).unwrap();
+            write!(w, "> {}{}", game.message, EOL).unwrap();
         }
         write!(w, "{}", EOL).unwrap();
         if game.is_guest_active() {
-            write!(
-                w,
-                "Arrow keys: Move Guest | Space: Greet | Esc: Quit{}",
-                EOL
-            )
-            .unwrap();
+            write!(w, "move: ↑↓←→ | greet: [SPACE]{}", EOL).unwrap();
         } else {
-            write!(
-                w,
-                "Arrow keys: Move | C: Clear | P: Plant | W: Water | H: Harvest | T: Trade | Esc: Quit{}",
-                EOL
-            )
-            .unwrap();
+            write!(w, "move: ↑↓←→ | clear: [C] | plant: [P] | water: [W] | harvest: [H] | trade: [T]{}", EOL).unwrap();
         }
     }
 }
@@ -475,19 +458,6 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
             render(&game);
 
             let mut stdout = std::io::stdout();
-            if game.guest_enabled {
-                write!(
-                    stdout,
-                    "\r\nControl: Guest | Arrow: Move Guest | Space: Greet | Esc: Quit"
-                )
-                .ok();
-            } else {
-                write!(
-                    stdout,
-                    "\r\nControl: Player | Arrow: Move | C/P/W/H/T: Actions | Esc: Quit"
-                )
-                .ok();
-            }
             stdout.flush().ok();
 
             if let Event::Key(key) =
@@ -609,8 +579,7 @@ mod tests {
         let mut output = String::new();
 
         output.push_str(&format!(
-            "{} Day {} {} {}\n\n",
-            game.season,
+            "tinydew day {} {} {}\n\n",
             game.day,
             game.get_weather_icon(),
             game.format_time()
@@ -632,12 +601,12 @@ mod tests {
         }
 
         output.push('\n');
-        output.push_str(&format!("{}\n", game.message));
+        output.push_str(&format!("> {}\n", game.message));
         output.push('\n');
-        output.push_str("Arrow keys: Move | C: Clear | P: Plant | W: Water | H: Harvest | T: Trade | Esc: Quit\n");
+        output.push_str("move: ↑↓←→ | clear: [C] | plant: [P] | water: [W] | harvest: [H] | trade: [T]\n");
 
         println!("{}", output);
-        assert!(output.contains("Spring Day 1"));
+        assert!(output.contains("tinydew day 1"));
         assert!(output.contains("🧑"));
         assert!(output.contains("Welcome to tinydew!"));
     }

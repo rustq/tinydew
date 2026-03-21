@@ -4,11 +4,14 @@
 Implemented (interactive TUI + MCP text snapshot UI).
 
 ## Interactive UI
-- Header shows season, day, weather/time, and control context.
+- Header shows `tinydew day <day> <weather_icon> <time>` (same style as MCP snapshot top line).
 - Map renders emoji tiles for current location.
 - Player (`🧑`) and guest (`👧`) markers are region-aware.
-- Bottom message area shows current contextual text.
-- Controls hint line is shown (guest vs player control variants).
+- Bottom message is prefixed as `> <message>`.
+- Single compact controls line is shown:
+  - Guest: `move: ↑↓←→ | greet: [SPACE]`
+  - Player: `move: ↑↓←→ | clear: [C] | plant: [P] | water: [W] | harvest: [H] | trade: [T]`
+- Legacy verbose control/status footer lines are not shown.
 
 ## MCP `print` UI
 - Text snapshot includes:
