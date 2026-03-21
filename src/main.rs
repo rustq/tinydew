@@ -612,7 +612,7 @@ mod tests {
     }
 
     #[test]
-    fn home_alert_triggers_at_midnight() {
+    fn home_alert_does_not_trigger_at_midnight() {
         let mut game = GameState::new();
         game.hour = 23;
         game.minute = 55;
@@ -624,7 +624,7 @@ mod tests {
         game.hour = 0;
         game.minute = 0;
         game.check_home_alert();
-        assert_eq!(game.home_state, state::HomeState::Alert);
+        assert_eq!(game.home_state, state::HomeState::None);
     }
 
     #[test]
@@ -639,13 +639,13 @@ mod tests {
     }
 
     #[test]
-    fn sleep_transitions_to_income() {
+    fn sleep_does_not_transition_to_income() {
         let mut game = GameState::new();
         game.home_state = state::HomeState::Alert;
         game.home_cursor = 0;
 
         game.home_handle_input(crossterm::event::KeyCode::Enter);
-        assert_eq!(game.home_state, state::HomeState::Income);
+        assert_eq!(game.home_state, state::HomeState::Alert);
     }
 
     #[test]

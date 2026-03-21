@@ -23,5 +23,5 @@ Implemented (stdio JSON-RPC style).
 ## Non-Interactive Mode
 - Full gameplay loop can be advanced via MCP commands without TUI key input.
 - `print` gives automation-friendly UI snapshot text.
-- MCP auto-resolves `HomeState::Income` to morning (`close_home`) so batch commands do not get stuck on sleep-income screen.
+- MCP does not force sleep/day-advance flow; after midnight commands continue and status text can suggest sleeping.
 - State/map endpoints support external orchestration.

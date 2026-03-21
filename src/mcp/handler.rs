@@ -242,7 +242,7 @@ pub fn handle_command(input: CommandInput) -> ToolResponse {
     if is_sleep_api_forbidden(&parsed) {
         return ToolResponse::error(
             ErrorCode::ValidationError,
-            "sleep command is disabled in MCP API. Go home and let auto-sleep handle day transition.".to_string(),
+            "sleep command is disabled in MCP API.".to_string(),
         );
     }
 
@@ -317,28 +317,11 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
             }
         };
 
-        if state.state.home_state == crate::state::HomeState::Income {
-            // Auto-resolve the income screen for MCP flows so command batches can continue next morning.
-            state.state.close_home();
-        }
-        if state.state.home_state == crate::state::HomeState::Alert {
-            let error_obj = serde_json::json!({
-                "code": "Sleeping",
-                "message": "Cannot execute commands while sleep alert is active. Move home and continue to next day.",
-                "details": Vec::<String>::new(),
-            });
-            results.push(serde_json::json!({
-                "command": cmd_str,
-                "ok": false,
-                "error": error_obj,
-            }));
-            break;
-        }
 
         if is_sleep_api_forbidden(&parsed) {
             let error_obj = serde_json::json!({
                 "code": "VALIDATION_ERROR",
-                "message": "sleep command is disabled in MCP API. Go home and let auto-sleep handle day transition.",
+                "message": "sleep command is disabled in MCP API.",
                 "details": ["Use movement/gameplay commands only; do not call sleep directly."],
             });
             results.push(serde_json::json!({
@@ -367,10 +350,6 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
 
         executed_count += 1;
 
-        if state.state.home_state == crate::state::HomeState::Income {
-            state.state.run_auto_sleep_and_advance();
-            break;
-        }
     }
 
     state.mark_dirty();
@@ -748,7 +727,7 @@ mod tests {
     }
 
     #[test]
-    fn test_auto_sleep_at_2am_completes_sleep_cycle() {
+    fn test_after_midnight_no_forced_sleep_cycle() {
         reset_for_tests();
 
         let state_input = GetStateInput {
@@ -782,22 +761,20 @@ mod tests {
         let time_str = state.get("time").unwrap().as_str().unwrap();
         let day_val = state.get("day").unwrap().as_u64().unwrap();
 
-        assert_eq!(
-            time_str, "06:00",
-            "After auto-sleep, time should reset to 06:00"
-        );
-        assert!(
-            day_val >= 2,
-            "After auto-sleep at 02:00, should be at least day 2, got day {}",
-            day_val
-        );
+        assert_eq!(time_str, "02:00");
+        assert_eq!(day_val, 2);
 
-        let msg = state.get("message").unwrap().as_str().unwrap();
-        assert!(
-            msg.contains("morning") || msg.contains("day"),
-            "Should have morning message after auto-sleep. Got: {}",
-            msg
-        );
+        let print_resp = handle_command(CommandInput {
+            session_id: SINGLETON_SESSION_ID.to_string(),
+            command: "print".to_string(),
+        });
+        assert!(print_resp.ok);
+        let print_result = print_resp.result.unwrap();
+        let snapshot = print_result
+            .get("snapshot_text")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default();
+        assert!(snapshot.contains("It's after midnight. You should go back home and sleep."));
     }
 
     #[test]

@@ -600,11 +600,6 @@ impl GameState {
     }
 
     pub fn move_player(&mut self, direction: Direction) -> bool {
-        if self.home_state == HomeState::Income {
-            self.message = String::from("Sleeping... (Income calculated)");
-            return false;
-        }
-
         self.direction = direction;
 
         let (dx, dy) = direction.delta();
@@ -1044,43 +1039,15 @@ impl GameState {
     }
 
     pub fn should_auto_sleep(&self) -> bool {
-        self.hour == 0
-            && self.minute == 0
-            && self.auto_sleep_triggered_day != self.day
-            && self.home_state == HomeState::None
+        false
     }
 
     pub fn run_auto_sleep(&mut self) {
-        self.auto_sleep_triggered_day = self.day;
-        self.perform_sleep();
+        // Auto-sleep disabled.
     }
 
     pub fn run_auto_sleep_and_advance(&mut self) {
-        // Sleep always advances to the next 06:00 checkpoint.
-        // If already after midnight (00:00-05:59), remain on the same day.
-        // Otherwise, advance to next day.
-        let crossed_to_next_day = self.hour >= 6;
-        if crossed_to_next_day {
-            self.day += 1;
-        }
-
-        self.auto_sleep_triggered_day = self.day;
-        self.hour = 6;
-        self.minute = 0;
-        self.total_minutes = 0;
-
-        self.location = Location::Farm;
-        self.player_location = Location::Farm;
-        self.player_x = 3;
-        self.player_y = 3;
-
-        if crossed_to_next_day {
-            self.start_new_day();
-        }
-
-        self.home_state = HomeState::None;
-        self.current_income = DailyIncome::default();
-        self.message = String::from("Ready for a new day.");
+        // Auto-sleep/day-advance disabled.
     }
 
     pub fn tick(&mut self, current_time_ms: u64) {
@@ -1568,11 +1535,8 @@ impl GameState {
     }
 
     pub fn check_home_alert(&mut self) {
-        if self.home_state == HomeState::None && self.hour == 0 && self.location == Location::Farm {
-            self.home_state = HomeState::Alert;
-            self.home_cursor = 0;
-            self.message = String::from("It's late. Time to rest.");
-        }
+        // Sleep alert/forced home flow disabled.
+        // After midnight we only show suggestion text via snapshot messaging.
     }
 
     pub fn record_income(&mut self, amount: u32) {
@@ -1764,16 +1728,14 @@ impl GameState {
     }
 
     fn perform_sleep(&mut self) {
-        self.home_state = HomeState::Income;
-        self.home_cursor = 0;
-        self.message = String::from("Sleeping... (Income calculated)");
+        // Sleep flow disabled; keep as no-op for compatibility.
     }
 
     pub fn close_home(&mut self) {
         self.current_income = DailyIncome::default();
         self.home_state = HomeState::None;
         self.home_cursor = 0;
-        self.message = String::from("Ready for a new day.");
+        // Keep existing message unchanged when closing home in compatibility paths.
     }
 }
 

@@ -7,10 +7,9 @@ Implemented.
 Consolidates sleep, auto-sleep, and day-transition behavior.
 
 ## Behavior
-- Interactive sleep uses home/menu flow and transitions into income/day-advance flow.
+- Sleep alert/income/auto-sleep forced flow is disabled.
 - MCP direct `sleep` command is disabled.
-- Auto-sleep handles overnight transition and reset to morning playable state.
-- MCP command handling auto-resolves `HomeState::Income` to morning (`close_home`) for batch continuity.
+- After midnight, gameplay continues normally while bottom text suggests sleeping.
 - Day-start processing includes:
   - weather roll (with festival override),
   - crop growth progression and watered-state reset,
