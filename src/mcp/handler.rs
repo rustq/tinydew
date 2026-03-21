@@ -317,10 +317,14 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
             }
         };
 
-        if state.state.home_state != crate::state::HomeState::None {
+        if state.state.home_state == crate::state::HomeState::Income {
+            // Auto-resolve the income screen for MCP flows so command batches can continue next morning.
+            state.state.close_home();
+        }
+        if state.state.home_state == crate::state::HomeState::Alert {
             let error_obj = serde_json::json!({
                 "code": "Sleeping",
-                "message": "Cannot execute commands while sleeping. Auto-sleep completed to morning.",
+                "message": "Cannot execute commands while sleep alert is active. Move home and continue to next day.",
                 "details": Vec::<String>::new(),
             });
             results.push(serde_json::json!({

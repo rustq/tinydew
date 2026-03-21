@@ -127,7 +127,7 @@ impl Weather {
 impl ForageType {
     pub fn emoji(&self) -> &'static str {
         match self {
-            ForageType::Mushroom => "🍄\u{200d}🟫",
+            ForageType::Mushroom => "🍄",
         }
     }
 
