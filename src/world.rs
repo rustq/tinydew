@@ -127,7 +127,7 @@ impl Weather {
 impl ForageType {
     pub fn emoji(&self) -> &'static str {
         match self {
-            ForageType::Mushroom => "🍄",
+            ForageType::Mushroom => "🍄\u{200d}🟫",
         }
     }
 
@@ -253,7 +253,7 @@ impl TileType {
             TileType::PathSouthRiver => "🌿",
             TileType::PathSouthRiverGate => "🌿",
             TileType::Player => "🧑",
-            TileType::Mushroom => "🍄",
+            TileType::Mushroom => "🍄‍🟫",
             TileType::Fountain => "⛲",
             TileType::Slide => "🛝",
             TileType::River => "🌊",

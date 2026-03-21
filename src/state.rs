@@ -1411,7 +1411,7 @@ impl GameState {
                 }
                 self.inventory.add_forage(ForageType::Mushroom);
                 self.record_forage_harvested(ForageType::Mushroom, 1);
-                self.message = String::from("Harvested 🍄.");
+                self.message = String::from("Harvested 🍄‍🟫.");
                 self.advance_time();
             } else {
                 self.message = String::from("Nothing to harvest!");
@@ -1468,7 +1468,7 @@ impl GameState {
                 }
                 self.inventory.add_forage(ForageType::Mushroom);
                 self.record_forage_harvested(ForageType::Mushroom, 1);
-                self.message = String::from("Harvested 🍄.");
+                self.message = String::from("Harvested 🍄‍🟫.");
                 self.advance_time();
             } else {
                 self.message = String::from("Nothing to harvest!");

@@ -188,7 +188,7 @@ fn parse_crop(s: &str) -> Result<CropType, McpError> {
 
 fn parse_forage(s: &str) -> Result<ForageType, McpError> {
     match s {
-        "mushroom" | "🍄" => Ok(ForageType::Mushroom),
+        "mushroom" | "🍄" | "🍄‍🟫" => Ok(ForageType::Mushroom),
         _ => Err(McpError::validation_error(
             format!("invalid forage '{}'", s),
             vec!["mushroom"],
