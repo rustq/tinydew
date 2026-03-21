@@ -651,6 +651,9 @@ impl GameState {
                     self.message =
                         String::from("Cannot move there. Try walking around to find a path.");
                 }
+            } else if matches!(target_tile, Some(TileType::Mushroom)) {
+                self.message =
+                    String::from("Cannot move there. Mature crop ahead — try harvest.");
             } else {
                 self.message = String::from("Cannot move there. Try walking around to find a path.");
             }

@@ -6,7 +6,6 @@ Implemented.
 ## Inventory Model
 - Seeds
 - Produce
-- Forage
 - Fish
 
 ## Seeds/Crops
@@ -15,6 +14,7 @@ Implemented.
 - Planting consumes one seed and randomly rolls a crop type.
 - Crops grow via day transitions when watered.
 - Mature crops harvest into produce inventory.
+- Mushrooms are treated as mature crop pickups (not a separate forage inventory type).
 
 ## Shop/Trade
 - Interactive trade menu supports buy/sell flow.
@@ -24,7 +24,7 @@ Implemented.
 ## Money
 - Buying decreases money by price × qty.
 - Selling increases money by value × qty.
-- Mushroom sells for $25 each (`sell:mushroom`).
+- Mushroom-equivalent pickups are represented under crop/produce flow (no separate forage sell path in spec).
 - Daily income summary fields remain in state for compatibility, but no forced end-of-day income screen is used.
 
 ## Persistence/Output
