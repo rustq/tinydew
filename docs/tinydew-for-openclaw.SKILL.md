@@ -39,7 +39,7 @@ Seed/shop model for this spec:
 - Shop sells a single generic seed item: `seed`
 - Inventory should show seed count as `🫙 xN` (no per-crop seed split)
 - Planting consumes one `seed`
-- After planting, crop type is randomized to one of the crop types (Carrot / Strawberry / Cauliflower / Rhubarb)
+- After planting, crop type is randomized to one of the crop types (Carrot / Strawberry / Cauliflower / Flower)
 
 When planting succeeds, include growth timing:
 - Rolled crop name (the randomized result)

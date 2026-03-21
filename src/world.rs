@@ -73,7 +73,7 @@ pub enum CropType {
     Carrot,
     Strawberry,
     Cauliflower,
-    Rhubarb,
+    Flower,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -150,7 +150,7 @@ impl CropType {
             CropType::Carrot => 4,
             CropType::Strawberry => 8,
             CropType::Cauliflower => 12,
-            CropType::Rhubarb => 16,
+            CropType::Flower => 16,
         }
     }
 
@@ -159,7 +159,7 @@ impl CropType {
             CropType::Carrot => "🥕",
             CropType::Strawberry => "🍓",
             CropType::Cauliflower => "🥦",
-            CropType::Rhubarb => "🌺",
+            CropType::Flower => "🌺",
         }
     }
 
@@ -168,7 +168,7 @@ impl CropType {
             CropType::Carrot => "Carrot",
             CropType::Strawberry => "Strawberry",
             CropType::Cauliflower => "Cauliflower",
-            CropType::Rhubarb => "Rhubarb",
+            CropType::Flower => "Flower",
         }
     }
 
@@ -177,7 +177,7 @@ impl CropType {
             CropType::Carrot => 10,
             CropType::Strawberry => 20,
             CropType::Cauliflower => 30,
-            CropType::Rhubarb => 40,
+            CropType::Flower => 40,
         }
     }
 
@@ -186,7 +186,7 @@ impl CropType {
             CropType::Carrot => 20,
             CropType::Strawberry => 40,
             CropType::Cauliflower => 60,
-            CropType::Rhubarb => 80,
+            CropType::Flower => 80,
         }
     }
 
@@ -195,7 +195,7 @@ impl CropType {
             CropType::Carrot,
             CropType::Strawberry,
             CropType::Cauliflower,
-            CropType::Rhubarb,
+            CropType::Flower,
         ]
     }
 }
@@ -301,7 +301,7 @@ pub fn create_farm_map() -> Map {
             TileType::Grass,
             TileType::Grass,
             TileType::Crop(
-                CropType::Rhubarb,
+                CropType::Flower,
                 CropState {
                     days_grown: 16,
                     watered_today: false,
@@ -435,7 +435,7 @@ pub fn create_square_map() -> Map {
         vec![
             TileType::Boundary,
             TileType::Crop(
-                CropType::Rhubarb,
+                CropType::Flower,
                 CropState {
                     days_grown: 16,
                     watered_today: false,

@@ -6,7 +6,7 @@ Implemented.
 ## Rules
 - Plant consumes one generic seed (`seed`).
 - MCP planting command is `plant:seed` (optionally with direction).
-- Planted result randomly rolls to one crop type (Carrot/Strawberry/Cauliflower/Rhubarb).
+- Planted result randomly rolls to one crop type (Carrot/Strawberry/Cauliflower/Flower).
 - Plant can target adjacent/default tile according to MCP action grammar.
 - Valid planting requires plantable ground and region allowance.
 - Square and EastPath are non-farm planting zones (blocked).

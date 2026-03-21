@@ -883,7 +883,7 @@ impl GameState {
                 days_grown: 16,
                 watered_today: false,
             };
-            self.farm_map[2][6] = TileType::Crop(CropType::Rhubarb, mature_state);
+            self.farm_map[2][6] = TileType::Crop(CropType::Flower, mature_state);
             self.spring_forced_flower_6_2_done = true;
         }
 
@@ -952,24 +952,24 @@ impl GameState {
                         if !Self::is_protected_farm_spawn_tile(x, y)
                             && self.farm_map[y][x] == TileType::Grass
                         {
-                            self.farm_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                            self.farm_map[y][x] = TileType::Crop(CropType::Flower, mature_state);
                         }
                     }
                     FlowerSpawnMap::EastPath => {
                         if self.east_path_map[y][x] == TileType::Grass {
                             self.east_path_map[y][x] =
-                                TileType::Crop(CropType::Rhubarb, mature_state);
+                                TileType::Crop(CropType::Flower, mature_state);
                         }
                     }
                     FlowerSpawnMap::Square => {
                         if self.square_map[y][x] == TileType::Grass {
-                            self.square_map[y][x] = TileType::Crop(CropType::Rhubarb, mature_state);
+                            self.square_map[y][x] = TileType::Crop(CropType::Flower, mature_state);
                         }
                     }
                     FlowerSpawnMap::SouthRiver => {
                         if self.south_river_map[y][x] == TileType::Grass {
                             self.south_river_map[y][x] =
-                                TileType::Crop(CropType::Rhubarb, mature_state);
+                                TileType::Crop(CropType::Flower, mature_state);
                         }
                     }
                 }
@@ -1587,7 +1587,7 @@ impl GameState {
             0 => CropType::Carrot,
             1 => CropType::Strawberry,
             2 => CropType::Cauliflower,
-            _ => CropType::Rhubarb,
+            _ => CropType::Flower,
         }
     }
 
@@ -1922,7 +1922,7 @@ mod tests {
 
         assert!(matches!(
             state.farm_map[2][6],
-            TileType::Crop(CropType::Rhubarb, state) if state.is_mature(CropType::Rhubarb)
+            TileType::Crop(CropType::Flower, state) if state.is_mature(CropType::Flower)
         ));
         assert!(state.spring_forced_flower_6_2_done);
     }
@@ -2106,10 +2106,10 @@ mod tests {
 
             state.spawn_random_crops();
 
-            if matches!(state.farm_map[2][2], TileType::Crop(CropType::Rhubarb, _)) {
+            if matches!(state.farm_map[2][2], TileType::Crop(CropType::Flower, _)) {
                 hit_home = true;
             }
-            if matches!(state.farm_map[3][3], TileType::Crop(CropType::Rhubarb, _)) {
+            if matches!(state.farm_map[3][3], TileType::Crop(CropType::Flower, _)) {
                 hit_wakeup = true;
             }
         }
@@ -2366,8 +2366,8 @@ mod tests {
         assert_eq!(square_map[2][4], TileType::Fountain);
 
         match square_map[1][1] {
-            TileType::Crop(CropType::Rhubarb, state) => {
-                assert!(state.is_mature(CropType::Rhubarb));
+            TileType::Crop(CropType::Flower, state) => {
+                assert!(state.is_mature(CropType::Flower));
             }
             _ => panic!("Expected day-1 spawn flower crop at square[1][1]"),
         }

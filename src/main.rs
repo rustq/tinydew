@@ -725,7 +725,7 @@ mod tests {
                 crate::world::CropType::Carrot
                     | crate::world::CropType::Strawberry
                     | crate::world::CropType::Cauliflower
-                    | crate::world::CropType::Rhubarb
+                    | crate::world::CropType::Flower
             ));
         } else {
             panic!("Expected Crop tile");

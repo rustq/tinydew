@@ -152,7 +152,7 @@ pub fn parse_command(input: &str) -> Result<ParsedCommand, McpError> {
                         "carrot",
                         "strawberry",
                         "cauliflower",
-                        "rhubarb",
+                        "flower",
                         "mushroom",
                         "fish",
                         "common",
@@ -181,10 +181,10 @@ fn parse_crop(s: &str) -> Result<CropType, McpError> {
         "carrot" => Ok(CropType::Carrot),
         "strawberry" => Ok(CropType::Strawberry),
         "cauliflower" => Ok(CropType::Cauliflower),
-        "rhubarb" => Ok(CropType::Rhubarb),
+        "flower" => Ok(CropType::Flower),
         _ => Err(McpError::validation_error(
             format!("invalid crop '{}'", s),
-            vec!["carrot", "strawberry", "cauliflower", "rhubarb"],
+            vec!["carrot", "strawberry", "cauliflower", "flower"],
         )),
     }
 }
@@ -239,7 +239,7 @@ fn parse_item_with_qty(s: &str) -> Result<(&str, u32), McpError> {
     if item.is_empty() {
         return Err(McpError::validation_error(
             "item is required for buy/sell",
-            vec!["carrot", "strawberry", "cauliflower", "rhubarb"],
+            vec!["carrot", "strawberry", "cauliflower", "flower"],
         ));
     }
     let qty = if let Some(qty_str) = parts.get(1) {
