@@ -307,6 +307,7 @@ fn advance_to_morning(state: &mut GameState) {
     state.minute = 0;
 
     state.location = Location::Farm;
+    state.player_location = Location::Farm;
     state.player_x = 3;
     state.player_y = 3;
 
