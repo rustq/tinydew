@@ -553,7 +553,7 @@ mod tests {
         let result = response.result.unwrap();
         assert!(result.get("snapshot_text").is_some());
         let snapshot = result.get("snapshot_text").unwrap().as_str().unwrap();
-        assert!(snapshot.contains("Day"));
+        assert!(snapshot.contains("tinydew day"));
     }
 
     #[test]

@@ -406,10 +406,10 @@ pub fn create_east_path_map() -> Map {
         vec![
             TileType::Boundary,
             TileType::Boundary,
-            TileType::Boundary,
-            TileType::Boundary,
-            TileType::Boundary,
             TileType::PathSouthRiver,
+            TileType::Boundary,
+            TileType::Boundary,
+            TileType::Boundary,
             TileType::Boundary,
             TileType::Boundary,
             TileType::Boundary,

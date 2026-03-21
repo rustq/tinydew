@@ -134,8 +134,11 @@ Example:
 ```text
 Done — moved to Square.
 
-=== Tinydew Day 3 09:10 ☀️ ===
-Location: Square
-...
+tinydew day 3 ☀️ 09:10
+
+<map rows>
+
+Money: 💰 $500
+
 > Entered Square.
 ```

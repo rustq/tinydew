@@ -12,14 +12,12 @@ Implemented (interactive TUI + MCP text snapshot UI).
 
 ## MCP `print` UI
 - Text snapshot includes:
-  - Day/time/weather header
-  - Location
-  - Money
-  - Player block
-  - Optional guest block (when guest active/visible by current rules)
-  - Inventory block
-  - Map block
+  - Top line formatted as `tinydew day <day> <weather_icon> <time>` (example: `tinydew day 1 ☀️ 06:20`)
+  - Map block (no map title label)
+  - Optional plain inventory item lines (only when non-empty; no `Inventory` section header)
+  - Money line formatted as `Money: 💰 $<amount>`
   - Bottom message line
+- MCP snapshot intentionally omits location/player/guest position text blocks.
 
 ## Festival UI Rules
 - Spring Day 28 default bottom line:

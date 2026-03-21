@@ -10,4 +10,5 @@ Implemented.
 
 ## Behavior
 - Supports crops, random spawn flows, and daily progression.
+- EastPath -> Farm return spawn is `(6,5)`.
 - Home/sleep flow is anchored to farm context.

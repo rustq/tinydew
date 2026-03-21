@@ -91,6 +91,10 @@ If multiple important system messages occur, summarize them in bullets.
 1. **Action result** (1-2 lines)
 2. **Surprise/celebration line** (only if event triggered)
 3. **Game UI snapshot** (code block)
+   - keep MCP snapshot style (no location/player/guest position lines)
+   - top line should be `tinydew day <day> <weather_icon> <time>`
+   - money line should appear as `Money: 💰 $<amount>`
+   - omit inventory section header; show item lines only when non-empty
 4. **Bottom text** (`Game says: ...`)
 5. **What next?** (2-4 concise options)
 

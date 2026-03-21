@@ -12,3 +12,4 @@ Implemented.
 - River tiles are fishable and support bubble state transitions.
 - Movement/collision respects boundaries and river non-walkable rules.
 - Enter/exit transitions update location and entity coordinates.
+- Returning from SouthRiver to EastPath spawns at `(2,2)`.

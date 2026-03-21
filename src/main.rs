@@ -639,7 +639,7 @@ mod tests {
         println!("{}", output);
         assert!(output.contains("Spring Day 1"));
         assert!(output.contains("🧑"));
-        assert!(output.contains("Welcome to Tinydew!"));
+        assert!(output.contains("Welcome to tinydew!"));
     }
 
     #[test]
@@ -887,6 +887,8 @@ mod tests {
         game.move_player(crate::world::Direction::Left);
 
         assert_eq!(game.location, state::Location::Farm);
+        assert_eq!(game.player_x, 6);
+        assert_eq!(game.player_y, 5);
     }
 
     #[test]

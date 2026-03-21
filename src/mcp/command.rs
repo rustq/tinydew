@@ -359,10 +359,10 @@ fn generate_text_snapshot(state: &GameState) -> String {
     if state.home_state == crate::state::HomeState::Income {
         let mut lines = vec![
             format!(
-                "=== Tinydew Day {} {} {} ===",
+                "tinydew day {} {} {}",
                 state.day,
-                state.format_time(),
-                state.get_weather_icon()
+                state.get_weather_icon(),
+                state.format_time()
             ),
             "--- Income this day ---".to_string(),
         ];
@@ -417,66 +417,18 @@ fn generate_text_snapshot(state: &GameState) -> String {
 
     let mut lines = vec![
         format!(
-            "=== Tinydew Day {} {} {} ===",
+            "tinydew day {} {} {}",
             state.day,
-            state.format_time(),
-            state.get_weather_icon()
+            state.get_weather_icon(),
+            state.format_time()
         ),
-        format!("Location: {:?}", state.location),
-        format!("Money: ${}", state.money),
-        String::new(),
-        "--- Player ---".to_string(),
-        format!("Position: ({}, {})", state.player_x, state.player_y),
-        String::new(),
-        "--- Inventory ---".to_string(),
     ];
-
-    if state.inventory.seeds.is_empty()
-        && state.inventory.produce.is_empty()
-        && state.inventory.forage.is_empty()
-        && state.inventory.fish.is_empty()
-    {
-        lines.push("(empty)".to_string());
-    } else {
-        let seed_count = state.inventory.seed_count();
-        if seed_count > 0 {
-            lines.push(format!("  Seeds: 🫙 x{}", seed_count));
-        }
-        for (crop, count) in &state.inventory.produce {
-            if *count > 0 {
-                lines.push(format!(
-                    "  Produce: {} {} x{}",
-                    crop.produce_emoji(),
-                    crop.seed_name(),
-                    count
-                ));
-            }
-        }
-        for (forage, count) in &state.inventory.forage {
-            if *count > 0 {
-                lines.push(format!("  Forage: {} x{}", forage.emoji(), count));
-            }
-        }
-        for (fish, count) in &state.inventory.fish {
-            if *count > 0 {
-                lines.push(format!("  Fish: {} x{}", fish.emoji(), count));
-            }
-        }
-    }
 
     let guest_visible = state.guest_enabled
         && state.guest_location == state.location
         && state.active_control == crate::state::ControlTarget::Guest;
 
-    if guest_visible {
-        lines.push(String::new());
-        lines.push("--- Guest ---".to_string());
-        lines.push(format!("Position: ({}, {})", state.guest_x, state.guest_y));
-        lines.push("(Active)".to_string());
-    }
-
     lines.push(String::new());
-    lines.push("--- Farm Map ---".to_string());
 
     let map = state.get_current_map_ref();
     let (width, height) = state.get_map_size();
@@ -501,6 +453,42 @@ fn generate_text_snapshot(state: &GameState) -> String {
             .collect();
         lines.push(line);
     }
+
+    let has_inventory = !(state.inventory.seeds.is_empty()
+        && state.inventory.produce.is_empty()
+        && state.inventory.forage.is_empty()
+        && state.inventory.fish.is_empty());
+
+    if has_inventory {
+        lines.push(String::new());
+        let seed_count = state.inventory.seed_count();
+        if seed_count > 0 {
+            lines.push(format!("seeds: 🫙 x{}", seed_count));
+        }
+        for (crop, count) in &state.inventory.produce {
+            if *count > 0 {
+                lines.push(format!(
+                    "produce: {} {} x{}",
+                    crop.produce_emoji(),
+                    crop.seed_name().to_lowercase(),
+                    count
+                ));
+            }
+        }
+        for (forage, count) in &state.inventory.forage {
+            if *count > 0 {
+                lines.push(format!("forage: {} {} x{}", forage.emoji(), forage.name().to_lowercase(), count));
+            }
+        }
+        for (fish, count) in &state.inventory.fish {
+            if *count > 0 {
+                lines.push(format!("fish: {} x{}", fish.emoji(), count));
+            }
+        }
+    }
+
+    lines.push(String::new());
+    lines.push(format!("money: 💰 ${}", state.money));
 
     let snapshot_message = display_message_for_snapshot(state);
     if !snapshot_message.is_empty() {
@@ -1077,7 +1065,7 @@ mod tests {
         let result = execute_command(&mut state, ParsedCommand::Print);
         assert!(result.snapshot_text.is_some());
         let snapshot = result.snapshot_text.unwrap();
-        assert!(snapshot.contains("Day"));
+        assert!(snapshot.contains("tinydew day"));
     }
 
     #[test]
@@ -1088,13 +1076,7 @@ mod tests {
         let result = execute_command(&mut state, ParsedCommand::Print);
         let snapshot = result.snapshot_text.unwrap();
 
-        let map_start = snapshot
-            .lines()
-            .position(|l| l.starts_with("--- Farm Map ---"));
-        assert!(map_start.is_some(), "Map section should exist");
-        let map_start = map_start.unwrap();
-
-        let map_rows: Vec<&str> = snapshot.lines().skip(map_start + 1).take(8).collect();
+        let map_rows: Vec<&str> = snapshot.lines().skip(2).take(8).collect();
 
         assert_eq!(map_rows.len(), 8, "Should have 8 map rows");
 
@@ -1128,14 +1110,8 @@ mod tests {
         let result = execute_command(&mut state, ParsedCommand::Print);
         let snapshot = result.snapshot_text.unwrap();
 
-        let map_start = snapshot
-            .lines()
-            .position(|l| l.starts_with("--- Farm Map ---"));
-        assert!(map_start.is_some(), "Map section should exist");
-        let map_start = map_start.unwrap();
-
         let (_, height) = state.get_map_size();
-        let map_rows: Vec<&str> = snapshot.lines().skip(map_start + 1).take(height).collect();
+        let map_rows: Vec<&str> = snapshot.lines().skip(2).take(height).collect();
         assert_eq!(map_rows.len(), height, "Should have {} map rows", height);
 
         assert!(
@@ -1851,13 +1827,7 @@ mod tests {
         let result = execute_command(&mut state, ParsedCommand::Print);
         let snapshot = result.snapshot_text.unwrap();
 
-        let map_start = snapshot
-            .lines()
-            .position(|l| l.starts_with("--- Farm Map ---"));
-        assert!(map_start.is_some(), "Map section should exist");
-        let map_start = map_start.unwrap();
-
-        let map_rows: Vec<&str> = snapshot.lines().skip(map_start + 1).take(5).collect();
+        let map_rows: Vec<&str> = snapshot.lines().skip(2).take(5).collect();
         assert_eq!(map_rows.len(), 5, "Square should have 5 rows");
 
         for row in &map_rows {
@@ -1897,13 +1867,7 @@ mod tests {
         let result = execute_command(&mut state, ParsedCommand::Print);
         let snapshot = result.snapshot_text.unwrap();
 
-        let map_start = snapshot
-            .lines()
-            .position(|l| l.starts_with("--- Farm Map ---"));
-        assert!(map_start.is_some(), "Map section should exist");
-        let map_start = map_start.unwrap();
-
-        let map_rows: Vec<&str> = snapshot.lines().skip(map_start + 1).take(5).collect();
+        let map_rows: Vec<&str> = snapshot.lines().skip(2).take(5).collect();
 
         assert!(
             !map_rows.iter().any(|row| row.contains('🧑')),
