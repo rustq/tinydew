@@ -142,6 +142,7 @@ impl Session {
             TileType::River => "R".to_string(),
             TileType::RiverBubble => "B".to_string(),
             TileType::Wonder => "W".to_string(),
+            TileType::Piano => "N".to_string(),
         }
     }
 
@@ -172,6 +173,7 @@ impl Session {
             TileType::River => "River".to_string(),
             TileType::RiverBubble => "RiverBubble".to_string(),
             TileType::Wonder => "Wonder".to_string(),
+            TileType::Piano => "Piano".to_string(),
         }
     }
 

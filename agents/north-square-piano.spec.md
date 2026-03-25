@@ -1,7 +1,7 @@
 # North Square Piano Spec
 
 ## Status
-Not implemented.
+Implemented.
 
 ## Context
 The Square region (the northernmost plaza) receives a permanent decorative piano object. The piano is a non-walkable fixture placed at a specific tile.
