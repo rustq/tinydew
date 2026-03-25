@@ -17,7 +17,7 @@ Implemented.
 ## Guest Control
 - Interactive mode enables guest control path.
 - Space triggers guest greeting text.
-- Guest obeys non-walkable tiles (including Fountain and Wonder).
+- Guest obeys non-walkable tiles (including Fountain, Piano, and Wonder).
 
 ## Transitions
 - Farm <-> EastPath (return from EastPath to Farm spawns at `(6,5)`)

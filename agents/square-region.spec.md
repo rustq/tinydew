@@ -6,7 +6,8 @@ Implemented.
 ## Map
 - Dimensions: 9 x 5.
 - Boundary trees block edges.
-- Center fountain (`⛲`) is non-walkable.
+- Center fountain (`⛲`) at `(4,2)` is non-walkable.
+- Piano (`🎹`) at `(6,2)` is a permanent non-walkable fixture (see `north-square-piano.spec.md`).
 - Bottom center gate connects to EastPath top-center gate.
 
 ## Behavior
