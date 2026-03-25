@@ -413,14 +413,12 @@ fn generate_text_snapshot(state: &GameState) -> String {
         return lines.join("\n");
     }
 
-    let mut lines = vec![
-        format!(
-            "tinydew day {} {} {}",
-            state.day,
-            state.get_weather_icon(),
-            state.format_time()
-        ),
-    ];
+    let mut lines = vec![format!(
+        "tinydew day {} {} {}",
+        state.day,
+        state.get_weather_icon(),
+        state.format_time()
+    )];
 
     let guest_visible = state.guest_enabled
         && state.guest_location == state.location
@@ -475,7 +473,12 @@ fn generate_text_snapshot(state: &GameState) -> String {
         }
         for (forage, count) in &state.inventory.forage {
             if *count > 0 {
-                lines.push(format!("forage: {} {} x{}", forage.emoji(), forage.name().to_lowercase(), count));
+                lines.push(format!(
+                    "forage: {} {} x{}",
+                    forage.emoji(),
+                    forage.name().to_lowercase(),
+                    count
+                ));
             }
         }
         for (fish, count) in &state.inventory.fish {
@@ -566,11 +569,12 @@ pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResu
                 None => state.plant_action(),
             };
 
-            let events = if state.message.contains("Plant Done") || original_message != state.message {
-                vec!["Planted seed".to_string()]
-            } else {
-                vec![]
-            };
+            let events =
+                if state.message.contains("Plant Done") || original_message != state.message {
+                    vec!["Planted seed".to_string()]
+                } else {
+                    vec![]
+                };
 
             CommandResult::new(state.message.clone())
                 .with_events(events)
@@ -683,7 +687,8 @@ pub fn execute_command(state: &mut GameState, cmd: ParsedCommand) -> CommandResu
                 state.money += revenue;
                 state.record_income(revenue);
                 state.record_forage_sold(forage, sold_count);
-                state.message = format!("Sold {} x{} for ${}!", forage.emoji(), sold_count, revenue);
+                state.message =
+                    format!("Sold {} x{} for ${}!", forage.emoji(), sold_count, revenue);
             } else {
                 state.message = format!("No {} to sell!", forage.emoji());
             }
@@ -822,19 +827,28 @@ mod tests {
         let result = parse_command("plant:seed:down");
         assert!(matches!(
             result,
-            Ok(ParsedCommand::Plant(CropType::Carrot, Some(Direction::Down)))
+            Ok(ParsedCommand::Plant(
+                CropType::Carrot,
+                Some(Direction::Down)
+            ))
         ));
 
         let result = parse_command("plant:seed:left");
         assert!(matches!(
             result,
-            Ok(ParsedCommand::Plant(CropType::Carrot, Some(Direction::Left)))
+            Ok(ParsedCommand::Plant(
+                CropType::Carrot,
+                Some(Direction::Left)
+            ))
         ));
 
         let result = parse_command("plant:seed:right");
         assert!(matches!(
             result,
-            Ok(ParsedCommand::Plant(CropType::Carrot, Some(Direction::Right)))
+            Ok(ParsedCommand::Plant(
+                CropType::Carrot,
+                Some(Direction::Right)
+            ))
         ));
     }
 
@@ -946,19 +960,13 @@ mod tests {
     #[test]
     fn test_parse_buy() {
         let result = parse_command("buy:seed");
-        assert!(matches!(
-            result,
-            Ok(ParsedCommand::BuySeed(1))
-        ));
+        assert!(matches!(result, Ok(ParsedCommand::BuySeed(1))));
     }
 
     #[test]
     fn test_parse_buy_with_qty() {
         let result = parse_command("buy:seed:5");
-        assert!(matches!(
-            result,
-            Ok(ParsedCommand::BuySeed(5))
-        ));
+        assert!(matches!(result, Ok(ParsedCommand::BuySeed(5))));
     }
 
     #[test]

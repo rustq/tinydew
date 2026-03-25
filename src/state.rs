@@ -263,6 +263,10 @@ impl GameState {
         self.guest_enabled && self.guest_location == self.location
     }
 
+    pub fn guest_play_piano(&mut self, note: &str) {
+        self.message = format!("🎵 {}", note);
+    }
+
     fn find_guest_spawn_location(&self) -> Option<(usize, usize)> {
         self.find_guest_spawn_location_in(self.guest_location)
     }
@@ -383,7 +387,11 @@ impl GameState {
             false
         } else {
             let target_tile = match self.guest_location {
-                Location::Farm => self.farm_map.get(new_y).and_then(|row| row.get(new_x)).copied(),
+                Location::Farm => self
+                    .farm_map
+                    .get(new_y)
+                    .and_then(|row| row.get(new_x))
+                    .copied(),
                 Location::EastPath => self
                     .east_path_map
                     .get(new_y)
@@ -406,7 +414,8 @@ impl GameState {
                     "That is so beautiful. Let human enjoy it together in interactive mode.",
                 );
             } else {
-                self.message = String::from("Cannot move there. Try walking around to find a path.");
+                self.message =
+                    String::from("Cannot move there. Try walking around to find a path.");
             }
             false
         }
@@ -655,10 +664,10 @@ impl GameState {
                 self.message =
                     String::from("A beautiful old piano. It hums quietly in the square.");
             } else if matches!(target_tile, Some(TileType::Mushroom)) {
-                self.message =
-                    String::from("Cannot move there. Mature crop ahead — try harvest.");
+                self.message = String::from("Cannot move there. Mature crop ahead — try harvest.");
             } else {
-                self.message = String::from("Cannot move there. Try walking around to find a path.");
+                self.message =
+                    String::from("Cannot move there. Try walking around to find a path.");
             }
             false
         }
@@ -922,9 +931,7 @@ impl GameState {
             }
 
             let mut map_candidates: Vec<FlowerSpawnMap> = Vec::new();
-            if !farm_positions.is_empty()
-                && !Self::region_has_flower_or_mushroom(&self.farm_map)
-            {
+            if !farm_positions.is_empty() && !Self::region_has_flower_or_mushroom(&self.farm_map) {
                 map_candidates.push(FlowerSpawnMap::Farm);
             }
             if !east_path_positions.is_empty()
@@ -1006,8 +1013,8 @@ impl GameState {
             let mut farm_positions = self.get_empty_grass_positions(&self.farm_map);
             let mut east_path_positions = self.get_empty_grass_positions(&self.east_path_map);
 
-            let farm_allowed = !farm_positions.is_empty()
-                && !Self::region_has_flower_or_mushroom(&self.farm_map);
+            let farm_allowed =
+                !farm_positions.is_empty() && !Self::region_has_flower_or_mushroom(&self.farm_map);
             let east_allowed = !east_path_positions.is_empty()
                 && !Self::region_has_flower_or_mushroom(&self.east_path_map);
 
@@ -1193,8 +1200,7 @@ impl GameState {
                     self.message = String::from("Cannot clear the slide!");
                 }
                 _ => {
-                    self.message =
-                        String::from("Nothing clearable nearby.");
+                    self.message = String::from("Nothing clearable nearby.");
                 }
             }
         } else {
@@ -1233,8 +1239,7 @@ impl GameState {
                     self.message = String::from("Cannot clear the slide!");
                 }
                 _ => {
-                    self.message =
-                        String::from("Nothing clearable nearby.");
+                    self.message = String::from("Nothing clearable nearby.");
                 }
             }
         } else {
@@ -2025,14 +2030,20 @@ mod tests {
         state.spring_forced_flower_6_2_done = true;
         for y in 0..FARM_HEIGHT {
             for x in 0..FARM_WIDTH {
-                if matches!(state.farm_map[y][x], TileType::Mushroom | TileType::Crop(CropType::Flower, _)) {
+                if matches!(
+                    state.farm_map[y][x],
+                    TileType::Mushroom | TileType::Crop(CropType::Flower, _)
+                ) {
                     state.farm_map[y][x] = TileType::Grass;
                 }
             }
         }
         for y in 0..EAST_PATH_HEIGHT {
             for x in 0..EAST_PATH_WIDTH {
-                if matches!(state.east_path_map[y][x], TileType::Mushroom | TileType::Crop(CropType::Flower, _)) {
+                if matches!(
+                    state.east_path_map[y][x],
+                    TileType::Mushroom | TileType::Crop(CropType::Flower, _)
+                ) {
                     state.east_path_map[y][x] = TileType::Grass;
                 }
             }

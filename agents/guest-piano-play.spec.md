@@ -30,7 +30,7 @@ The guest girl can play the piano placed at Square `(6,2)`. When the guest stand
 
 ## Message Display
 - On key press, the bottom message line shows the note name:
-  - Example: pressing `D` shows `🎹 Mi`
+  - Example: pressing `D` shows `🎵 Mi`
 - The message updates on each key press, replacing the previous note display.
 - If the guest moves away from `(6,3)`, the keys revert to their normal behavior (farm action rejection messages).
 
@@ -77,7 +77,7 @@ The guest girl can play the piano placed at Square `(6,2)`. When the guest stand
 
 ## Implementation Notes
 - **Input handling** (`src/main.rs`): Inside the guest-enabled branch of the interactive key loop, check if `guest_location == Square && guest_x == 6 && guest_y == 3`. If true, intercept `KeyCode::Char('a'..'k')` for the 8 mapped keys before falling through to the default "Guest can only walk around." handler.
-- **State** (`src/state.rs`): Add a method `guest_play_piano(&mut self, note: &str)` that sets `self.message` to the note display string (e.g., `"🎹 Do"`). No persistent piano state is needed — each press is stateless.
+- **State** (`src/state.rs`): Add a method `guest_play_piano(&mut self, note: &str)` that sets `self.message` to the note display string (e.g., `"🎵 Do"`). No persistent piano state is needed — each press is stateless.
 - **Audio module**: Create `src/audio.rs` that loads Salamander FLAC samples from `Samples/` and plays them via `rodio`. Expose a function like `play_note(note: PianoNote)` that decodes, pitch-shifts, and appends to a sink on a background thread. Guard the entire module behind the `interactive` feature flag so MCP/headless mode is unaffected.
 - **Cargo.toml**: Add `rodio` under `[dependencies]` gated by the `interactive` feature:
   ```toml

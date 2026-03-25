@@ -283,8 +283,7 @@ mod tests {
 
     #[test]
     fn test_autosave_persists_state() {
-        let test_path: std::path::PathBuf =
-            std::env::temp_dir().join("tinydew_autosave_test.json");
+        let test_path: std::path::PathBuf = std::env::temp_dir().join("tinydew_autosave_test.json");
 
         let mut state = GameState::new();
         state.day = 5;

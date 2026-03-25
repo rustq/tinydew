@@ -127,7 +127,6 @@ fn should_autosave_after_command(cmd: &super::command::ParsedCommand) -> bool {
     )
 }
 
-
 pub fn handle_start_session(_input: StartSessionInput) -> ToolResponse {
     let state = match GAME_STATE.lock() {
         Ok(s) => s,
@@ -307,7 +306,6 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
             }
         };
 
-
         let result = execute_command(&mut state.state, parsed);
 
         results.push(serde_json::json!({
@@ -322,7 +320,6 @@ pub fn handle_command_batch(input: CommandBatchInput) -> ToolResponse {
         }));
 
         executed_count += 1;
-
     }
 
     state.mark_dirty();
