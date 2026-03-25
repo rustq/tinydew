@@ -18,6 +18,7 @@ Implemented.
 - Interactive mode enables guest control path.
 - Space triggers guest greeting text.
 - Guest obeys non-walkable tiles (including Fountain, Piano, and Wonder).
+- Guest can play the piano when standing at Square `(6,3)` via A/S/D/F/G/H/J/K keys (see `guest-piano-play.spec.md`).
 
 ## Transitions
 - Farm <-> EastPath (return from EastPath to Farm spawns at `(6,5)`)

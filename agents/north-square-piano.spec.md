@@ -25,6 +25,7 @@ The Square region (the northernmost plaza) receives a permanent decorative piano
 ## Interaction
 - Attempting to walk onto the piano tile shows:
   `A beautiful old piano. It hums quietly in the square.`
+- Guest can play the piano by standing at `(6,3)` directly below the piano tile (see `guest-piano-play.spec.md`).
 
 ## Implementation Notes
 - Requires new `TileType::Piano` variant in the tile enum.

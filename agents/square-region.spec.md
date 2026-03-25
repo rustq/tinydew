@@ -13,6 +13,7 @@ Implemented.
 ## Behavior
 - Supports player/guest movement with region-aware collision.
 - Square forbids farm actions like clear/plant.
+- Tile `(6,3)` acts as the piano play zone for the guest (see `guest-piano-play.spec.md`).
 - Transition rules connect EastPath <-> Square for both player and guest.
 - Entering Square from EastPath spawns at `(4,3)`.
 - Returning from Square to EastPath spawns at `(5,1)`.
