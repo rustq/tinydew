@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-interactive = []
+interactive = ["rodio", "once_cell"]
 default = []
 
 [dependencies]
@@ -18,5 +18,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1.0"
 clap = { version = "4.5", features = ["derive"] }
 dirs = "5.0"
+rodio = { version = "0.21", optional = true, features = ["minimp3"] }
+once_cell = { version = "1.18", optional = true }
 
 [dev-dependencies]

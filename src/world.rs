@@ -40,6 +40,7 @@ pub enum TileType {
     River,
     RiverBubble,
     Wonder,
+    Piano,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -211,6 +212,7 @@ impl TileType {
             TileType::River => false,
             TileType::RiverBubble => false,
             TileType::Wonder => false,
+            TileType::Piano => false,
             TileType::Grass
             | TileType::Soil
             | TileType::PathEast
@@ -259,6 +261,7 @@ impl TileType {
             TileType::River => "🌊",
             TileType::RiverBubble => "🫧",
             TileType::Wonder => "🦋",
+            TileType::Piano => "🎹",
         }
     }
 }
@@ -456,7 +459,7 @@ pub fn create_square_map() -> Map {
             TileType::Grass,
             TileType::Fountain,
             TileType::Grass,
-            TileType::Grass,
+            TileType::Piano,
             TileType::Grass,
             TileType::Boundary,
         ],

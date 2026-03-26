@@ -2,11 +2,13 @@
 #![allow(dead_code, unused_imports)]
 
 mod mcp;
+mod piano;
 mod savegame;
 mod state;
 mod world;
 
 use crate::mcp::handler::ToolResponse;
+use crate::piano::{PianoNote, play_note};
 use crate::state::GameState;
 use crate::world::Direction;
 use clap::Parser;
@@ -252,7 +254,12 @@ fn print_message<W: Write>(w: &mut W, game: &GameState) {
         if game.is_guest_active() {
             write!(w, "move: ↑↓←→ | greet: [SPACE]{}", EOL).unwrap();
         } else {
-            write!(w, "move: ↑↓←→ | clear: [C] | plant: [P] | water: [W] | harvest: [H] | trade: [T]{}", EOL).unwrap();
+            write!(
+                w,
+                "move: ↑↓←→ | clear: [C] | plant: [P] | water: [W] | harvest: [H] | trade: [T]{}",
+                EOL
+            )
+            .unwrap();
         }
     }
 }
@@ -482,6 +489,19 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
                         continue;
                     }
 
+                    let guest_at_square_piano = game.guest_enabled
+                        && game.guest_location == state::Location::Square
+                        && game.guest_x == 6
+                        && game.guest_y == 3;
+
+                    if guest_at_square_piano {
+                        if let Some(note) = PianoNote::from_key_code(key.code) {
+                            game.guest_play_piano(note.display_name());
+                            play_note(note);
+                            continue;
+                        }
+                    }
+
                     match key.code {
                         KeyCode::Up => {
                             if game.guest_enabled {
@@ -603,7 +623,9 @@ mod tests {
         output.push('\n');
         output.push_str(&format!("> {}\n", game.message));
         output.push('\n');
-        output.push_str("move: ↑↓←→ | clear: [C] | plant: [P] | water: [W] | harvest: [H] | trade: [T]\n");
+        output.push_str(
+            "move: ↑↓←→ | clear: [C] | plant: [P] | water: [W] | harvest: [H] | trade: [T]\n",
+        );
 
         println!("{}", output);
         assert!(output.contains("tinydew day 1"));
