@@ -9,76 +9,67 @@ use once_cell::sync::Lazy as OnceCellLazy;
 use rodio::{Decoder, OutputStreamBuilder, Sink, Source};
 use std::io::Cursor;
 
-/// Musical notes mapped to keyboard keys (C Major scale, C4–E5).
+/// Musical notes mapped to keyboard keys (black keys).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlockKeyNote {
-    C4,
-    D4,
-    E4,
-    F4,
-    G4,
-    A4,
-    B4,
-    C5,
-    D5,
-    E5,
+    C4Sharp,    // C#
+    D4Sharp,    // D#
+    F4Sharp,    // F#
+    G4Sharp,    // G#
+    A4Sharp,    // A#
+    None,       // No sound
 }
 
 impl BlockKeyNote {
     /// Human-readable name displayed in the bottom message.
     pub fn display_name(self) -> &'static str {
         match self {
-            BlockKeyNote::C4 => "C4",
-            BlockKeyNote::D4 => "D4",
-            BlockKeyNote::E4 => "E4",
-            BlockKeyNote::F4 => "F4",
-            BlockKeyNote::G4 => "G4",
-            BlockKeyNote::A4 => "A4",
-            BlockKeyNote::B4 => "B4",
-            BlockKeyNote::C5 => "C5",
-            BlockKeyNote::D5 => "D5",
-            BlockKeyNote::E5 => "E5",
+            BlockKeyNote::C4Sharp => "C#",
+            BlockKeyNote::D4Sharp => "D#",
+            BlockKeyNote::F4Sharp => "F#",
+            BlockKeyNote::G4Sharp => "G#",
+            BlockKeyNote::A4Sharp => "A#",
+            BlockKeyNote::None => "",
         }
     }
 
     /// File name for the Salamander Grand Piano sample used as the source.
     pub fn sample_file(self) -> &'static str {
         match self {
-            BlockKeyNote::C4 | BlockKeyNote::D4 | BlockKeyNote::E4 | BlockKeyNote::F4 | BlockKeyNote::G4 => "C4v8.flac",
-            BlockKeyNote::A4 | BlockKeyNote::B4 => "A4v8.flac",
-            BlockKeyNote::C5 | BlockKeyNote::D5 | BlockKeyNote::E5 => "C5v8.flac",
+            BlockKeyNote::C4Sharp => "C4v8.flac",
+            BlockKeyNote::D4Sharp => "C4v8.flac",
+            BlockKeyNote::F4Sharp => "F#4v8.flac",
+            BlockKeyNote::G4Sharp => "F#4v8.flac",
+            BlockKeyNote::A4Sharp => "A4v8.flac",
+            BlockKeyNote::None => "",
         }
     }
 
     /// Speed ratio applied to the source sample to reach the target pitch.
     pub fn playback_speed(self) -> f32 {
         match self {
-            BlockKeyNote::C4 => 1.0,
-            BlockKeyNote::D4 => 1.1225,
-            BlockKeyNote::E4 => 1.2599,
-            BlockKeyNote::F4 => 0.9439,
-            BlockKeyNote::G4 => 1.0595,
-            BlockKeyNote::A4 => 1.0,
-            BlockKeyNote::B4 => 0.9439,
-            BlockKeyNote::C5 => 1.0,
-            BlockKeyNote::D5 => 1.1225,
-            BlockKeyNote::E5 => 1.2599,
+            BlockKeyNote::C4Sharp => 1.0595,   // C# = C4 * 2^(1/12)
+            BlockKeyNote::D4Sharp => 1.1892,   // D# = D4 * 2^(1/12)
+            BlockKeyNote::F4Sharp => 1.0,      // F#
+            BlockKeyNote::G4Sharp => 1.0595,   // G# = G4 * 2^(1/12)
+            BlockKeyNote::A4Sharp => 1.1892,   // A# = A4 * 2^(1/12)
+            BlockKeyNote::None => 1.0,
         }
     }
 
     /// Convert a lowercase character to its corresponding note.
     pub fn from_char(c: char) -> Option<Self> {
         match c.to_ascii_lowercase() {
-            'q' => Some(Self::C4),
-            'w' => Some(Self::D4),
-            'e' => Some(Self::E4),
-            'r' => Some(Self::F4),
-            't' => Some(Self::G4),
-            'y' => Some(Self::A4),
-            'u' => Some(Self::B4),
-            'i' => Some(Self::C5),
-            'o' => Some(Self::D5),
-            'p' => Some(Self::E5),
+            'q' => Some(BlockKeyNote::C4Sharp),   // C#
+            'w' => Some(BlockKeyNote::D4Sharp),   // D#
+            'e' => Some(BlockKeyNote::F4Sharp),   // F#
+            'r' => Some(BlockKeyNote::G4Sharp),   // G#
+            't' => Some(BlockKeyNote::A4Sharp),   // A#
+            'y' => Some(BlockKeyNote::None),      // No sound
+            'u' => Some(BlockKeyNote::None),      // No sound
+            'i' => Some(BlockKeyNote::None),      // No sound
+            'o' => Some(BlockKeyNote::None),      // No sound
+            'p' => Some(BlockKeyNote::None),      // No sound
             _ => None,
         }
     }
@@ -156,14 +147,21 @@ static BLOCK_AUDIO_SENDER: OnceCellLazy<mpsc::Sender<AudioCommand>> = OnceCellLa
 });
 
 /// Play a note using the shared audio thread.
+/// Returns true if note should be displayed in message, false otherwise.
 #[cfg(feature = "interactive")]
-pub fn play_note(note: BlockKeyNote) {
+pub fn play_note(note: BlockKeyNote) -> bool {
+    // Skip sound for None notes
+    if matches!(note, BlockKeyNote::None) {
+        return false;
+    }
+    
     let sample_file = note.sample_file();
     let speed = note.playback_speed();
     let _ = BLOCK_AUDIO_SENDER.send(AudioCommand::Play {
         sample_file: sample_file.to_string(),
         speed,
     });
+    true
 }
 
 #[cfg(not(feature = "interactive"))]

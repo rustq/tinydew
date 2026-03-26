@@ -512,7 +512,7 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
                             if let Some(note) = BlockKeyNote::from_char(c) {
                                 if block_key_state.key_down(c) {
                                     game.message = format!("🎵 {}", note.display_name());
-                                    play_note(note);
+                                    let _ = play_note(note);
                                 }
                                 continue;
                             }
