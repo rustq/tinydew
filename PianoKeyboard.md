@@ -2,28 +2,33 @@
 
 Tinydew features two piano input systems that use the Salamander Grand Piano samples.
 
-## 1. Block Key System (QWERTYUIOP) - Default
+## 1. Block Key System (Full Keyboard)
 
-The default piano system uses keyboard keys Q, W, E, R, T, Y, U, I, O, P to play notes.
+The block key system uses keys Z through U to play a full range of notes (C3-B5).
 
-| Key | Note | Sample File | Playback Speed | Description |
-|-----|------|-------------|----------------|-------------|
-| Q | C# | C4v8.flac | 1.0595 | Black key |
-| W | D# | C4v8.flac | 1.1892 | Black key |
-| E | F# | F#4v8.flac | 1.0 | Black key |
-| R | G# | F#4v8.flac | 1.0595 | Black key |
-| T | A# | A4v8.flac | 1.1892 | Black key |
-| Y | No sound | - | - | Empty |
-| U | No sound | - | - | Empty |
-| I | No sound | - | - | Empty |
-| O | No sound | - | - | Empty |
-| P | No sound | - | - | Empty |
+### Full Key Mapping
+
+| Key | Note | Sample File | Playback Speed | Key | Note | Sample File | Playback Speed |
+|-----|------|-------------|----------------|-----|------|-------------|----------------|
+| Z | C3 | C3v8.flac | 1.0 | Q | C5 | C5v8.flac | 1.0 |
+| X | D3 | C3v8.flac | 1.1225 | W | D5 | C5v8.flac | 1.1225 |
+| C | E3 | C3v8.flac | 1.2599 | E | E5 | C5v8.flac | 1.2599 |
+| V | F3 | F3v8.flac | 0.9439 | R | F5 | F#5v8.flac | 0.9439 |
+| B | G3 | F3v8.flac | 1.0595 | T | G5 | F#5v8.flac | 1.0595 |
+| N | A3 | A3v8.flac | 1.0 | Y | A5 | A5v8.flac | 1.0 |
+| M | B3 | A3v8.flac | 0.9439 | U | B5 | A5v8.flac | 0.9439 |
+| A | C4 | C4v8.flac | 1.0 | | | | |
+| S | D4 | C4v8.flac | 1.1225 | | | | |
+| D | E4 | C4v8.flac | 1.2599 | | | | |
+| F | F4 | F#4v8.flac | 0.9439 | | | | |
+| G | G4 | F#4v8.flac | 1.0595 | | | | |
+| H | A4 | A4v8.flac | 1.0 | | | | |
+| J | B4 | A4v8.flac | 0.9439 | | | | |
 
 ### Usage
 
 - Guest must be at position (6, 3) on the Square map (directly in front of the piano at 6, 2)
-- Press Q, W, E, R, T to play black keys (C#, D#, F#, G#, A#)
-- Y, U, I, O, P produce no sound
+- Press any of the above keys to play the corresponding note
 - Keys are debounced - press and release to hear the note again
 - Uses shared audio thread to prevent "Dropping OutputStream" warnings
 
@@ -61,10 +66,9 @@ Both systems use identical audio logic:
 Both systems use the [Salamander Grand Piano](https://github.com/alexholm/salamander-grand-piano-in-rust) samples by Alexander Holm.
 
 Available samples:
-- C4v8.flac (root C4, various speeds for pitch shifting)
-- F#4v8.flac (F#4 for Fa and So notes)
-- A4v8.flac (A4 for La note)
-- C5v8.flac (C5 for higher notes)
+- C3v8.flac, C4v8.flac, C5v8.flac (root C notes, various speeds for pitch shifting)
+- F3v8.flac, F#4v8.flac, F#5v8.flac (F/F# notes)
+- A3v8.flac, A4v8.flac, A5v8.flac (A notes)
 
 ## Requirements
 
