@@ -7,12 +7,12 @@ Implemented in `src/piano.rs` and integrated in `src/main.rs`.
 - **2026-03-26**: Updated to reflect macOS compatibility fix. Audio thread owns `OutputStream` to avoid `Send` trait issues with CoreAudio's non-Send `PropertyListenerCallbackWrapper`. Uses `mpsc` channel for communication between main thread and audio thread.
 
 ## Context
-The guest girl can play the piano placed at Square `(6,2)`. When the guest stands directly below the piano at `(6,3)`, keyboard keys activate piano notes with audible sound output. Only the guest has this ability — the player character cannot play the piano.
+The guest girl can play the piano placed at Farm `(4,2)`. When the guest stands directly below the piano at `(4,3)`, keyboard keys activate piano notes with audible sound output. Only the guest has this ability — the player character cannot play the piano.
 
 ## Activation
 - Guest must be enabled (`guest_enabled == true`).
-- Guest must be in Square region (`guest_location == Location::Square`).
-- Guest must be at tile `(6,3)` — directly south of the piano at `(6,2)`.
+- Guest must be in Farm region (`guest_location == Location::Farm`).
+- Guest must be at tile `(4,3)` — directly south of the piano at `(4,2)`.
 - When all conditions are met, the piano key bindings become active in the interactive input loop.
 - Piano mode is passive — no explicit enter/exit action. Keys are simply available while standing at `(6,3)`.
 
@@ -76,17 +76,17 @@ The guest girl can play the piano placed at Square `(6,2)`. When the guest stand
 - If audio initialization fails (e.g., no audio device), the game continues silently — sound is best-effort, never a hard failure.
 
 ## Player Restriction
-- When the player (non-guest) stands at `(6,3)`, the A/S/D/F/G/H/J/K keys do **not** trigger piano notes.
-- The piano interaction message from `north-square-piano.spec.md` still applies when walking into `(6,2)`.
+- When the player (non-guest) stands at `(4,3)`, the Z/U keys do **not** trigger piano notes.
+- The piano interaction message from `farm-piano.spec.md` still applies when walking into `(4,2)`.
 
 ## Implementation Notes
-- **Input handling** (`src/main.rs`): Inside the guest-enabled branch of the interactive key loop, check if `guest_location == Square && guest_x == 6 && guest_y == 3`. If true, intercept `KeyCode::Char('a'..'k')` for the 8 mapped keys before falling through to the default "Guest can only walk around." handler.
+- **Input handling** (`src/main.rs`): Inside the guest-enabled branch of the interactive key loop, check if `guest_location == Farm && guest_x == 4 && guest_y == 3`. If true, intercept `KeyCode::Char('a'..'u')` for all mapped keys before falling through to the default "Guest can only walk around." handler.
 - **State** (`src/state.rs`): Add a method `guest_play_piano(&mut self, note: &str)` that sets `self.message` to the note display string (e.g., `"🎵 Do"`). No persistent piano state is needed — each press is stateless.
 - **Audio module**: `src/piano.rs` exposes `play_note(note: PianoNote)` that uses a dedicated audio thread pattern to avoid macOS Send/Sync issues. Audio initialization failures are silently ignored (sound is best-effort).
 - **Cargo.toml**: `rodio` is added as a dependency with `rodio = { version = "0.21", optional = true }`. The `interactive` feature includes it.
 - **No MCP impact**: Piano playback is interactive-only. The MCP command interface has no piano command and requires no changes.
 
 ## Related Specs
-- `north-square-piano.spec.md` — Piano tile placement and walkability.
+- `farm-piano.spec.md` — Piano tile placement and walkability.
 - `entities-and-movement.spec.md` — Guest movement and non-walkable tile rules.
-- `square-region.spec.md` — Square map layout.
+- `farm-region.spec.md` — Farm map layout.

@@ -33,7 +33,7 @@ Tinydew uses the PianoNote system to play notes across 3 octaves using the Salam
 
 ## Usage
 
-- Guest must be at position (6, 3) on the Square map (directly in front of the piano at 6, 2)
+- Guest must be at position (4, 3) on the Farm map (directly in front of the piano at 4, 2)
 - Press any of the above keys to play the corresponding note
 - Notes are debounced - press and release to hear the note again
 - Uses shared audio thread with max 4 concurrent notes
@@ -45,6 +45,11 @@ Tinydew uses the PianoNote system to play notes across 3 octaves using the Salam
 - **Sink cleanup**: Automatic cleanup of finished notes, max 4 concurrent sinks
 - **Sample format**: .flac files from Salamander Grand Piano project
 - **Pitch shifting**: Uses playback speed ratios to transpose samples
+
+## Piano Location
+
+- **Piano position**: Farm map at (4, 2)
+- **Piano-play position**: Farm map at (4, 3) - directly in front of the piano
 
 ## Sound Source
 
