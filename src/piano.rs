@@ -76,21 +76,21 @@ impl PianoNote {
 mod audio {
     use super::PianoNote;
     use once_cell::sync::Lazy;
-use std::sync::Arc;
-    use rodio::source::Source;
     use rodio::mixer::Mixer;
-    use rodio::{Decoder, OutputStream, OutputStreamBuilder, Sink};
+    use rodio::source::Source;
+    use rodio::{Decoder, OutputStream, Sink};
     use std::collections::VecDeque;
     use std::fs::File;
     use std::io::BufReader;
     use std::path::PathBuf;
-    use std::sync::Mutex;
+    use std::sync::{Arc, Mutex};
     use std::time::Duration;
 
     pub fn play_note(note: PianoNote) {
-        if let Some(manager) = &*MANAGER {
-            manager.lock().unwrap().play(note);
-        }
+        let manager = MANAGER.get_or_init(|| {
+            Arc::new(Mutex::new(AudioManager::new().expect("Failed to initialize audio manager")))
+        });
+        manager.lock().unwrap().play(note);
     }
 
     struct AudioManager {
@@ -101,7 +101,7 @@ use std::sync::Arc;
 
     impl AudioManager {
         fn new() -> anyhow::Result<Self> {
-            let stream = OutputStreamBuilder::open_default_stream()?;
+            let stream = OutputStream::try_default()?;
             let mixer = Mutex::new(stream.mixer().clone());
             Ok(Self {
                 _stream: stream,
@@ -156,8 +156,8 @@ use std::sync::Arc;
         }
     }
 
-    static MANAGER: Lazy<Option<Arc<Mutex<AudioManager>>>> = Lazy::new(|| {
-        AudioManager::new().ok().map(|m| Arc::new(Mutex::new(m)))
+    static MANAGER: Lazy<Arc<Mutex<AudioManager>>> = Lazy::new(|| {
+        Arc::new(Mutex::new(AudioManager::new().expect("Failed to initialize audio manager")))
     });
 }
 
