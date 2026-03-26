@@ -1,10 +1,6 @@
 use std::collections::HashSet;
-use std::f32::consts::PI;
-use std::io::Cursor;
-use std::thread;
 
 use crossterm::event::KeyCode;
-use rodio::{Decoder, OutputStreamBuilder, Sink};
 
 /// Musical notes mapped to keyboard keys (C Major scale, C4–E5).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -81,8 +77,40 @@ impl BlockKeyNote {
     }
 }
 
+/// Fire-and-forget: spawn a thread that plays the note.
+/// Audio initialization failures are silently ignored.
+#[cfg(feature = "interactive")]
+pub fn play_note(note: BlockKeyNote) {
+    use std::f32::consts::PI;
+    use std::io::Cursor;
+    use std::thread;
+
+    use rodio::{Decoder, OutputStreamBuilder, Sink};
+
+    thread::spawn(move || {
+        let Ok(stream) = OutputStreamBuilder::open_default_stream() else {
+            return;
+        };
+        let sink = Sink::connect_new(&stream.mixer().clone());
+
+        let wav_data = generate_sine_wav(note.frequency());
+        let cursor = Cursor::new(wav_data);
+        if let Ok(source) = rodio::Decoder::new(cursor) {
+            sink.append(source);
+        }
+    });
+}
+
+#[cfg(not(feature = "interactive"))]
+pub fn play_note(_note: BlockKeyNote) {
+    // No-op when audio is disabled
+}
+
 /// Generate a 500ms sine-wave WAV at the given frequency, with 0.3 gain.
+#[cfg(feature = "interactive")]
 fn generate_sine_wav(freq: f32) -> Vec<u8> {
+    use std::f32::consts::PI;
+
     let sample_rate: u32 = 44100;
     let duration_secs: f32 = 0.5;
     let gain: f32 = 0.3;
@@ -130,23 +158,6 @@ fn generate_sine_wav(freq: f32) -> Vec<u8> {
     }
 
     buf
-}
-
-/// Fire-and-forget: spawn a thread that plays the note.
-/// Audio initialization failures are silently ignored.
-pub fn play_note(note: BlockKeyNote) {
-    thread::spawn(move || {
-        let Ok(stream) = OutputStreamBuilder::open_default_stream() else {
-            return;
-        };
-        let sink = Sink::connect_new(&stream.mixer().clone());
-
-        let wav_data = generate_sine_wav(note.frequency());
-        let cursor = Cursor::new(wav_data);
-        if let Ok(source) = rodio::Decoder::new(cursor) {
-            sink.append(source);
-        }
-    });
 }
 
 /// Tracks currently held keys to debounce key-repeat events.

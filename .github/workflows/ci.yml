@@ -66,11 +66,8 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install ALSA dependencies
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
-
-      - name: Build
-        run: cargo build --release
+      - name: Build (headless - no audio)
+        run: cargo build --release --no-default-features
 
   nightly:
     name: Nightly Build
