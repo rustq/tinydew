@@ -1,7 +1,10 @@
 # Guest Piano Play Spec
 
 ## Status
-Not implemented.
+Implemented in `src/piano.rs` and integrated in `src/main.rs`.
+
+## Recent Updates
+- **2026-03-26**: Updated to reflect macOS compatibility fix. Audio thread owns `OutputStream` to avoid `Send` trait issues with CoreAudio's non-Send `PropertyListenerCallbackWrapper`. Uses `mpsc` channel for communication between main thread and audio thread.
 
 ## Context
 The guest girl can play the piano placed at Square `(6,2)`. When the guest stands directly below the piano at `(6,3)`, keyboard keys activate piano notes with audible sound output. Only the guest has this ability — the player character cannot play the piano.
@@ -60,13 +63,14 @@ The guest girl can play the piano placed at Square `(6,2)`. When the guest stand
 | DO#  | DO#     | C5v8.flac     | 0               | 1.0                           |
 
 ### Playback Engine
-- Use the `rodio` crate for audio decoding and playback (already cross-platform: ALSA/PulseAudio on Linux, CoreAudio on macOS, WASAPI on Windows).
+- Uses `rodio` crate for audio decoding and playback (cross-platform: ALSA/PulseAudio on Linux, CoreAudio on macOS, WASAPI on Windows).
+- **Audio thread pattern**: A dedicated thread owns the `OutputStream` to avoid macOS `Send` trait issues (CoreAudio's `PropertyListenerCallbackWrapper` is not `Send`). The main thread communicates via `mpsc` channel.
 - Playback pipeline per note:
-  1. Read source sample bytes from disk (or from a pre-loaded in-memory cache).
-  2. Wrap bytes in a `std::io::Cursor`, decode with `rodio::Decoder::new()`.
-  3. Apply pitch shift via `.speed(speed_ratio)` using the semitone formula `2.0_f32.powf(offset / 12.0)`.
-  4. Apply a short fade-in (`.fade_in(Duration::from_millis(8))`) to prevent click artifacts.
-  5. Append to a `rodio::Sink` for non-blocking playback.
+  1. Main thread reads sample bytes from disk and sends via channel.
+  2. Audio thread receives, wraps in `std::io::Cursor`, decodes with `rodio::Decoder::new()`.
+  3. Applies pitch shift via `.speed(speed_ratio)` using the semitone formula `2.0_f32.powf(offset / 12.0)`.
+  4. Applies a short fade-in (`.fade_in(Duration::from_millis(8))`) to prevent click artifacts.
+  5. Appends to a `rodio::Sink` for non-blocking playback.
 - **Polyphony**: Maintain up to 4 concurrent voice sinks in a `VecDeque<Sink>`. When a 5th note triggers, stop the oldest sink. Prune empty sinks on each key press.
 - Each key press triggers a single note playback (non-blocking, fire-and-forget).
 - If audio initialization fails (e.g., no audio device), the game continues silently — sound is best-effort, never a hard failure.
@@ -78,15 +82,8 @@ The guest girl can play the piano placed at Square `(6,2)`. When the guest stand
 ## Implementation Notes
 - **Input handling** (`src/main.rs`): Inside the guest-enabled branch of the interactive key loop, check if `guest_location == Square && guest_x == 6 && guest_y == 3`. If true, intercept `KeyCode::Char('a'..'k')` for the 8 mapped keys before falling through to the default "Guest can only walk around." handler.
 - **State** (`src/state.rs`): Add a method `guest_play_piano(&mut self, note: &str)` that sets `self.message` to the note display string (e.g., `"🎵 Do"`). No persistent piano state is needed — each press is stateless.
-- **Audio module**: Create `src/audio.rs` that loads Salamander FLAC samples from `Samples/` and plays them via `rodio`. Expose a function like `play_note(note: PianoNote)` that decodes, pitch-shifts, and appends to a sink on a background thread. Guard the entire module behind the `interactive` feature flag so MCP/headless mode is unaffected.
-- **Cargo.toml**: Add `rodio` under `[dependencies]` gated by the `interactive` feature:
-  ```toml
-  rodio = { version = "0.21", optional = true }
-  ```
-  Update the `interactive` feature to include it:
-  ```toml
-  interactive = ["rodio"]
-  ```
+- **Audio module**: `src/piano.rs` exposes `play_note(note: PianoNote)` that uses a dedicated audio thread pattern to avoid macOS Send/Sync issues. Audio initialization failures are silently ignored (sound is best-effort).
+- **Cargo.toml**: `rodio` is added as a dependency with `rodio = { version = "0.21", optional = true }`. The `interactive` feature includes it.
 - **No MCP impact**: Piano playback is interactive-only. The MCP command interface has no piano command and requires no changes.
 
 ## Related Specs
