@@ -6,25 +6,26 @@ Tinydew features two piano input systems that use the Salamander Grand Piano sam
 
 The default piano system uses keyboard keys Q, W, E, R, T, Y, U, I, O, P to play notes.
 
-| Key | Note | Sample File | Playback Speed |
-|-----|------|-------------|----------------|
-| Q | C4 | C4v8.flac | 1.0 |
-| W | D4 | C4v8.flac | 1.1225 |
-| E | E4 | C4v8.flac | 1.2599 |
-| R | F4 | C4v8.flac | 0.9439 |
-| T | G4 | C4v8.flac | 1.0595 |
-| Y | A4 | A4v8.flac | 1.0 |
-| U | B4 | A4v8.flac | 0.9439 |
-| I | C5 | C5v8.flac | 1.0 |
-| O | D5 | C5v8.flac | 1.1225 |
-| P | E5 | C5v8.flac | 1.2599 |
+| Key | Note | Sample File | Playback Speed | Description |
+|-----|------|-------------|----------------|-------------|
+| Q | C# | C4v8.flac | 1.0595 | Black key |
+| W | D# | C4v8.flac | 1.1892 | Black key |
+| E | F# | F#4v8.flac | 1.0 | Black key |
+| R | G# | F#4v8.flac | 1.0595 | Black key |
+| T | A# | A4v8.flac | 1.1892 | Black key |
+| Y | No sound | - | - | Empty |
+| U | No sound | - | - | Empty |
+| I | No sound | - | - | Empty |
+| O | No sound | - | - | Empty |
+| P | No sound | - | - | Empty |
 
 ### Usage
 
 - Guest must be at position (6, 3) on the Square map (directly in front of the piano at 6, 2)
-- Press any of the above keys to play the corresponding note
+- Press Q, W, E, R, T to play black keys (C#, D#, F#, G#, A#)
+- Y, U, I, O, P produce no sound
 - Keys are debounced - press and release to hear the note again
-- Uses shared audio thread ( OutputStream ) to prevent audio drop warnings
+- Uses shared audio thread to prevent "Dropping OutputStream" warnings
 
 ## 2. Traditional Piano System (ASDFGHJK)
 
