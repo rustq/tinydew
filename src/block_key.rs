@@ -9,26 +9,58 @@ use once_cell::sync::Lazy as OnceCellLazy;
 use rodio::{Decoder, OutputStreamBuilder, Sink, Source};
 use std::io::Cursor;
 
-/// Musical notes mapped to keyboard keys (black keys).
+/// Musical notes mapped to keyboard keys (C Major scale, C3-B5).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlockKeyNote {
-    C4Sharp,    // C#
-    D4Sharp,    // D#
-    F4Sharp,    // F#
-    G4Sharp,    // G#
-    A4Sharp,    // A#
-    None,       // No sound
+    C3,
+    D3,
+    E3,
+    F3,
+    G3,
+    A3,
+    B3,
+    C4,
+    D4,
+    E4,
+    F4,
+    G4,
+    A4,
+    B4,
+    C5,
+    D5,
+    E5,
+    F5,
+    G5,
+    A5,
+    B5,
+    None, // No sound
 }
 
 impl BlockKeyNote {
     /// Human-readable name displayed in the bottom message.
     pub fn display_name(self) -> &'static str {
         match self {
-            BlockKeyNote::C4Sharp => "C#",
-            BlockKeyNote::D4Sharp => "D#",
-            BlockKeyNote::F4Sharp => "F#",
-            BlockKeyNote::G4Sharp => "G#",
-            BlockKeyNote::A4Sharp => "A#",
+            BlockKeyNote::C3 => "C3",
+            BlockKeyNote::D3 => "D3",
+            BlockKeyNote::E3 => "E3",
+            BlockKeyNote::F3 => "F3",
+            BlockKeyNote::G3 => "G3",
+            BlockKeyNote::A3 => "A3",
+            BlockKeyNote::B3 => "B3",
+            BlockKeyNote::C4 => "C4",
+            BlockKeyNote::D4 => "D4",
+            BlockKeyNote::E4 => "E4",
+            BlockKeyNote::F4 => "F4",
+            BlockKeyNote::G4 => "G4",
+            BlockKeyNote::A4 => "A4",
+            BlockKeyNote::B4 => "B4",
+            BlockKeyNote::C5 => "C5",
+            BlockKeyNote::D5 => "D5",
+            BlockKeyNote::E5 => "E5",
+            BlockKeyNote::F5 => "F5",
+            BlockKeyNote::G5 => "G5",
+            BlockKeyNote::A5 => "A5",
+            BlockKeyNote::B5 => "B5",
             BlockKeyNote::None => "",
         }
     }
@@ -36,11 +68,15 @@ impl BlockKeyNote {
     /// File name for the Salamander Grand Piano sample used as the source.
     pub fn sample_file(self) -> &'static str {
         match self {
-            BlockKeyNote::C4Sharp => "C4v8.flac",
-            BlockKeyNote::D4Sharp => "C4v8.flac",
-            BlockKeyNote::F4Sharp => "F#4v8.flac",
-            BlockKeyNote::G4Sharp => "F#4v8.flac",
-            BlockKeyNote::A4Sharp => "A4v8.flac",
+            BlockKeyNote::C3 | BlockKeyNote::D3 | BlockKeyNote::E3 => "C3v8.flac",
+            BlockKeyNote::F3 | BlockKeyNote::G3 => "F3v8.flac",
+            BlockKeyNote::A3 | BlockKeyNote::B3 => "A3v8.flac",
+            BlockKeyNote::C4 | BlockKeyNote::D4 | BlockKeyNote::E4 => "C4v8.flac",
+            BlockKeyNote::F4 | BlockKeyNote::G4 => "F#4v8.flac",
+            BlockKeyNote::A4 | BlockKeyNote::B4 => "A4v8.flac",
+            BlockKeyNote::C5 | BlockKeyNote::D5 | BlockKeyNote::E5 => "C5v8.flac",
+            BlockKeyNote::F5 | BlockKeyNote::G5 => "F#5v8.flac",
+            BlockKeyNote::A5 | BlockKeyNote::B5 => "A5v8.flac",
             BlockKeyNote::None => "",
         }
     }
@@ -48,11 +84,27 @@ impl BlockKeyNote {
     /// Speed ratio applied to the source sample to reach the target pitch.
     pub fn playback_speed(self) -> f32 {
         match self {
-            BlockKeyNote::C4Sharp => 1.0595,   // C# = C4 * 2^(1/12)
-            BlockKeyNote::D4Sharp => 1.1892,   // D# = D4 * 2^(1/12)
-            BlockKeyNote::F4Sharp => 1.0,      // F#
-            BlockKeyNote::G4Sharp => 1.0595,   // G# = G4 * 2^(1/12)
-            BlockKeyNote::A4Sharp => 1.1892,   // A# = A4 * 2^(1/12)
+            BlockKeyNote::C3 => 1.0,
+            BlockKeyNote::D3 => 1.1225,
+            BlockKeyNote::E3 => 1.2599,
+            BlockKeyNote::F3 => 0.9439,
+            BlockKeyNote::G3 => 1.0595,
+            BlockKeyNote::A3 => 1.0,
+            BlockKeyNote::B3 => 0.9439,
+            BlockKeyNote::C4 => 1.0,
+            BlockKeyNote::D4 => 1.1225,
+            BlockKeyNote::E4 => 1.2599,
+            BlockKeyNote::F4 => 0.9439,
+            BlockKeyNote::G4 => 1.0595,
+            BlockKeyNote::A4 => 1.0,
+            BlockKeyNote::B4 => 0.9439,
+            BlockKeyNote::C5 => 1.0,
+            BlockKeyNote::D5 => 1.1225,
+            BlockKeyNote::E5 => 1.2599,
+            BlockKeyNote::F5 => 0.9439,
+            BlockKeyNote::G5 => 1.0595,
+            BlockKeyNote::A5 => 1.0,
+            BlockKeyNote::B5 => 0.9439,
             BlockKeyNote::None => 1.0,
         }
     }
@@ -60,16 +112,30 @@ impl BlockKeyNote {
     /// Convert a lowercase character to its corresponding note.
     pub fn from_char(c: char) -> Option<Self> {
         match c.to_ascii_lowercase() {
-            'q' => Some(BlockKeyNote::C4Sharp),   // C#
-            'w' => Some(BlockKeyNote::D4Sharp),   // D#
-            'e' => Some(BlockKeyNote::F4Sharp),   // F#
-            'r' => Some(BlockKeyNote::G4Sharp),   // G#
-            't' => Some(BlockKeyNote::A4Sharp),   // A#
-            'y' => Some(BlockKeyNote::None),      // No sound
-            'u' => Some(BlockKeyNote::None),      // No sound
-            'i' => Some(BlockKeyNote::None),      // No sound
-            'o' => Some(BlockKeyNote::None),      // No sound
-            'p' => Some(BlockKeyNote::None),      // No sound
+            // Lower octave (C3-B3)
+            'z' => Some(BlockKeyNote::C3),
+            'x' => Some(BlockKeyNote::D3),
+            'c' => Some(BlockKeyNote::E3),
+            'v' => Some(BlockKeyNote::F3),
+            'b' => Some(BlockKeyNote::G3),
+            'n' => Some(BlockKeyNote::A3),
+            'm' => Some(BlockKeyNote::B3),
+            // Middle octave (C4-B4)
+            'a' => Some(BlockKeyNote::C4),
+            's' => Some(BlockKeyNote::D4),
+            'd' => Some(BlockKeyNote::E4),
+            'f' => Some(BlockKeyNote::F4),
+            'g' => Some(BlockKeyNote::G4),
+            'h' => Some(BlockKeyNote::A4),
+            'j' => Some(BlockKeyNote::B4),
+            // Upper octave (C5-B5)
+            'q' => Some(BlockKeyNote::C5),
+            'w' => Some(BlockKeyNote::D5),
+            'e' => Some(BlockKeyNote::E5),
+            'r' => Some(BlockKeyNote::F5),
+            't' => Some(BlockKeyNote::G5),
+            'y' => Some(BlockKeyNote::A5),
+            'u' => Some(BlockKeyNote::B5),
             _ => None,
         }
     }
@@ -154,7 +220,7 @@ pub fn play_note(note: BlockKeyNote) -> bool {
     if matches!(note, BlockKeyNote::None) {
         return false;
     }
-    
+
     let sample_file = note.sample_file();
     let speed = note.playback_speed();
     let _ = BLOCK_AUDIO_SENDER.send(AudioCommand::Play {
