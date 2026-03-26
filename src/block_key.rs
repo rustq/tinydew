@@ -77,26 +77,53 @@ impl BlockKeyNote {
     }
 }
 
+/// Map a BlockKeyNote to its corresponding sample file and playback speed.
+fn sample_info(note: BlockKeyNote) -> (&'static str, f32) {
+    match note {
+        BlockKeyNote::C4 => ("C4v8.flac", 1.0),
+        BlockKeyNote::D4 => ("C4v8.flac", 1.1225),
+        BlockKeyNote::E4 => ("C4v8.flac", 1.2599),
+        BlockKeyNote::F4 => ("C4v8.flac", 0.9439),
+        BlockKeyNote::G4 => ("C4v8.flac", 1.0595),
+        BlockKeyNote::A4 => ("A4v8.flac", 1.0),
+        BlockKeyNote::B4 => ("A4v8.flac", 0.9439),
+        BlockKeyNote::C5 => ("C5v8.flac", 1.0),
+        BlockKeyNote::D5 => ("C5v8.flac", 1.1225),
+        BlockKeyNote::E5 => ("C5v8.flac", 1.2599),
+    }
+}
+
 /// Fire-and-forget: spawn a thread that plays the note.
 /// Audio initialization failures are silently ignored.
 #[cfg(feature = "interactive")]
 pub fn play_note(note: BlockKeyNote) {
-    use std::f32::consts::PI;
-    use std::io::Cursor;
+    use std::path::PathBuf;
+    use rodio::source::Source;
+    use rodio::{Decoder, OutputStreamBuilder, Sink};
+    use std::fs::File;
+    use std::io::BufReader;
     use std::thread;
 
-    use rodio::{Decoder, OutputStreamBuilder, Sink};
+    let (sample_file, speed) = sample_info(note);
 
     thread::spawn(move || {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("salamander-grand-piano-in-rust")
+            .join("Samples")
+            .join(sample_file);
+
         let Ok(stream) = OutputStreamBuilder::open_default_stream() else {
             return;
         };
         let sink = Sink::connect_new(&stream.mixer().clone());
 
-        let wav_data = generate_sine_wav(note.frequency());
-        let cursor = Cursor::new(wav_data);
-        if let Ok(source) = rodio::Decoder::new(cursor) {
-            sink.append(source);
+        if let Ok(file) = File::open(&path) {
+            let reader = BufReader::new(file);
+            if let Ok(source) = Decoder::new(reader) {
+                let source = source.speed(speed);
+                sink.append(source);
+            }
         }
     });
 }
@@ -104,60 +131,6 @@ pub fn play_note(note: BlockKeyNote) {
 #[cfg(not(feature = "interactive"))]
 pub fn play_note(_note: BlockKeyNote) {
     // No-op when audio is disabled
-}
-
-/// Generate a 500ms sine-wave WAV at the given frequency, with 0.3 gain.
-#[cfg(feature = "interactive")]
-fn generate_sine_wav(freq: f32) -> Vec<u8> {
-    use std::f32::consts::PI;
-
-    let sample_rate: u32 = 44100;
-    let duration_secs: f32 = 0.5;
-    let gain: f32 = 0.3;
-    let num_samples = (sample_rate as f32 * duration_secs) as usize;
-
-    let attack_samples = (sample_rate as f32 * 0.01) as usize;
-    let release_samples = (sample_rate as f32 * 0.01) as usize;
-
-    let mut samples: Vec<i16> = Vec::with_capacity(num_samples);
-    for i in 0..num_samples {
-        let t = i as f32 / sample_rate as f32;
-        let raw = (2.0 * PI * freq * t).sin();
-
-        let envelope = if i < attack_samples {
-            i as f32 / attack_samples as f32
-        } else if i > num_samples - release_samples {
-            (num_samples - i) as f32 / release_samples as f32
-        } else {
-            1.0
-        };
-
-        let sample = (raw * gain * envelope * i16::MAX as f32) as i16;
-        samples.push(sample);
-    }
-
-    let data_size = (num_samples * 2) as u32;
-    let file_size = 36 + data_size;
-    let mut buf: Vec<u8> = Vec::with_capacity(44 + data_size as usize);
-
-    buf.extend_from_slice(b"RIFF");
-    buf.extend_from_slice(&file_size.to_le_bytes());
-    buf.extend_from_slice(b"WAVE");
-    buf.extend_from_slice(b"fmt ");
-    buf.extend_from_slice(&16u32.to_le_bytes());
-    buf.extend_from_slice(&1u16.to_le_bytes());
-    buf.extend_from_slice(&1u16.to_le_bytes());
-    buf.extend_from_slice(&sample_rate.to_le_bytes());
-    buf.extend_from_slice(&(sample_rate * 2).to_le_bytes());
-    buf.extend_from_slice(&2u16.to_le_bytes());
-    buf.extend_from_slice(&16u16.to_le_bytes());
-    buf.extend_from_slice(b"data");
-    buf.extend_from_slice(&data_size.to_le_bytes());
-    for s in &samples {
-        buf.extend_from_slice(&s.to_le_bytes());
-    }
-
-    buf
 }
 
 /// Tracks currently held keys to debounce key-repeat events.

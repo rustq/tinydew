@@ -7,6 +7,7 @@ A cozy farming game with both interactive play and MCP automation support.
 Tinydew is a lightweight Rust game where you can:
 - move between regions (Farm, EastPath, Square, SouthRiver)
 - farm, fish, trade, and progress days
+- play piano with guests at the North Square
 - run fully in MCP mode for automation agents like OpenClaw
 
 ---
@@ -66,6 +67,33 @@ cargo run --quiet --features interactive
 
 ```bash
 cargo test
+```
+
+---
+
+## Piano Keyboard
+
+Tinydew features a piano at the North Square where guests can play music.
+
+**Keyboard Mapping:**
+- Q, W, E, R, T, Y, U, I, O, P → C Major scale (C4–E5) using Salamander Grand Piano samples
+
+See [`PianoKeyboard.md`](./PianoKeyboard.md) for full details.
+
+---
+
+## Save Data
+
+Default save location:
+
+```text
+~/.local/share/tinydew/savegame.json
+```
+
+Reset save:
+
+```bash
+rm -f ~/.local/share/tinydew/savegame.json
 ```
 
 ---
