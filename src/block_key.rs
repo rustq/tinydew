@@ -1,7 +1,5 @@
 use std::collections::HashSet;
 use std::collections::VecDeque;
-use std::fs::File;
-use std::io::BufReader;
 use std::path::PathBuf;
 use std::sync::mpsc;
 use std::thread;
@@ -9,6 +7,7 @@ use std::thread;
 use crossterm::event::KeyCode;
 use once_cell::sync::Lazy as OnceCellLazy;
 use rodio::{Decoder, OutputStreamBuilder, Sink, Source};
+use std::io::Cursor;
 
 /// Musical notes mapped to keyboard keys (C Major scale, C4–E5).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -42,19 +41,28 @@ impl BlockKeyNote {
         }
     }
 
-    /// Frequency in Hz for this note.
-    pub fn frequency(self) -> f32 {
+    /// File name for the Salamander Grand Piano sample used as the source.
+    pub fn sample_file(self) -> &'static str {
         match self {
-            BlockKeyNote::C4 => 261.63,
-            BlockKeyNote::D4 => 293.66,
-            BlockKeyNote::E4 => 329.63,
-            BlockKeyNote::F4 => 349.23,
-            BlockKeyNote::G4 => 392.00,
-            BlockKeyNote::A4 => 440.00,
-            BlockKeyNote::B4 => 493.88,
-            BlockKeyNote::C5 => 523.25,
-            BlockKeyNote::D5 => 587.33,
-            BlockKeyNote::E5 => 659.25,
+            BlockKeyNote::C4 | BlockKeyNote::D4 | BlockKeyNote::E4 | BlockKeyNote::F4 | BlockKeyNote::G4 => "C4v8.flac",
+            BlockKeyNote::A4 | BlockKeyNote::B4 => "A4v8.flac",
+            BlockKeyNote::C5 | BlockKeyNote::D5 | BlockKeyNote::E5 => "C5v8.flac",
+        }
+    }
+
+    /// Speed ratio applied to the source sample to reach the target pitch.
+    pub fn playback_speed(self) -> f32 {
+        match self {
+            BlockKeyNote::C4 => 1.0,
+            BlockKeyNote::D4 => 1.1225,
+            BlockKeyNote::E4 => 1.2599,
+            BlockKeyNote::F4 => 0.9439,
+            BlockKeyNote::G4 => 1.0595,
+            BlockKeyNote::A4 => 1.0,
+            BlockKeyNote::B4 => 0.9439,
+            BlockKeyNote::C5 => 1.0,
+            BlockKeyNote::D5 => 1.1225,
+            BlockKeyNote::E5 => 1.2599,
         }
     }
 
@@ -82,22 +90,6 @@ impl BlockKeyNote {
         } else {
             None
         }
-    }
-}
-
-/// Map a BlockKeyNote to its corresponding sample file and playback speed.
-fn sample_info(note: BlockKeyNote) -> (&'static str, f32) {
-    match note {
-        BlockKeyNote::C4 => ("C4v8.flac", 1.0),
-        BlockKeyNote::D4 => ("C4v8.flac", 1.1225),
-        BlockKeyNote::E4 => ("C4v8.flac", 1.2599),
-        BlockKeyNote::F4 => ("C4v8.flac", 0.9439),
-        BlockKeyNote::G4 => ("C4v8.flac", 1.0595),
-        BlockKeyNote::A4 => ("A4v8.flac", 1.0),
-        BlockKeyNote::B4 => ("A4v8.flac", 0.9439),
-        BlockKeyNote::C5 => ("C5v8.flac", 1.0),
-        BlockKeyNote::D5 => ("C5v8.flac", 1.1225),
-        BlockKeyNote::E5 => ("C5v8.flac", 1.2599),
     }
 }
 
@@ -136,9 +128,11 @@ static BLOCK_AUDIO_SENDER: OnceCellLazy<mpsc::Sender<AudioCommand>> = OnceCellLa
                 .join("Samples")
                 .join(&sample_file);
 
-            if let Ok(file) = File::open(&path) {
-                let reader = BufReader::new(file);
-                if let Ok(source) = Decoder::new(reader) {
+            let source_data = std::fs::read(&path).ok();
+
+            if let Some(source_data) = source_data {
+                let cursor = Cursor::new(source_data);
+                if let Ok(source) = Decoder::new(cursor) {
                     let source = source.speed(speed);
                     let sink = Sink::connect_new(&mixer);
                     sink.append(source);
@@ -164,7 +158,8 @@ static BLOCK_AUDIO_SENDER: OnceCellLazy<mpsc::Sender<AudioCommand>> = OnceCellLa
 /// Play a note using the shared audio thread.
 #[cfg(feature = "interactive")]
 pub fn play_note(note: BlockKeyNote) {
-    let (sample_file, speed) = sample_info(note);
+    let sample_file = note.sample_file();
+    let speed = note.playback_speed();
     let _ = BLOCK_AUDIO_SENDER.send(AudioCommand::Play {
         sample_file: sample_file.to_string(),
         speed,
