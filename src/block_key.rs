@@ -1,6 +1,14 @@
 use std::collections::HashSet;
+use std::collections::VecDeque;
+use std::fs::File;
+use std::io::BufReader;
+use std::path::PathBuf;
+use std::sync::mpsc;
+use std::thread;
 
 use crossterm::event::KeyCode;
+use once_cell::sync::Lazy as OnceCellLazy;
+use rodio::{Decoder, OutputStreamBuilder, Sink, Source};
 
 /// Musical notes mapped to keyboard keys (C Major scale, C4–E5).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -93,38 +101,73 @@ fn sample_info(note: BlockKeyNote) -> (&'static str, f32) {
     }
 }
 
-/// Fire-and-forget: spawn a thread that plays the note.
-/// Audio initialization failures are silently ignored.
-#[cfg(feature = "interactive")]
-pub fn play_note(note: BlockKeyNote) {
-    use std::path::PathBuf;
-    use rodio::source::Source;
-    use rodio::{Decoder, OutputStreamBuilder, Sink};
-    use std::fs::File;
-    use std::io::BufReader;
-    use std::thread;
+/// Audio command for the shared audio thread.
+#[derive(Debug)]
+enum AudioCommand {
+    Play {
+        sample_file: String,
+        speed: f32,
+    },
+}
 
-    let (sample_file, speed) = sample_info(note);
+/// Shared audio sender for all block key notes.
+/// Uses a single OutputStream that lives for the duration of the program.
+#[cfg(feature = "interactive")]
+static BLOCK_AUDIO_SENDER: OnceCellLazy<mpsc::Sender<AudioCommand>> = OnceCellLazy::new(|| {
+    let (tx, rx) = mpsc::channel::<AudioCommand>();
 
     thread::spawn(move || {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("..")
-            .join("salamander-grand-piano-in-rust")
-            .join("Samples")
-            .join(sample_file);
-
         let Ok(stream) = OutputStreamBuilder::open_default_stream() else {
+            eprintln!("[BlockKey] Failed to open audio stream");
             return;
         };
-        let sink = Sink::connect_new(&stream.mixer().clone());
+        let mixer = stream.mixer().clone();
 
-        if let Ok(file) = File::open(&path) {
-            let reader = BufReader::new(file);
-            if let Ok(source) = Decoder::new(reader) {
-                let source = source.speed(speed);
-                sink.append(source);
+        let mut sinks: VecDeque<Sink> = VecDeque::new();
+
+        for cmd in rx {
+            let (sample_file, speed) = match cmd {
+                AudioCommand::Play { sample_file, speed } => (sample_file, speed),
+            };
+
+            let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("..")
+                .join("salamander-grand-piano-in-rust")
+                .join("Samples")
+                .join(&sample_file);
+
+            if let Ok(file) = File::open(&path) {
+                let reader = BufReader::new(file);
+                if let Ok(source) = Decoder::new(reader) {
+                    let source = source.speed(speed);
+                    let sink = Sink::connect_new(&mixer);
+                    sink.append(source);
+                    sinks.push_back(sink);
+                }
+            }
+
+            // Clean up empty sinks
+            sinks.retain(|s| !s.empty());
+
+            // Limit concurrent sinks
+            if sinks.len() > 4 {
+                if let Some(old) = sinks.pop_front() {
+                    old.stop();
+                }
             }
         }
+    });
+
+    tx
+});
+
+/// Play a note using the shared audio thread.
+#[cfg(feature = "interactive")]
+pub fn play_note(note: BlockKeyNote) {
+    let (sample_file, speed) = sample_info(note);
+    let _ = BLOCK_AUDIO_SENDER.send(AudioCommand::Play {
+        sample_file: sample_file.to_string(),
+        speed,
     });
 }
 
