@@ -36,6 +36,9 @@ jobs:
         with:
           components: clippy
 
+      - name: Install ALSA dependencies
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+
       - name: Run Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
@@ -47,6 +50,9 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Install ALSA dependencies
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
 
       - name: Run tests
         run: cargo test --all-features -- --test-threads=1
@@ -75,6 +81,9 @@ jobs:
 
       - name: Install Rust Nightly
         uses: dtolnay/rust-toolchain@nightly
+
+      - name: Install ALSA dependencies
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
 
       - name: Run tests
         run: cargo test --all-features -- --test-threads=1
