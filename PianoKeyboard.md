@@ -1,74 +1,59 @@
 # Piano Keyboard Mapping
 
-Tinydew features two piano input systems that use the Salamander Grand Piano samples.
+Tinydew uses the PianoNote system to play notes across 3 octaves using the Salamander Grand Piano samples.
 
-## 1. Block Key System (Full Keyboard)
+## Keyboard Mapping
 
-The block key system uses keys Z through U to play a full range of notes (C3-B5).
+| Key | Note | Key | Note | Key | Note |
+|-----|------|-----|------|-----|------|
+| Z | C3 | A | C4 | Q | C5 |
+| X | D3 | S | D4 | W | D5 |
+| C | E3 | D | E4 | E | E5 |
+| V | F3 | F | F4 | R | F5 |
+| B | G3 | G | G4 | T | G5 |
+| N | A3 | H | A4 | Y | A5 |
+| M | B3 | J | B4 | U | B5 |
 
-### Full Key Mapping
+### Octave Breakdown
 
-| Key | Note | Sample File | Playback Speed | Key | Note | Sample File | Playback Speed |
-|-----|------|-------------|----------------|-----|------|-------------|----------------|
-| Z | C3 | C3v8.flac | 1.0 | Q | C5 | C5v8.flac | 1.0 |
-| X | D3 | C3v8.flac | 1.1225 | W | D5 | C5v8.flac | 1.1225 |
-| C | E3 | C3v8.flac | 1.2599 | E | E5 | C5v8.flac | 1.2599 |
-| V | F3 | F3v8.flac | 0.9439 | R | F5 | F#5v8.flac | 0.9439 |
-| B | G3 | F3v8.flac | 1.0595 | T | G5 | F#5v8.flac | 1.0595 |
-| N | A3 | A3v8.flac | 1.0 | Y | A5 | A5v8.flac | 1.0 |
-| M | B3 | A3v8.flac | 0.9439 | U | B5 | A5v8.flac | 0.9439 |
-| A | C4 | C4v8.flac | 1.0 | | | | |
-| S | D4 | C4v8.flac | 1.1225 | | | | |
-| D | E4 | C4v8.flac | 1.2599 | | | | |
-| F | F4 | F#4v8.flac | 0.9439 | | | | |
-| G | G4 | F#4v8.flac | 1.0595 | | | | |
-| H | A4 | A4v8.flac | 1.0 | | | | |
-| J | B4 | A4v8.flac | 0.9439 | | | | |
+**Lower Octave (Z-M):** C3 to B3
+- Z, X, C → C3v8.flac
+- V, B → F#3v8.flac
+- N, M → A3v8.flac
 
-### Usage
+**Middle Octave (A-J):** C4 to B4
+- A, S, D → C4v8.flac
+- F, G → F#4v8.flac
+- H, J → A4v8.flac
+
+**Upper Octave (Q-U):** C5 to B5
+- Q, W, E → C5v8.flac
+- R, T → F#5v8.flac
+- Y, U → A5v8.flac
+
+## Usage
 
 - Guest must be at position (6, 3) on the Square map (directly in front of the piano at 6, 2)
 - Press any of the above keys to play the corresponding note
-- Keys are debounced - press and release to hear the note again
-- Uses shared audio thread to prevent "Dropping OutputStream" warnings
-
-## 2. Traditional Piano System (ASDFGHJK)
-
-A secondary piano system uses keys A, S, D, F, G, H, J, K.
-
-| Key | Note | Sample File | Playback Speed |
-|-----|------|-------------|----------------|
-| A | Do (C4) | C4v8.flac | 1.0 |
-| S | Re (D4) | C4v8.flac | 1.1225 |
-| D | Mi (E4) | C4v8.flac | 1.2599 |
-| F | Fa (F4) | F#4v8.flac | 0.9439 |
-| G | So (G4) | F#4v8.flac | 1.0595 |
-| H | La (A4) | A4v8.flac | 1.0 |
-| J | Si (B4) | A4v8.flac | 0.9439 |
-| K | Do# (C5) | C5v8.flac | 1.0 |
-
-### Usage
-
-- Same position requirement: guest at (6, 3) on Square map
-- Uses the same `PianoNote` type as the traditional keyboard layout
+- Notes are debounced - press and release to hear the note again
+- Uses shared audio thread with max 4 concurrent notes
 
 ## Audio Implementation
-
-Both systems use identical audio logic:
 
 - **Shared OutputStream**: A single background thread owns the audio stream
 - **mpsc channel**: Key presses send `AudioCommand::Play` messages
 - **Sink cleanup**: Automatic cleanup of finished notes, max 4 concurrent sinks
 - **Sample format**: .flac files from Salamander Grand Piano project
+- **Pitch shifting**: Uses playback speed ratios to transpose samples
 
 ## Sound Source
 
-Both systems use the [Salamander Grand Piano](https://github.com/alexholm/salamander-grand-piano-in-rust) samples by Alexander Holm.
+Uses the [Salamander Grand Piano](https://github.com/alexholm/salamander-grand-piano-in-rust) samples by Alexander Holm.
 
 Available samples:
-- C3v8.flac, C4v8.flac, C5v8.flac (root C notes, various speeds for pitch shifting)
-- F3v8.flac, F#4v8.flac, F#5v8.flac (F/F# notes)
-- A3v8.flac, A4v8.flac, A5v8.flac (A notes)
+- C3v8.flac, C4v8.flac, C5v8.flac
+- F#3v8.flac, F#4v8.flac, F#5v8.flac
+- A3v8.flac, A4v8.flac, A5v8.flac
 
 ## Requirements
 
@@ -91,5 +76,5 @@ cargo run --features interactive
 ## Troubleshooting
 
 If you see "Dropping OutputStream" warnings:
-- Ensure only one audio stream is created (fixed in recent versions)
-- The block key system now uses a shared OutputStream for all notes
+- Ensure only one audio stream is created
+- The piano system uses a shared OutputStream for all notes
