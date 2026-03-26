@@ -1,16 +1,14 @@
 #![allow(clippy::needless_range_loop)]
 #![allow(dead_code, unused_imports)]
 
-mod block_key;
 mod mcp;
 mod piano;
 mod savegame;
 mod state;
 mod world;
 
-use crate::block_key::{BlockKeyNote, BlockKeyState, play_note};
 use crate::mcp::handler::ToolResponse;
-use crate::piano::{PianoNote, play_note as piano_play_note};
+use crate::piano::{PianoNote, play_note};
 use crate::state::GameState;
 use crate::world::Direction;
 use clap::Parser;
@@ -463,8 +461,6 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
 
         let _ = crossterm::execute!(std::io::stdout(), EnterAlternateScreen);
 
-        let mut block_key_state = BlockKeyState::new();
-
         loop {
             render(&game);
 
@@ -501,21 +497,8 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
                     if guest_at_square_piano {
                         if let Some(note) = PianoNote::from_key_code(key.code) {
                             game.guest_play_piano(note.display_name());
-                            piano_play_note(note);
+                            play_note(note);
                             continue;
-                        }
-                    }
-
-                    // Block key sound system (QWERTYUIOP) - same piano location
-                    if guest_at_square_piano {
-                        if let KeyCode::Char(c) = key.code {
-                            if let Some(note) = BlockKeyNote::from_char(c) {
-                                if block_key_state.key_down(c) {
-                                    game.message = format!("🎵 {}", note.display_name());
-                                    let _ = play_note(note);
-                                }
-                                continue;
-                            }
                         }
                     }
 
@@ -592,10 +575,6 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
                             if game.guest_enabled {
                                 game.message = game.guest_greeting_message();
                             }
-                        }
-                        // Block key key release to allow re-triggering
-                        KeyCode::Char(c) => {
-                            block_key_state.key_up(c);
                         }
                         _ => {}
                     }
