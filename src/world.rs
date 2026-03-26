@@ -301,7 +301,7 @@ pub fn create_farm_map() -> Map {
             TileType::Grass,
             TileType::House,
             TileType::Grass,
-            TileType::Grass,
+            TileType::Piano,
             TileType::Grass,
             TileType::Crop(
                 CropType::Flower,
@@ -459,7 +459,7 @@ pub fn create_square_map() -> Map {
             TileType::Grass,
             TileType::Fountain,
             TileType::Grass,
-            TileType::Piano,
+            TileType::Grass,
             TileType::Grass,
             TileType::Boundary,
         ],
