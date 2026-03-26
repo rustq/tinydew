@@ -69,7 +69,7 @@ impl BlockKeyNote {
     pub fn sample_file(self) -> &'static str {
         match self {
             BlockKeyNote::C3 | BlockKeyNote::D3 | BlockKeyNote::E3 => "C3v8.flac",
-            BlockKeyNote::F3 | BlockKeyNote::G3 => "F3v8.flac",
+            BlockKeyNote::F3 | BlockKeyNote::G3 => "F#3v8.flac",
             BlockKeyNote::A3 | BlockKeyNote::B3 => "A3v8.flac",
             BlockKeyNote::C4 | BlockKeyNote::D4 | BlockKeyNote::E4 => "C4v8.flac",
             BlockKeyNote::F4 | BlockKeyNote::G4 => "F#4v8.flac",
