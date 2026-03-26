@@ -90,7 +90,7 @@ impl BlockKeyNote {
             BlockKeyNote::F3 => 0.9439,
             BlockKeyNote::G3 => 1.0595,
             BlockKeyNote::A3 => 1.0,
-            BlockKeyNote::B3 => 0.9439,
+            BlockKeyNote::B3 => 1.1225,
             BlockKeyNote::C4 => 1.0,
             BlockKeyNote::D4 => 1.1225,
             BlockKeyNote::E4 => 1.2599,
@@ -104,7 +104,7 @@ impl BlockKeyNote {
             BlockKeyNote::F5 => 0.9439,
             BlockKeyNote::G5 => 1.0595,
             BlockKeyNote::A5 => 1.0,
-            BlockKeyNote::B5 => 0.9439,
+            BlockKeyNote::B5 => 1.1225,
             BlockKeyNote::None => 1.0,
         }
     }
