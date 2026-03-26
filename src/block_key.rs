@@ -201,7 +201,7 @@ static BLOCK_AUDIO_SENDER: OnceCellLazy<mpsc::Sender<AudioCommand>> = OnceCellLa
             sinks.retain(|s| !s.empty());
 
             // Limit concurrent sinks
-            if sinks.len() > 4 {
+            if sinks.len() > 8 {
                 if let Some(old) = sinks.pop_front() {
                     old.stop();
                 }
