@@ -662,7 +662,7 @@ impl GameState {
                 }
             } else if matches!(target_tile, Some(TileType::Piano)) {
                 self.message =
-                    String::from("A beautiful old piano. It hums quietly in the square.");
+                    String::from("A beautiful old piano. It hums quietly on the farm.");
             } else if matches!(target_tile, Some(TileType::Mushroom)) {
                 self.message = String::from("Cannot move there. Mature crop ahead — try harvest.");
             } else {
@@ -2685,13 +2685,36 @@ mod tests {
         let can_down = state.can_move_to(4, 3);
         let can_left = state.can_move_to(3, 2);
         let can_right = state.can_move_to(5, 2);
-        let can_piano = state.can_move_to(6, 2);
 
         assert!(can_up, "Should be able to move up (grass)");
         assert!(can_down, "Should be able to move down (grass)");
         assert!(can_left, "Should be able to move left (grass)");
         assert!(can_right, "Should be able to move right (grass)");
-        assert!(!can_piano, "Piano at (6,2) should block movement");
+    }
+
+    #[test]
+    fn test_farm_piano_at_4_2() {
+        let mut state = GameState::new();
+        state.location = Location::Farm;
+        state.player_location = Location::Farm;
+        state.player_x = 3;
+        state.player_y = 2;
+
+        let can_left = state.can_move_to(3, 2);
+        let can_right = state.can_move_to(4, 2);
+
+        assert!(can_left, "Should be able to move left (grass)");
+        assert!(!can_right, "Piano at (4,2) should block movement");
+    }
+
+    #[test]
+    fn test_farm_map_has_piano_at_4_2() {
+        use crate::world::create_farm_map;
+        let farm_map = create_farm_map();
+
+        assert_eq!(farm_map[2][4], TileType::Piano);
+        assert_eq!(TileType::Piano.emoji(), "🎹");
+        assert!(!TileType::Piano.is_walkable());
     }
 
     #[test]

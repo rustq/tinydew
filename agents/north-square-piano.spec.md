@@ -4,28 +4,23 @@
 Implemented.
 
 ## Context
-The Square region (the northernmost plaza) receives a permanent decorative piano object. The piano is a non-walkable fixture placed at a specific tile.
+The Farm region receives a permanent decorative piano object. The piano is a non-walkable fixture placed at a specific tile.
 
 ## Placement
-- Piano tile (`🎹`) placed at Square `(6,2)`.
+- Piano tile (`🎹`) placed at Farm `(4,2)`.
 - Replaces the default Grass tile at that position.
 - Piano is always present on the map (not seasonal or spawned).
-- The tile sits on row 2 (the fountain row), two tiles right of the fountain (`⛲` at `(4,2)`).
-
-## Map Reference (Square, row 2 after placement)
-```
-🌳 🌿 🌿 🌿 ⛲ 🌿 🎹 🌿 🌳
-```
+- The tile sits at position `(4,2)` on the Farm map.
 
 ## Walkability
 - Piano is non-walkable for both player and guest.
 - Movement, pathfinding, and collision must respect the piano as a blocking tile.
-- Random spawn logic must treat `(6,2)` as a protected tile (no flower/mushroom spawn on it).
+- Random spawn logic must treat `(4,2)` as a protected tile (no flower/mushroom spawn on it).
 
 ## Interaction
 - Attempting to walk onto the piano tile shows:
-  `A beautiful old piano. It hums quietly in the square.`
-- Guest can play the piano by standing at `(6,3)` directly below the piano tile (see `guest-piano-play.spec.md`).
+  `A beautiful old piano. It hums quietly on the farm.`
+- Guest can play the piano by standing at `(4,3)` directly below the piano tile (see `guest-piano-play.spec.md`).
 
 ## Implementation Notes
 - Requires new `TileType::Piano` variant in the tile enum.

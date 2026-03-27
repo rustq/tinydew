@@ -489,12 +489,12 @@ fn run_interactive_mode() -> Result<(), InteractiveError> {
                         continue;
                     }
 
-                    let guest_at_square_piano = game.guest_enabled
-                        && game.guest_location == state::Location::Square
-                        && game.guest_x == 6
+                    let guest_at_farm_piano = game.guest_enabled
+                        && game.guest_location == state::Location::Farm
+                        && game.guest_x == 4
                         && game.guest_y == 3;
 
-                    if guest_at_square_piano {
+                    if guest_at_farm_piano {
                         if let Some(note) = PianoNote::from_key_code(key.code) {
                             game.guest_play_piano(note.display_name());
                             play_note(note);

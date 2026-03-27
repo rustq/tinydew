@@ -301,15 +301,9 @@ pub fn create_farm_map() -> Map {
             TileType::Grass,
             TileType::House,
             TileType::Grass,
+            TileType::Piano,
             TileType::Grass,
             TileType::Grass,
-            TileType::Crop(
-                CropType::Flower,
-                CropState {
-                    days_grown: 16,
-                    watered_today: false,
-                },
-            ),
             TileType::Boundary,
         ],
         vec![
@@ -459,7 +453,7 @@ pub fn create_square_map() -> Map {
             TileType::Grass,
             TileType::Fountain,
             TileType::Grass,
-            TileType::Piano,
+            TileType::Grass,
             TileType::Grass,
             TileType::Boundary,
         ],
