@@ -149,9 +149,7 @@ mod audio {
 
     pub fn play_note(note: PianoNote) {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("..")
-            .join("salamander-grand-piano-in-rust")
-            .join("Samples")
+            .join("files")
             .join(note.sample_file());
         let speed = note.playback_speed();
         let source_data = std::fs::read(&path).ok();
