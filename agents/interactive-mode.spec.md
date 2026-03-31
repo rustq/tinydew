@@ -78,17 +78,12 @@ The screen is a full-screen crossterm application that redraws on every input.
 ┌──────────────────────────────────┐
 │ tinydew day 1 ☀️  06:20          │  ← Header (weather + time)
 ├──────────────────────────────────┤
-│                                  │
-│  🌳🌳🌳🌳🌳🌳🌳🌳🌳           │
-│  🌳🌿🌿🌿🌿🌿🌿🌳🌳           │  ← Map emoji grid
-│  🌳🌿🏠🌿👧🌿🌿🌳🌳           │     (guest at 4,2)
-│  🌳🌿🌿🌿🌿🌿🌿🌳🌳           │
-│  🌳🌳🌳🌳🌳🌳🌳🌳🌳           │
+│  ...                             │
+│  ...                             │  ← Map emoji grid
+│  ...                             │
 │                                  │
 ├──────────────────────────────────┤
 │ > Hello!                         │  ← Message line (> prefix)
-│ 🫙 x5     💰 $100               │  ← Inventory + money
-│ Farm                             │  ← Current region name
 │ ↑↓←→ move  Space greet  Esc quit│  ← Controls hint
 └──────────────────────────────────┘
 ```
@@ -98,7 +93,6 @@ The screen is a full-screen crossterm application that redraws on every input.
 1. **Title bar** — `tinydew day <N> <weather_icon>  HH:MM`
 2. **Map grid** — emoji-per-tile, guest overlay replaces tile emoji
 3. **Message line** — `> <message>` (last action feedback or contextual)
-4. **Footer strip** — inventory summary, region name, control hints
 
 ### Redraw Strategy
 
