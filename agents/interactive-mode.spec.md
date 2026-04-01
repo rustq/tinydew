@@ -61,7 +61,7 @@ Follows existing `TileType::is_walkable()` logic — guest cannot walk onto:
 
 Blocked movement shows a brief message at the bottom and does **not** advance time.
 
-Successful moves advance time by 5 minutes (same as CLI `do move`).
+No advance time logic (different from CLI `do move`).
 
 ### Region Transitions
 
@@ -72,27 +72,12 @@ Walking onto path tiles triggers seamless region switches with spawn-point mappi
 
 The screen is a full-screen crossterm application that redraws on every input.
 
-### Layout
-
-```
-┌──────────────────────────────────┐
-│ tinydew day 1 ☀️  06:20          │  ← Header (weather + time)
-├──────────────────────────────────┤
-│  ...                             │
-│  ...                             │  ← Map emoji grid
-│  ...                             │
-│                                  │
-├──────────────────────────────────┤
-│ > Hello!                         │  ← Message line (> prefix)
-│ ↑↓←→ move  Space greet  Esc quit│  ← Controls hint
-└──────────────────────────────────┘
-```
-
 ### Rendering Layers
 
 1. **Title bar** — `tinydew day <N> <weather_icon>  HH:MM`
 2. **Map grid** — emoji-per-tile, guest overlay replaces tile emoji
 3. **Message line** — `> <message>` (last action feedback or contextual)
+4. **Controls hint** (↑↓←→ move | Space greet | Esc quit)
 
 ### Redraw Strategy
 
@@ -125,7 +110,7 @@ Z X C V B N M | A S D F G H J | Q W E R T Y U → play piano   Esc quit
 | 1st col  | Z → C3    | A → C4    | Q → C5    |
 | 2nd col  | X → D3    | S → D4    | W → D5    |
 | 3rd col  | C → E3    | D → E4    | E → E5    |
-| 4th col  | V → F#3   | F → F#4   | R → F#5   |
+| 4th col  | V → F3    | F → F4    | R → F5    |
 | 5th col  | B → G3    | G → G4    | T → G5    |
 | 6th col  | N → A3    | H → A4    | Y → A5    |
 | 7th col  | M → B3    | J → B4    | U → B5    |
@@ -164,17 +149,15 @@ Pressing `Space` shows a region-specific greeting:
 | ---------- | ------------------------------------ |
 | Farm       | `Hello!`                             |
 | EastPath   | `This path leads somewhere...`       |
-| Square     | `✨ The fountain sparkles!`          |
+| Square     | `The north square!`          |
+| Square (Day 28 Spring)  | `✨ The fountain sparkles!`          |
 | SouthRiver | `The river flows quietly today.`     |
 
 Greeting text replaces the message line for 3 seconds or until the next non-greet action.
 
 ## Time & Day
 
-- Time advances 5 minutes per successful movement
-- Sleeping is done by returning to the House tile and pressing `Space` near it
-- After sleeping: day increments, time resets to 06:00, weather re-rolls
-- Weather: ☀️ sunny (default), 🌧️ rainy (random)
+- Never time advances
 - Day 28 (Spring) = Butterfly Festival — special message overrides
 
 ## Input Loop
@@ -189,9 +172,7 @@ loop:
     Arrow keys → movement
     Space → greeting
     Piano keys (when in piano mode) → play note
-    Esc → break loop (save and exit)
-  update time if movement was successful
-  persist state to savegame.json
+    Esc → break loop (exit)
 restore terminal (leave alternate screen, show cursor)
 ```
 
@@ -199,9 +180,9 @@ restore terminal (leave alternate screen, show cursor)
 
 On exit (Esc or Ctrl+C):
 
-1. Save current state to `savegame.json`
-2. Restore terminal: leave alternate screen, show cursor, disable raw mode
-3. Print final status line to stdout
+1. Restore terminal: leave alternate screen, show cursor, disable raw mode
+2. Print final status line to stdout
+3. Never save data in interactive mode
 
 ## Error Handling
 
@@ -209,9 +190,8 @@ On exit (Esc or Ctrl+C):
 | -------------------------------- | --------------------------------- |
 | Terminal too small               | Print min size message, exit 0    |
 | Audio device unavailable         | Silent fail, piano still visual   |
-| Save file corrupted/missing      | Start fresh (Day 1, Farm, $100)   |
 | Unmapped key pressed             | No action (ignored silently)      |
-| Ctrl+C / SIGINT                  | Save and clean exit (same as Esc) |
+| Ctrl+C / SIGINT                  | Clean exit (same as Esc) |
 
 ## Dependencies
 
