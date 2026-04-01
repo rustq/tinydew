@@ -49,6 +49,8 @@ tinydew do <ACTION> [ARGS...]
 | `clear` | Clear debris at a position | `do clear up`, `do clear left` |
 | `plant` | Plant seeds at a position | `do plant up`, `do plant left` |
 | `harvest` | Harvest at a position | `do harvest up`, `do harvest left` |
+| `sleep` | Sleep through the night | `do sleep` |
+| `play` | Play a piano note | `do play C4`, `do play D3`, `do play A5` |
 
 ## Examples
 
@@ -88,10 +90,16 @@ tinydew do plant up
 
 # Harvest at up position
 tinydew do harvest up
-```
+
+# Play piano notes
+tinydew do play C4
+tinydew do play D4
+tinydew do play A5
+tinydew do play G3
 
 ## Notes
 
 - This is a draft specification. Implementation details may vary.
 - Directional commands (`up`, `down`, `left`, `right`) may need to map to game-specific coordinates.
 - The `do` command parser should be extensible for future actions.
+- Piano notes work anywhere in CLI mode — no need to be at a specific position.
