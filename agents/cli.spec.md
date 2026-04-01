@@ -102,4 +102,4 @@ tinydew do play G3
 - This is a draft specification. Implementation details may vary.
 - Directional commands (`up`, `down`, `left`, `right`) may need to map to game-specific coordinates.
 - The `do` command parser should be extensible for future actions.
-- Piano notes work anywhere in CLI mode — no need to be at a specific position.
+- Piano notes work in CLI mode — but need to be at a front of piano (6,3).
