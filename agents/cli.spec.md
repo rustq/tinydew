@@ -96,10 +96,18 @@ tinydew do play C4
 tinydew do play D4
 tinydew do play A5
 tinydew do play G3
+```
 
 ## Notes
 
 - This is a draft specification. Implementation details may vary.
 - Directional commands (`up`, `down`, `left`, `right`) may need to map to game-specific coordinates.
 - The `do` command parser should be extensible for future actions.
-- Piano notes work in CLI mode — but need to be at a front of piano (6,3).
+- Piano notes work in CLI mode — just `do play <note>`, e.g., `do play C4`, `do play D3`, `do play A5`.
+- Supported notes: C3, D3, E3, F3, G3, A3, B3, C4, D4, E4, F4, G4, A4, B4, C5, D5, E5, F5, G5, A5, B5.
+
+## Notes
+
+- This is a draft specification. Implementation details may vary.
+- Directional commands (`up`, `down`, `left`, `right`) may need to map to game-specific coordinates.
+- The `do` command parser should be extensible for future actions.
