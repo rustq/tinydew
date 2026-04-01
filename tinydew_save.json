@@ -1,0 +1,298 @@
+{
+  "day": 26335,
+  "season": "Spring",
+  "time": {
+    "hour": 6,
+    "minute": 25
+  },
+  "weather": "Cloudy",
+  "player": {
+    "x": 1,
+    "y": 6,
+    "location": "Farm",
+    "direction": "Left"
+  },
+  "guest": {
+    "x": 5,
+    "y": 4,
+    "location": "Farm",
+    "direction": "Down"
+  },
+  "guest_enabled": false,
+  "inventory": {
+    "seeds": 5,
+    "carrots": 0,
+    "strawberries": 0,
+    "cauliflowers": 0,
+    "flowers": 0,
+    "mushrooms": 9,
+    "fish": 0,
+    "rare_fish": 0
+  },
+  "money": 100,
+  "maps": {
+    "SouthRiver": [
+      [
+        "Boundary",
+        "Boundary",
+        "PathSouthRiverGate",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary"
+      ],
+      [
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass"
+      ],
+      [
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River"
+      ],
+      [
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River",
+        "River"
+      ]
+    ],
+    "EastPath": [
+      [
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "PathSquare",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary"
+      ],
+      [
+        "Boundary",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Boundary"
+      ],
+      [
+        "PathFarm",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Mushroom",
+        "Boundary"
+      ],
+      [
+        "Boundary",
+        "Boundary",
+        "PathSouthRiver",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary"
+      ]
+    ],
+    "Square": [
+      [
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary"
+      ],
+      [
+        "Boundary",
+        {
+          "Crop": {
+            "crop_type": "Flower",
+            "days_grown": 2,
+            "watered_today": false
+          }
+        },
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Boundary"
+      ],
+      [
+        "Boundary",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Fountain",
+        "Grass",
+        "Flower",
+        "Grass",
+        "Boundary"
+      ],
+      [
+        "Boundary",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Boundary"
+      ],
+      [
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "PathSquare",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary"
+      ]
+    ],
+    "Farm": [
+      [
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary"
+      ],
+      [
+        "Boundary",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Boundary"
+      ],
+      [
+        "Boundary",
+        "Grass",
+        "House",
+        "Grass",
+        "Piano",
+        "Grass",
+        "Grass",
+        "Boundary"
+      ],
+      [
+        "Boundary",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Boundary"
+      ],
+      [
+        "Boundary",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Boundary"
+      ],
+      [
+        "Boundary",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Grass",
+        "PathEast"
+      ],
+      [
+        "Boundary",
+        "Grass",
+        "Grass",
+        "Grass",
+        "Flower",
+        "Grass",
+        "Grass",
+        "Boundary"
+      ],
+      [
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary",
+        "Boundary"
+      ]
+    ]
+  },
+  "message": "Nothing to harvest there.",
+  "seed": 42
+}
