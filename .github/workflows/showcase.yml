@@ -1,0 +1,190 @@
+name: Showcase
+
+on:
+  push:
+    branches: [engineering]
+  pull_request:
+    branches: [engineering]
+
+jobs:
+  showcase:
+    name: 🌱 TinyDew Feature Showcase
+    runs-on: ubuntu-24.04
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          
+      - name: Build
+        run: cargo build --verbose
+        
+      - name: Run showcase and generate summary
+        run: |
+          echo "# 🌱 TinyDew Showcase" > $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Full walkthrough of all game features in CI." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # ─── Initial Status ───
+          rm -f tinydew_save.json
+          echo "## 🏠 Initial Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cargo run -- status >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # ─── Movement ───
+          echo "## 🚶 Movement" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Moving the player around — each move advances time 5 minutes:**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          rm -f tinydew_save.json
+          echo "- **Move down:** \`$(cargo run -- do move down 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Move right:** \`$(cargo run -- do move right 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          cargo run -- do move right >> $GITHUB_STEP_SUMMARY
+          echo "- **Move up:** \`$(cargo run -- do move up 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### After Movement"
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cargo run -- status >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # ─── Economy ───
+          echo "## 🛒 Economy (Buy/Sell)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          rm -f tinydew_save.json
+          echo "- **Buy seed (1):** \`$(cargo run -- do buy seed 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Buy seed (2):** \`$(cargo run -- do buy seed 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Buy seed (3):** \`$(cargo run -- do buy seed 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Sell seed (not possible):** \`$(cargo run -- do sell seed 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cargo run -- do sell fish >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # ─── Farming ───
+          echo "## 🌾 Farming" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          rm -f tinydew_save.json
+          echo "**Starting fresh at Farm (3,3):**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cargo run -- status >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "- **Clear weeds (up):** \`$(cargo run -- do clear up 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Plant seed (up) — auto-rolls crop type:** \`$(cargo run -- do plant up 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Water crop (up):** \`$(cargo run -- do water up 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Try harvest (too early!):** \`$(cargo run -- do harvest up 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cargo run -- status >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # ─── Sleep & Day Transition ───
+          echo "## 💤 Sleep & Day Transition" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          rm -f tinydew_save.json
+          # Farm for a few days to grow crops
+          for i in $(seq 1 10); do
+            cargo run -- do sleep >> /dev/null
+          done
+          # Then clear and plant
+          cargo run -- do clear up >> /dev/null
+          cargo run -- do clear up >> /dev/null
+          cargo run -- do plant up >> /dev/null
+          cargo run -- do water up >> /dev/null
+          echo "**Day 1 → Day 2:** \`$(cargo run -- do sleep 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Day 2 → Day 3:** \`$(cargo run -- do sleep 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Day 3 → Day 4:** \`$(cargo run -- do sleep 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Status Day 4"
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cargo run -- status >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # ─── Random Spawns ───
+          echo "## 🍄 Random Spawns" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          rm -f tinydew_save.json
+          echo "**After sleeping multiple days, mushrooms and flowers randomly spawn on maps:**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for i in $(seq 1 5); do
+            cargo run -- do sleep >> /dev/null
+          done
+          echo "**Day 6 status:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cargo run -- status >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # ─── Piano ───
+          echo "## 🎹 Piano (Play at Farm 4,3)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          rm -f tinydew_save.json
+          echo "**Attempt play from wrong location:** \`$(cargo run -- do play C4 2>&1 | tail -1)\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Player walks to Farm (4,3) — directly south of 🎹 at (4,2):**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cargo run -- do move down >> /dev/null
+          cargo run -- do move right >> /dev/null
+          cargo run -- do move up >> /dev/null
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cargo run -- status >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "**Now playing notes:**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Key | Note | Play Output |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|------|-------------|" >> $GITHUB_STEP_SUMMARY
+          for note in C4 D4 E4 F4 G4 A4 B4 C5 D5 E5 F5 G5 A5 B5 C3 A3; do
+            result=$(cargo run -- do play $note 2>&1 | tail -1)
+            echo "| \`$note\` | $note | \`$result\` |" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # ─── Festival ───
+          echo "## 🦋 Seasonal Festival (Butterfly Festival)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          rm -f tinydew_save.json
+          echo "**Sleeping 27 more days to reach Spring Day 28:**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for i in $(seq 1 27); do
+            if [ $i -eq 27 ]; then
+              result=$(cargo run -- do sleep 2>&1 | tail -1)
+              echo "**Day 28 wakeup:** \`$result\`" >> $GITHUB_STEP_SUMMARY
+            else
+              cargo run -- do sleep >> /dev/null
+            fi
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cargo run -- status >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # ─── Tests ───
+          echo "## ✅ Unit Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cargo test -- --test-threads=1 2>&1 >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
