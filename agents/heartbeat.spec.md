@@ -4,6 +4,6 @@
 Implemented.
 
 ## Behavior
-- Runtime tracks pause-like state fields used by MCP stats/state snapshots.
-- Heartbeat-related status is surfaced in summary/state responses.
+- Runtime tracks pause-like state fields surfaced in TUI/`status` summaries where applicable.
+- Heartbeat-related status is included in the same state views the player already sees (not a separate protocol).
 - Core gameplay remains deterministic and command-driven.

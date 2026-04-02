@@ -50,7 +50,6 @@ tinydew do <ACTION> [ARGS...]
 | `plant` | Plant seeds at a position | `do plant up`, `do plant left` |
 | `harvest` | Harvest at a position | `do harvest up`, `do harvest left` |
 | `sleep` | Sleep through the night | `do sleep` |
-| `play` | Play a piano note | `do play C4`, `do play D3`, `do play A5` |
 
 ## Examples
 
@@ -90,12 +89,6 @@ tinydew do plant up
 
 # Harvest at up position
 tinydew do harvest up
-
-# Play piano notes
-tinydew do play C4
-tinydew do play D4
-tinydew do play A5
-tinydew do play G3
 ```
 
 ## Notes
@@ -103,6 +96,3 @@ tinydew do play G3
 - This is a draft specification. Implementation details may vary.
 - Directional commands (`up`, `down`, `left`, `right`) may need to map to game-specific coordinates.
 - The `do` command parser should be extensible for future actions.
-- Piano notes work in CLI mode via `do play <note>` — player must be at Farm `(4,3)` (directly south of the piano tile at `(4,2)`).
-- If player is not at piano position, the action returns: `"Not near the piano."`
-- Supported notes: C3, D3, E3, F3, G3, A3, B3, C4, D4, E4, F4, G4, A4, B4, C5, D5, E5, F5, G5, A5, B5.

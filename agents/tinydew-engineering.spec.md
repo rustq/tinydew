@@ -4,11 +4,11 @@
 Draft.
 
 ## Overview
-Tinydew is a cozy farming and exploration game built with Rust. It provides both an interactive TUI mode and a CLI interface. This document serves as the engineering blueprint for building the tinydew codebase, referencing the detailed specs in `agents/`.
+Tinydew is a cozy farming and exploration game built with Rust. It ships a **TUI** and a **CLI** (`tinydew status`, `tinydew do …`) in **one** default build — no separate `interactive` Cargo feature. **No realtime audio dependency** (no `rodio` or equivalent required).
 
 ## Language & Toolchain
 - **Language**: Rust (stable toolchain).
-- **Build**: `cargo build` (default features for MCP/CLI), `cargo build --features interactive` for TUI + audio.
+- **Build**: `cargo build` compiles the full binary (TUI + CLI). Release: `cargo build --release`.
 - **Lint**: `clippy` enforced in CI.
 - **Test**: `cargo test -- --test-threads=1` (single-threaded due to shared game state).
 
@@ -18,9 +18,9 @@ Tinydew is a cozy farming and exploration game built with Rust. It provides both
 
 | Module | Responsibility | Reference Spec |
 |--------|---------------|----------------|
-| `state` | Single authoritative game state, save/load, auto-save | `single-state-no-session.spec.md` |
-| `map` | Region map creation (Farm, EastPath, Square, SouthRiver), tile types, walkability | `farm.spec.md`, `east-path.spec.md`, `square-region.spec.md`, `south-river-region.spec.md` |
-| `entity` | Player and guest entities, position, movement, collision | `entities-and-movement.spec.md` |
+| `state` | Single authoritative game state; SQLite persistence, load/save, auto-save | `single-state-no-session.spec.md` |
+| `map` | Region map creation (Farm, EastPath, Square, SouthRiver), tile types, walkability | `initial-map.spec.md`, `farm.spec.md`, `east-path.spec.md`, `square-region.spec.md`, `south-river-region.spec.md`, `tree.spec.md`, `game-emoji-map.spec.md` |
+| `entity` | Player entity, position, movement, collision | `entities-and-movement.spec.md` |
 | `economy` | Inventory (seeds, produce, forage, fish), shop buy/sell, money | `economy-and-items.spec.md` |
 | `farming` | Clear, plant, water, harvest action handlers | `clear.spec.md`, `plant.spec.md`, `water.spec.md`, `harvest.spec.md`, `grow.spec.md` |
 | `fishing` | Fish action, river bubble lifecycle, fish types | `fishing.spec.md` |
@@ -29,27 +29,25 @@ Tinydew is a cozy farming and exploration game built with Rust. It provides both
 | `weather` | Deterministic daily weather roll | `random-weather.spec.md` |
 | `spawn` | Nightly random flower/mushroom spawn on valid tiles | `spawns.spec.md` |
 | `festival` | Seasonal festival events (Spring Day 28 Butterfly Festival) | `seasonal-festival.spec.md` |
-| `piano` | Audio playback, note mapping, guest piano interaction | `guest-piano-play.spec.md`, `piano-keyboard.spec.md`, `piano-samples.spec.md`, `farm-piano.spec.md` |
-| `block_key` | One-row keyboard sound instrument (Q-P keys) | `block-key-sound.spec.md` |
-| `ui` | Interactive TUI rendering, MCP print snapshot | `ui.spec.md` |
+| `ui` | TUI rendering; plain-text game view for `tinydew status` | `ui.spec.md` |
 | `cli` | Command-line interface (`status`, `do` actions) | `cli.spec.md` |
 
 ### Tile System
-- Enum `TileType` with variants: Grass, Tree, House, Gate, Fountain, Piano, River, RiverBubble, Crop, Mushroom, Flower, Wonder, etc.
+- Enum `TileType`: **canonical emoji and tile names** are in `game-emoji-map.spec.md`. **Coordinates and region graphs** are in `initial-map.spec.md` plus each region spec. Edges use `Boundary` (non-walkable); region links use path/transition tile variants (`PathEast`, `PathFarm`, etc.), not a separate abstract “Gate” type, unless implementation chooses an alias.
 - Each variant implements `is_walkable()` and `emoji()`.
-- Protected tiles (House, Piano) excluded from random spawn logic.
+- Protected tiles (e.g. House) excluded from random spawn logic.
 
 ### Region Maps
-- **Farm**: Primary farming zone with tree boundaries, house tile, piano at `(4,2)`, east-path gate.
+- **Farm**: Primary farming zone with tree boundaries, house tile, east-path gate.
 - **EastPath**: Connector corridor between Farm, Square, and SouthRiver with mushroom spawn area.
 - **Square**: 9x5 with center fountain at `(4,2)`, no farming allowed.
 - **SouthRiver**: 13x4 with river tiles for fishing, gate at top row.
 
 ### State Management
 - One global game state instance — no per-session isolation.
-- Persistent save/load on startup.
-- Auto-save after command batches and day transitions.
-- State fields: day, time, weather, player position, guest position, inventory, money, map tile states, crop growth data.
+- **Persistence**: SQLite database file (see `single-state-no-session.spec.md` for path, schema versioning, WAL, and transactions).
+- Load from SQLite on startup; auto-save to SQLite after command batches and day transitions.
+- State fields: day, time, weather, player position, inventory, money, map tile states, crop growth data.
 
 ### Movement & Collision
 - Directional movement: up/down/left/right.
@@ -70,33 +68,25 @@ Tinydew is a cozy farming and exploration game built with Rust. It provides both
 - Wake-up position fixed at Farm `(3,3)`.
 - Day 1 forced Sunny; Spring Day 28 forced Sunny (Butterfly Festival).
 
-### Audio System (Feature-Gated)
-- Gated behind `interactive` feature flag.
-- Dependency: `rodio` crate (optional).
-- Piano: 21 keys across 3 octaves (C3–B5), pitch-shifted from 9 Salamander Grand Piano FLAC samples stored in `./files/`.
-- Dedicated audio thread with mpsc channel; max 4 concurrent sinks.
-- Block key sound: 10-key sine wave instrument (Q–P), 500ms tones.
-- Audio init failures silently ignored (best-effort).
-
 ### CLI Interface
 - `tinydew status` — show current game state.
-- `tinydew do <action> [args]` — execute actions: move, water, clear, plant, harvest, buy, sell, fish.
+- `tinydew do <action> [args]` — execute actions: move, water, clear, plant, harvest, buy, sell, fish, sleep (full list in `cli.spec.md`).
 - Global flags: `-h`/`--help`, `-V`/`--version`.
 
 ### UI Rendering
-- **Interactive TUI**: header (`tinydew day <day> <weather> <time>`), emoji tile map, player/guest markers, bottom message, compact controls line.
-- **MCP print**: same header, map block, inventory lines (non-empty only), money line, bottom message.
+- **TUI**: header (`tinydew day <day> <weather> <time>`), emoji tile map, player marker, bottom message, compact controls line.
+- **CLI `status`**: same informational layout as plain text — header, map block, inventory lines (non-empty only), money line, bottom message (see `ui.spec.md`).
 
 ## Build & CI
 - See `ci.spec.md` for GitHub Actions workflows.
-- CI workflow: checkout with submodules, stable Rust + clippy, `cargo build`, `cargo test -- --test-threads=1`.
+- CI workflow: checkout, stable Rust + clippy, `cargo build`, `cargo test -- --test-threads=1`.
 - UI workflow: `cargo test initial_farm_ui -- --nocapture` smoke test.
-- Interactive build: `cargo build --release --features interactive`.
+- Release build: `cargo build --release`.
 
 ## Dependencies
-- `rodio` (optional, `interactive` feature) — audio playback.
-- Salamander Grand Piano v3 samples (CC-BY, Alexander Holm) — stored in `./files/`.
-- Standard Rust ecosystem: `serde` for state serialization, TUI libraries for interactive mode.
+- **`rusqlite`** (or equivalent) — SQLite access; prefer **`bundled`** sqlite for consistent CI and local builds unless documented otherwise.
+- `serde` (optional) — still useful for JSON/TEXT column encoding inside SQLite or ancillary config; not a replacement for the DB file.
+- TUI libraries for the in-terminal UI.
 
 ## Related Specs
 All detailed specs are in the `agents/` directory. Each module above references its corresponding spec for full behavioral requirements.

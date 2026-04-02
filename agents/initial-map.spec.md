@@ -14,7 +14,6 @@
 - **Boundaries**: full boundary ring (all edges are `Boundary` / non-walkable)
 - **Fixed tiles**
   - `House` at **(2,2)** (non-walkable)
-  - `Piano` at **(4,2)** (non-walkable)
   - Transition tile to EastPath: `PathEast` at **(7,5)**
 - **Connection**
   - **Farm -> EastPath**
@@ -80,6 +79,3 @@
   - **SouthRiver -> EastPath**
     - Trigger: stepping onto `PathSouthRiverGate` at **(2,0)**
     - Spawn in EastPath at **(2,2)**, facing **Up**
-
-## Player vs Guest parity
-- The guest uses the same region connections and the same spawn coordinates as the player for these transitions.

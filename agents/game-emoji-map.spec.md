@@ -15,11 +15,9 @@
 | SouthRiver gate (`PathSouthRiverGate`) | 🌿 | Transition tile; rendered same as grass |
 | Mushroom tile (`Mushroom`) | 🍄 | Non-walkable forage/blocker |
 | Fountain (`Fountain`) | ⛲ | Non-walkable |
-| Slide (`Slide`) | 🛝 | Non-walkable |
 | River (`River`) | 🌊 | Non-walkable; fishable |
 | River bubble (`RiverBubble`) | 🫧 | Non-walkable; fishable state |
 | Wonder (`Wonder`) | 🦋 | Non-walkable (festival/wonder tile) |
-| Piano (`Piano`) | 🎹 | Non-walkable |
 | Player tile (`Player`) | 🧑 | TileType has an emoji, but runtime rendering usually overlays entities (see Entities) |
 
 ## Crops (produce emoji)
@@ -53,10 +51,9 @@
 | Entity / state | Emoji | Notes |
 |---|---|---|
 | Player | 🧑 | Drawn on top of the underlying tile |
-| Guest | 👧 | Drawn only when the guest is visible on the current map; if both overlap, the active control target decides which emoji shows |
 
 ## UI / inventory affordances
 | UI concept | Emoji | Notes |
 |---|---|---|
-| Money | 💰 | Rendered in snapshot as `money: 💰 $<amount>` |
-| Seeds (count) | 🫙 | Snapshot line: `seeds: 🫙 x<count>` |
+| Money | 💰 | Shown in TUI / `status` as `Money: 💰 $<amount>` (match `ui.spec.md`) |
+| Seeds (count) | 🫙 | Line in TUI / `status`: `seeds: 🫙 x<count>` |

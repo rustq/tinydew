@@ -9,7 +9,7 @@ Implemented.
 - **Trigger**: Push to any branch, PR to `main`.
 - **Runner**: `ubuntu-latest`.
 - **Steps**:
-  1. Checkout with submodules (`actions/checkout@v4`, `submodules: true`).
+  1. Checkout repository (`actions/checkout@v4`).
   2. Install stable Rust toolchain with clippy (`dtolnay/rust-toolchain@stable`).
   3. `cargo build` — compile the project.
   4. `cargo test -- --test-threads=1` — run tests single-threaded to avoid state conflicts.
@@ -20,7 +20,7 @@ Implemented.
 - **Steps**:
   1. Checkout (`actions/checkout@v4`).
   2. Install stable Rust toolchain (`dtolnay/rust-toolchain@stable`).
-  3. `cargo test initial_farm_ui -- --nocapture` — run the farm UI snapshot test with visible output.
+  3. `cargo test initial_farm_ui -- --nocapture` — run the farm UI regression test with visible output.
 
 ### Showcase (`show-case.yml`)
 - **Trigger**: Push to any branch, PR to `main`.
@@ -51,4 +51,3 @@ Implemented.
 - Tests run single-threaded (`--test-threads=1`) because game state is shared and not thread-safe.
 - The UI workflow captures the initial farm rendering as a visual smoke test.
 - The Showcase workflow provides a visual walkthrough of all CLI actions in CI logs.
-- Submodules are required for CI build (piano sound samples dependency).

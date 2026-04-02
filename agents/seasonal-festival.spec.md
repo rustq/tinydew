@@ -12,12 +12,9 @@ Implemented.
   `Today is Butterfly Festival, enjoy it!`
 - Wonder tile (`🦋`) appears at Square `(2,2)` on Day 28.
 - After sleeping/day-transition beyond the festival day, Wonder is reset back to Grass at `(2,2)`.
-- Wonder is non-walkable for both player and guest.
+- Wonder is non-walkable for the player.
 - Attempting to step onto Wonder shows:
-  `That is so beautiful. Let human enjoy it together in interactive mode.`
+  `That is so beautiful. Let's enjoy it together in the game.`
 
 ## Greeting Text
 - Normal days: time/weather-aware greeting messages.
-- Festival guest greet (Space in interactive guest mode):
-  `✨ Happy Butterfly Festival!`
-- Interactive renderer allows festival guest greeting to display as override text.
