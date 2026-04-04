@@ -1,0 +1,65 @@
+name: Showcase
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  showcase:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build
+      - name: Initial Status
+        run: cargo run -- status
+      - name: Move Down
+        run: cargo run -- do move down
+      - name: Status after Move Down
+        run: cargo run -- status
+      - name: Move Left
+        run: cargo run -- do move left
+      - name: Status after Move Left
+        run: cargo run -- status
+      - name: Move Right
+        run: cargo run -- do move right
+      - name: Status after Move Right
+        run: cargo run -- status
+      - name: Move Up
+        run: cargo run -- do move up
+      - name: Status after Move Up
+        run: cargo run -- status
+      - name: Clear Up
+        run: cargo run -- do clear up
+      - name: Status after Clear
+        run: cargo run -- status
+      - name: Plant Up
+        run: cargo run -- do plant up
+      - name: Status after Plant
+        run: cargo run -- status
+      - name: Water Up
+        run: cargo run -- do water up
+      - name: Status after Water
+        run: cargo run -- status
+      - name: Buy Seed
+        run: cargo run -- do buy seed
+      - name: Status after Buy
+        run: cargo run -- status
+      - name: Harvest Up
+        run: cargo run -- do harvest up
+      - name: Status after Harvest
+        run: cargo run -- status
+      - name: Sell Strawberry
+        run: cargo run -- do sell 🍓
+      - name: Status after Sell Strawberry
+        run: cargo run -- status
+      - name: Sell Mushroom
+        run: cargo run -- do sell 🍄
+      - name: Status after Sell Mushroom
+        run: cargo run -- status
+      - name: Fish Up
+        run: cargo run -- do fish up
+      - name: Status after Fish
+        run: cargo run -- status
