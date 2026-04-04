@@ -4,11 +4,11 @@
 Draft.
 
 ## Overview
-Tinydew is a cozy farming and exploration game built with Rust. It ships a **TUI** and a **CLI** (`tinydew status`, `tinydew do …`) in **one** default build — no separate `interactive` Cargo feature. **No realtime audio dependency** (no `rodio` or equivalent required).
+Tinydew is a cozy farming and exploration game built with Rust. It provides a **CLI** interface only (`tinydew status`, `tinydew do …`) — **no interactive/TUI mode**. **No realtime audio dependency** (no `rodio` or equivalent required).
 
 ## Language & Toolchain
 - **Language**: Rust (stable toolchain).
-- **Build**: `cargo build` compiles the full binary (TUI + CLI). Release: `cargo build --release`.
+- **Build**: `cargo build` compiles the CLI binary. Release: `cargo build --release`.
 - **Lint**: `clippy` enforced in CI.
 - **Test**: `cargo test -- --test-threads=1` (single-threaded due to shared game state).
 
@@ -29,7 +29,7 @@ Tinydew is a cozy farming and exploration game built with Rust. It ships a **TUI
 | `weather` | Deterministic daily weather roll | `random-weather.spec.md` |
 | `spawn` | Nightly random flower/mushroom spawn on valid tiles | `spawns.spec.md` |
 | `festival` | Seasonal festival events (Spring Day 28 Butterfly Festival) | `seasonal-festival.spec.md` |
-| `ui` | TUI rendering; plain-text game view for `tinydew status` | `ui.spec.md` |
+| `ui` | Plain-text game view for `tinydew status` output | `ui.spec.md` |
 | `cli` | Command-line interface (`status`, `do` actions) | `cli.spec.md` |
 
 ### Tile System
@@ -74,8 +74,7 @@ Tinydew is a cozy farming and exploration game built with Rust. It ships a **TUI
 - Global flags: `-h`/`--help`, `-V`/`--version`.
 
 ### UI Rendering
-- **TUI**: header (`tinydew day <day> <weather> <time>`), emoji tile map, player marker, bottom message, compact controls line.
-- **CLI `status`**: same informational layout as plain text — header, map block, inventory lines (non-empty only), money line, bottom message (see `ui.spec.md`).
+- **CLI `status`** output includes: header (`tinydew day <day> <weather> <time>`), emoji tile map, inventory lines (non-empty only), money line, bottom message (see `ui.spec.md`).
 
 ## Build & CI
 - See `ci.spec.md` for GitHub Actions workflows.
@@ -86,7 +85,7 @@ Tinydew is a cozy farming and exploration game built with Rust. It ships a **TUI
 ## Dependencies
 - **`rusqlite`** (or equivalent) — SQLite access; prefer **`bundled`** sqlite for consistent CI and local builds unless documented otherwise.
 - `serde` (optional) — still useful for JSON/TEXT column encoding inside SQLite or ancillary config; not a replacement for the DB file.
-- TUI libraries for the in-terminal UI.
+- No TUI libraries needed — pure CLI output.
 
 ## Related Specs
 All detailed specs are in the `agents/` directory. Each module above references its corresponding spec for full behavioral requirements.

@@ -1,16 +1,7 @@
 # UI Spec
 
 ## Status
-Implemented (TUI + CLI text output for `tinydew status`).
-
-## TUI
-- Header shows `tinydew day <day> <weather_icon> <time>` (same style as `tinydew status` top line).
-- Map renders emoji tiles for current location.
-- Player (`🧑`) marker is region-aware.
-- Bottom message is prefixed as `> <message>`.
-- Single compact controls line is shown:
-  - `move: ↑↓←→ | clear: [C] | plant: [P] | water: [W] | harvest: [H] | trade: [T]`
-- Legacy verbose control/status footer lines are not shown.
+Implemented (CLI text output only for `tinydew status` — no interactive/TUI mode).
 
 ## CLI `status` layout
 - Plain-text output (no TUI) includes:

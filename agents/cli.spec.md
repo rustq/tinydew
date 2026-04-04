@@ -2,7 +2,7 @@
 
 ## Overview
 
-A command-line interface for TinyDew that allows users to interact with the game world through simple commands.
+TinyDew provides a **CLI interface only** — no interactive or TUI mode. All interaction with the game world happens through command-line commands.
 
 ## Usage
 
