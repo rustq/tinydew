@@ -1,0 +1,152 @@
+name: Showcase
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+env:
+  TINYDEW_DB_PATH: /tmp/tinydew-showcase.sqlite
+
+jobs:
+  showcase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build
+
+      - name: Initial Status
+        run: cargo run -- status
+
+      # Basic actions at Farm (start at (3,3))
+      - name: Move Down
+        run: cargo run -- do move down
+      - name: Status after Move Down
+        run: cargo run -- status
+
+      - name: Move Left
+        run: cargo run -- do move left
+      - name: Status after Move Left
+        run: cargo run -- status
+
+      - name: Move Right
+        run: cargo run -- do move right
+      - name: Status after Move Right
+        run: cargo run -- status
+
+      - name: Move Up
+        run: cargo run -- do move up
+      - name: Status after Move Up
+        run: cargo run -- status
+
+      - name: Clear Up
+        run: cargo run -- do clear up
+      - name: Status after Clear
+        run: cargo run -- status
+
+      - name: Plant Up
+        run: cargo run -- do plant up
+      - name: Status after Plant
+        run: cargo run -- status
+
+      - name: Water Up
+        run: cargo run -- do water up
+      - name: Status after Water
+        run: cargo run -- status
+
+      - name: Buy Seed
+        run: cargo run -- do buy seed
+      - name: Status after Buy
+        run: cargo run -- status
+
+      - name: Harvest Up
+        run: cargo run -- do harvest up
+      - name: Status after Harvest
+        run: cargo run -- status
+
+      - name: Sell Strawberry
+        run: cargo run -- do sell 🍓
+      - name: Status after Sell Strawberry
+        run: cargo run -- status
+
+      - name: Sell Mushroom
+        run: cargo run -- do sell 🍄
+      - name: Status after Sell Mushroom
+        run: cargo run -- status
+
+      # Navigate Farm -> EastPath (from (3,3) to PathEast (7,5))
+      - name: Navigate to (3,4)
+        run: cargo run -- do move down
+      - name: Navigate to (3,5)
+        run: cargo run -- do move down
+      - name: Navigate to (4,5)
+        run: cargo run -- do move right
+      - name: Navigate to (5,5)
+        run: cargo run -- do move right
+      - name: Navigate to (6,5)
+        run: cargo run -- do move right
+      - name: Transition Farm to EastPath
+        run: cargo run -- do move right
+      - name: Status at EastPath
+        run: cargo run -- status
+
+      # Navigate EastPath -> Square (from (1,2) to PathSquare (5,0))
+      - name: Navigate to (2,2)
+        run: cargo run -- do move right
+      - name: Navigate to (3,2)
+        run: cargo run -- do move right
+      - name: Navigate to (4,2)
+        run: cargo run -- do move right
+      - name: Navigate to (5,2)
+        run: cargo run -- do move right
+      - name: Navigate to (5,1)
+        run: cargo run -- do move up
+      - name: Transition EastPath to Square
+        run: cargo run -- do move up
+      - name: Status at Square
+        run: cargo run -- status
+
+      # Navigate Square -> EastPath -> SouthRiver
+      - name: Transition Square to EastPath
+        run: cargo run -- do move down
+      - name: Navigate to (4,1)
+        run: cargo run -- do move left
+      - name: Navigate to (3,1)
+        run: cargo run -- do move left
+      - name: Navigate to (2,1)
+        run: cargo run -- do move left
+      - name: Navigate to (2,2)
+        run: cargo run -- do move down
+      - name: Transition EastPath to SouthRiver
+        run: cargo run -- do move down
+      - name: Status at SouthRiver
+        run: cargo run -- status
+
+      # Fish at SouthRiver
+      - name: Fish Down
+        run: cargo run -- do fish down
+      - name: Status after Fish
+        run: cargo run -- status
+
+      # Navigate SouthRiver -> EastPath -> Farm
+      - name: Transition SouthRiver to EastPath
+        run: cargo run -- do move up
+      - name: Navigate to (1,2)
+        run: cargo run -- do move left
+      - name: Transition EastPath to Farm
+        run: cargo run -- do move left
+      - name: Status back at Farm
+        run: cargo run -- status
+
+      # Sleep and day transition
+      - name: Sleep
+        run: cargo run -- do sleep
+      - name: Status Day 2
+        run: cargo run -- status
