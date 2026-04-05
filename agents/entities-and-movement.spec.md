@@ -9,6 +9,7 @@ Implemented.
 ## Movement
 - Directional movement uses up/down/left/right.
 - Blocked by out-of-bounds, non-walkable tiles, and same-region occupancy.
+- Immature crop (plant) tiles are walkable.
 - Mature crop tiles are non-walkable until harvested.
 - If movement is blocked by a mature crop tile, movement feedback suggests harvesting first.
 - Successful moves advance time per runtime rules.

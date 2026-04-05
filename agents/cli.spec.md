@@ -44,7 +44,7 @@ tinydew do <ACTION> [ARGS...]
 | `water` | Water a specific area | `do water up`, `do water down`, `do water left`, `do water right` |
 | `move` | Move character in a direction | `do move left`, `do move right`, `do move up`, `do move down` |
 | `buy` | Purchase items | `do buy seed` |
-| `sell` | Sell items | `do sell 🍓`, `do sell 🍄` |
+| `sell` | Sell items | `do sell 🍓`, `do sell 🍄`, `do sell 🌺` |
 | `fish` | Fish at a position | `do fish up`, `do fish left` |
 | `clear` | Clear debris at a position | `do clear up`, `do clear left` |
 | `plant` | Plant seeds at a position | `do plant up`, `do plant left` |
@@ -77,6 +77,9 @@ tinydew do sell 🍓
 
 # Sell mushrooms
 tinydew do sell 🍄
+
+# Sell flowers
+tinydew do sell 🌺
 
 # Fish at up position
 tinydew do fish up

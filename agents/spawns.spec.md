@@ -8,9 +8,9 @@ Nightly **random flower** and **random mushroom** spawns on the world map. Crops
 
 ## Behavior
 - Daily spawn flow uses deterministic day/seed progression.
-- **Flower**: spawn picks a valid empty grass tile on allowed maps only.
-- **Mushroom**: spawn occurs on allowed maps and only on empty grass tiles; mushrooms remain non-walkable until collected/resolved.
-- Per region, nightly random spawn executes only when that region currently has no flower/mushroom present (max one active flower-or-mushroom blocker per region).
+- **Flower**: spawn picks a valid empty grass tile in any region. Spawns already mature (non-walkable, harvestable).
+- **Mushroom**: spawn occurs in any region on empty grass tiles. Spawns already mature (non-walkable, harvestable).
+- Per region, nightly random spawn allows max one active flower AND max one active mushroom (one of each type per region). Pre-placed flowers/mushrooms (e.g. EastPath mushroom at (9,2)) count toward this limit.
 - Mushroom visual/emoji in specs is 🍄.
 - Protected tiles (house/wakeup-sensitive and similar guard tiles) are excluded from random placement.
 - Square supports decorative spawn participation while preserving movement/collision constraints.

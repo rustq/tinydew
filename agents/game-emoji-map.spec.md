@@ -13,6 +13,7 @@
 | Path to Square (`PathSquare`) | 🌿 | Transition tile; rendered same as grass |
 | Path to SouthRiver (`PathSouthRiver`) | 🌿 | Transition tile; rendered same as grass |
 | SouthRiver gate (`PathSouthRiverGate`) | 🌿 | Transition tile; rendered same as grass |
+| Flower tile (`Flower`) | 🌺 | Non-walkable forage/blocker |
 | Mushroom tile (`Mushroom`) | 🍄 | Non-walkable forage/blocker |
 | Fountain (`Fountain`) | ⛲ | Non-walkable |
 | River (`River`) | 🌊 | Non-walkable; fishable |
@@ -26,12 +27,12 @@
 | Carrot | 🥕 |
 | Strawberry | 🍓 |
 | Cauliflower | 🥦 |
-| Flower | 🌺 |
 
 ## Forage
 | ForageType | Emoji |
 |---|---|
 | Mushroom | 🍄 |
+| Flower | 🌺 |
 
 ## Fish
 | FishType | Emoji |

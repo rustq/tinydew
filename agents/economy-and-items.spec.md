@@ -26,6 +26,7 @@ Implemented.
 - Buying decreases money by price × qty.
 - Selling increases money by value × qty.
 - Mushroom sells for $25 each (e.g. `tinydew do sell 🍄`).
+- Flower sells for $25 each (e.g. `tinydew do sell 🌺`).
 - Daily income summary fields remain in state for compatibility, but no forced end-of-day income screen is used.
 
 ## Persistence/Output

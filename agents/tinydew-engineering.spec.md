@@ -57,10 +57,10 @@ Tinydew is a cozy farming and exploration game built with Rust. It provides a **
 
 ### Farming Loop
 1. **Clear** — convert clearable tile to soil.
-2. **Plant** — consume one generic seed, randomly roll crop type (Carrot/Strawberry/Cauliflower/Flower).
+2. **Plant** — consume one generic seed, randomly roll crop type (Carrot/Strawberry/Cauliflower).
 3. **Water** — set crop watered state; rainy weather auto-waters during day transition.
-4. **Grow** — on day transition, watered crops increment `days_grown`; maturity based on type thresholds.
-5. **Harvest** — collect produce from mature crops; tile reverts to ground.
+4. **Grow** — on day transition, watered crops increment `days_grown`; all crops mature in 1 day if watered.
+5. **Harvest** — collect produce from mature crops; crop tile reverts to immature replant. Mushroom/flower harvest returns tile to soil.
 
 ### Day/Night & Sleep
 - World time advances in 5-minute ticks per action (exception: fishing costs 1 hour).

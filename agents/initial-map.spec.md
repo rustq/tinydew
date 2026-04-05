@@ -56,7 +56,7 @@
 - **Boundaries**: full boundary ring (all edges are `Boundary` / non-walkable)
 - **Fixed tiles**
   - `Fountain` at **(4,2)** (non-walkable)
-  - A pre-planted mature `Flower` crop at **(1,1)** (non-walkable because mature crop blocks movement)
+  - A pre-placed `Flower` at **(1,1)** (non-walkable; decorative spawn, not a planted crop)
   - Transition tile back to EastPath: `PathSquare` at **(4,4)**
 - **Connection**
   - **EastPath -> Square**
