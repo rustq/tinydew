@@ -30,7 +30,7 @@ tinydew status
 
 ### `do`
 
-Execute an action in the game world.
+Execute an action in the game world. Does not print status output — only returns an action result message.
 
 **Usage:**
 ```
