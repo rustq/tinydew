@@ -1,0 +1,136 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-apple-darwin
+            runner: macos-15
+          - target: aarch64-apple-darwin
+            runner: macos-15
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package tarball
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          tar -czf "tinydew-v${VERSION}-${{ matrix.target }}.tar.gz" \
+            -C "target/${{ matrix.target }}/release" tinydew
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tinydew-${{ matrix.target }}
+          path: "*.tar.gz"
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" *.tar.gz --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+
+  update-tap:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Compute SHA256 checksums
+        id: sha
+        run: |
+          SHA_MACOS_ARM=$(shasum -a 256 tinydew-v*-aarch64-apple-darwin.tar.gz | awk '{print $1}')
+          SHA_MACOS_X86=$(shasum -a 256 tinydew-v*-x86_64-apple-darwin.tar.gz | awk '{print $1}')
+          SHA_LINUX=$(shasum -a 256 tinydew-v*-x86_64-unknown-linux-gnu.tar.gz | awk '{print $1}')
+          echo "macos_arm=$SHA_MACOS_ARM" >> "$GITHUB_OUTPUT"
+          echo "macos_x86=$SHA_MACOS_X86" >> "$GITHUB_OUTPUT"
+          echo "linux=$SHA_LINUX" >> "$GITHUB_OUTPUT"
+
+      - name: Clone tap repository
+        run: |
+          git clone "https://x-access-token:${{ secrets.TAP_GITHUB_TOKEN }}@github.com/rustq/homebrew-tap.git" homebrew-tap || {
+            mkdir homebrew-tap && cd homebrew-tap && git init
+            git remote add origin "https://x-access-token:${{ secrets.TAP_GITHUB_TOKEN }}@github.com/rustq/homebrew-tap.git"
+          }
+
+      - name: Update formula
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p homebrew-tap/Formula
+          cat > homebrew-tap/Formula/tinydew.rb << 'FORMULA'
+          class Tinydew < Formula
+            desc "A cozy CLI farming game"
+            homepage "https://github.com/rustq/tinydew"
+            version "VERSION_PLACEHOLDER"
+            license "MIT"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/rustq/tinydew/releases/download/v#{version}/tinydew-v#{version}-aarch64-apple-darwin.tar.gz"
+                sha256 "SHA_MACOS_ARM_PLACEHOLDER"
+              else
+                url "https://github.com/rustq/tinydew/releases/download/v#{version}/tinydew-v#{version}-x86_64-apple-darwin.tar.gz"
+                sha256 "SHA_MACOS_X86_PLACEHOLDER"
+              end
+            end
+
+            on_linux do
+              url "https://github.com/rustq/tinydew/releases/download/v#{version}/tinydew-v#{version}-x86_64-unknown-linux-gnu.tar.gz"
+              sha256 "SHA_LINUX_PLACEHOLDER"
+            end
+
+            def install
+              bin.install "tinydew"
+            end
+
+            test do
+              assert_match "tinydew", shell_output("#{bin}/tinydew -V")
+            end
+          end
+          FORMULA
+
+          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/" homebrew-tap/Formula/tinydew.rb
+          sed -i "s/SHA_MACOS_ARM_PLACEHOLDER/${{ steps.sha.outputs.macos_arm }}/" homebrew-tap/Formula/tinydew.rb
+          sed -i "s/SHA_MACOS_X86_PLACEHOLDER/${{ steps.sha.outputs.macos_x86 }}/" homebrew-tap/Formula/tinydew.rb
+          sed -i "s/SHA_LINUX_PLACEHOLDER/${{ steps.sha.outputs.linux }}/" homebrew-tap/Formula/tinydew.rb
+
+      - name: Commit and push
+        run: |
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/tinydew.rb
+          git commit -m "Update tinydew to ${GITHUB_REF_NAME#v}"
+          git branch -M main
+          git push -u origin main
