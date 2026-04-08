@@ -77,12 +77,12 @@ jobs:
           echo "macos_x86=$SHA_MACOS_X86" >> "$GITHUB_OUTPUT"
           echo "linux=$SHA_LINUX" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout tap repository
-        uses: actions/checkout@v4
-        with:
-          repository: rustq/homebrew-tap
-          token: ${{ secrets.TAP_GITHUB_TOKEN }}
-          path: homebrew-tap
+      - name: Clone tap repository
+        run: |
+          git clone "https://x-access-token:${{ secrets.TAP_GITHUB_TOKEN }}@github.com/rustq/homebrew-tap.git" homebrew-tap || {
+            mkdir homebrew-tap && cd homebrew-tap && git init
+            git remote add origin "https://x-access-token:${{ secrets.TAP_GITHUB_TOKEN }}@github.com/rustq/homebrew-tap.git"
+          }
 
       - name: Update formula
         run: |
@@ -132,4 +132,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Formula/tinydew.rb
           git commit -m "Update tinydew to ${GITHUB_REF_NAME#v}"
-          git push
+          git branch -M main
+          git push -u origin main
