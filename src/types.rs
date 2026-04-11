@@ -94,6 +94,14 @@ impl CropType {
             CropType::Cauliflower => 25,
         }
     }
+
+    pub fn days_to_mature(&self) -> u8 {
+        match self {
+            CropType::Carrot => 1,
+            CropType::Strawberry => 1,
+            CropType::Cauliflower => 1,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -130,7 +138,7 @@ impl TileType {
             | TileType::PathSquare
             | TileType::PathSouthRiver
             | TileType::PathSouthRiverGate => true,
-            TileType::Plant { days_grown, .. } => *days_grown < 1,
+            TileType::Plant { crop, days_grown, .. } => *days_grown < crop.days_to_mature(),
             _ => false,
         }
     }
@@ -140,8 +148,8 @@ impl TileType {
             TileType::Boundary => "\u{1f333}",  // 🌳
             TileType::Grass => "\u{1f33f}",      // 🌿
             TileType::Soil => "\u{1f343}",       // 🍃
-            TileType::Plant { days_grown, crop, .. } => {
-                if *days_grown >= 1 {
+            TileType::Plant { crop, days_grown, .. } => {
+                if *days_grown >= crop.days_to_mature() {
                     crop.emoji()
                 } else {
                     "\u{1f331}" // 🌱
