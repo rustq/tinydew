@@ -22,7 +22,7 @@ Implemented.
   2. Install stable Rust toolchain (`dtolnay/rust-toolchain@stable`).
   3. `cargo test initial_farm_ui -- --nocapture` — run the farm UI regression test with visible output.
 
-### Showcase (`show-case.yml`)
+### Showcase (`show-case.yml`) — `hello-case` job
 - **Trigger**: Push to any branch, PR to `main`.
 - **Runner**: `ubuntu-latest`.
 - **Purpose**: Demonstrate all CLI actions and print the game status after each one as a showcase.
@@ -30,9 +30,12 @@ Implemented.
   1. Checkout (`actions/checkout@v4`).
   2. Install stable Rust toolchain (`dtolnay/rust-toolchain@stable`).
   3. `cargo build` — compile the project.
-  4. Print initial status:
+  4. Show version and help:
+     - `cargo run -- -V` — print version from Cargo.toml.
+     - `cargo run -- -h` — print help information.
+  5. Print initial status:
      - `cargo run -- status`
-  5. Run each action followed by `cargo run -- status` to show the result:
+  6. Run each action followed by `cargo run -- status` to show the result:
      **Basic actions at Farm (start at (3,3)):**
      - `cargo run -- do move down` → `cargo run -- status`
      - `cargo run -- do move left` → `cargo run -- status`
@@ -78,7 +81,19 @@ Implemented.
      - `cargo run -- status` *(back at Farm)*
      **Sleep and day transition:**
      - `cargo run -- do sleep` → `cargo run -- status` *(show day 2 state)*
-  6. Each step uses a descriptive `name` label (e.g., "Move Down", "Status after Move Down", "Navigate to Square", "Status at SouthRiver") for readable CI output.
+  7. Each step uses a descriptive `name` label (e.g., "Move Down", "Status after Move Down", "Navigate to Square", "Status at SouthRiver") for readable CI output.
+
+### Showcase — Day Transition (`day-transition-cases` job)
+- **Purpose**: Verify day-transition mechanics: midnight crossing, 06:00 day-start trigger, and sleep.
+- **DB**: `/tmp/tinydew-cases.sqlite` (isolated).
+- **Steps**:
+  1. Build the project.
+  2. Setup: clear, plant, and water a crop on Day 1, showing status after each action.
+  3. Navigate Farm → SouthRiver. Show status at destination.
+  4. Fish 17 times to reach 23:55, showing status after each fish.
+  5. **CASE 1**: Fish once to cross midnight → show status (day 2 00:55, no day-start effects).
+  6. **CASE 2**: Fish 5 more times with status after each, then fish once more to cross 06:00 → show status (day-start fires: weather, crop growth, spawns).
+  7. **CASE 3**: Navigate back to Farm (show status at destination), harvest (show status), water (show status), sleep → show status (day 3 06:00).
 
 ### Showcase — Regions (`regions-showcase` job)
 - **Purpose**: Demonstrate region traversal across all four regions in a single run.
@@ -95,9 +110,9 @@ Implemented.
 - **DB**: `/tmp/tinydew-grow.sqlite` (isolated).
 - **Steps**:
   1. Build the project.
-  2. Buy 5 seeds (start with 1 → total 6).
-  3. Navigate along column x=3 from y=1 to y=6, clearing and planting at (4,1), (4,2), (4,3), (4,4), (4,5), (4,6). Show status.
-  4. Navigate back and water only (4,1), (4,3), (4,5) — skip (4,2), (4,4), (4,6).
+  2. Buy 5 seeds (start with 1 → total 6), showing status after each purchase.
+  3. Navigate along column x=3 from y=1 to y=6, clearing and planting at (4,1), (4,2), (4,3), (4,4), (4,5), (4,6), showing status after each clear and plant action.
+  4. Navigate back and water only (4,1), (4,3), (4,5) — skip (4,2), (4,4), (4,6), showing status after each water action.
   5. Sleep to Day 2. Show status — watered crops matured, unwatered crops remain seedlings.
 
 ## Notes

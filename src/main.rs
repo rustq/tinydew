@@ -10,7 +10,7 @@ fn main() {
 
     match args[1].as_str() {
         "-h" | "--help" => print_help(),
-        "-V" | "--version" => println!("tinydew 0.1.0"),
+        "-V" | "--version" => println!("tinydew {}", env!("CARGO_PKG_VERSION")),
         "status" => {
             let state = tinydew::db::load_or_create();
             tinydew::ui::render_status(&state);

@@ -10,7 +10,7 @@ env:
   TINYDEW_DB_PATH: /tmp/tinydew-showcase.sqlite
 
 jobs:
-  showcase:
+  hello-case:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,6 +21,12 @@ jobs:
 
       - name: Build
         run: cargo build
+
+      - name: Show Version
+        run: cargo run -- -V
+
+      - name: Show Help
+        run: cargo run -- -h
 
       - name: Initial Status
         run: cargo run -- status
@@ -170,11 +176,15 @@ jobs:
         run: cargo run -- status
       - name: Clear tile above player
         run: cargo run -- do clear up
+      - name: Status after Clear
+        run: cargo run -- status
       - name: Plant seed
         run: cargo run -- do plant up
+      - name: Status after Plant
+        run: cargo run -- status
       - name: Water crop
         run: cargo run -- do water up
-      - name: Status after planting and watering
+      - name: Status after Water
         run: cargo run -- status
 
       # Navigate Farm -> SouthRiver for fishing (each action = 5 min)
@@ -200,39 +210,71 @@ jobs:
       # Fish 17 times to reach 23:55 (each fish = 60 min)
       - name: Fish 1
         run: cargo run -- do fish
+      - name: Status after Fish 1
+        run: cargo run -- status
       - name: Fish 2
         run: cargo run -- do fish
+      - name: Status after Fish 2
+        run: cargo run -- status
       - name: Fish 3
         run: cargo run -- do fish
+      - name: Status after Fish 3
+        run: cargo run -- status
       - name: Fish 4
         run: cargo run -- do fish
+      - name: Status after Fish 4
+        run: cargo run -- status
       - name: Fish 5
         run: cargo run -- do fish
+      - name: Status after Fish 5
+        run: cargo run -- status
       - name: Fish 6
         run: cargo run -- do fish
+      - name: Status after Fish 6
+        run: cargo run -- status
       - name: Fish 7
         run: cargo run -- do fish
+      - name: Status after Fish 7
+        run: cargo run -- status
       - name: Fish 8
         run: cargo run -- do fish
+      - name: Status after Fish 8
+        run: cargo run -- status
       - name: Fish 9
         run: cargo run -- do fish
+      - name: Status after Fish 9
+        run: cargo run -- status
       - name: Fish 10
         run: cargo run -- do fish
+      - name: Status after Fish 10
+        run: cargo run -- status
       - name: Fish 11
         run: cargo run -- do fish
+      - name: Status after Fish 11
+        run: cargo run -- status
       - name: Fish 12
         run: cargo run -- do fish
+      - name: Status after Fish 12
+        run: cargo run -- status
       - name: Fish 13
         run: cargo run -- do fish
+      - name: Status after Fish 13
+        run: cargo run -- status
       - name: Fish 14
         run: cargo run -- do fish
+      - name: Status after Fish 14
+        run: cargo run -- status
       - name: Fish 15
         run: cargo run -- do fish
+      - name: Status after Fish 15
+        run: cargo run -- status
       - name: Fish 16
         run: cargo run -- do fish
+      - name: Status after Fish 16
+        run: cargo run -- status
       - name: Fish 17
         run: cargo run -- do fish
-      - name: Status before midnight (23:55)
+      - name: Status after Fish 17 (23:55)
         run: cargo run -- status
 
       # ===== CASE 1: Cross midnight — day increments, day-start does NOT fire =====
@@ -244,14 +286,24 @@ jobs:
       # ===== CASE 2: Reach 06:00 — day-start fires automatically =====
       - name: Fish toward 06:00 (1)
         run: cargo run -- do fish
+      - name: Status after Fish toward 06:00 (1)
+        run: cargo run -- status
       - name: Fish toward 06:00 (2)
         run: cargo run -- do fish
+      - name: Status after Fish toward 06:00 (2)
+        run: cargo run -- status
       - name: Fish toward 06:00 (3)
         run: cargo run -- do fish
+      - name: Status after Fish toward 06:00 (3)
+        run: cargo run -- status
       - name: Fish toward 06:00 (4)
         run: cargo run -- do fish
+      - name: Status after Fish toward 06:00 (4)
+        run: cargo run -- status
       - name: Fish toward 06:00 (5)
         run: cargo run -- do fish
+      - name: Status after Fish toward 06:00 (5)
+        run: cargo run -- status
       - name: "CASE 2: Fish crosses 06:00 — day-start fires"
         run: cargo run -- do fish
       - name: "CASE 2: Status — day 2 06:55, weather rolled, crop grew, spawns appeared"
@@ -275,11 +327,15 @@ jobs:
         run: cargo run -- do move up
       - name: Navigate to (3,3)
         run: cargo run -- do move up
+      - name: Status back at Farm
+        run: cargo run -- status
       - name: Harvest mature crop above
         run: cargo run -- do harvest up
+      - name: Status after Harvest
+        run: cargo run -- status
       - name: Water crop above
         run: cargo run -- do water up
-      - name: "CASE 3: Status before sleep — crop harvested and re-watered"
+      - name: "CASE 3: Status after Water — crop harvested and re-watered"
         run: cargo run -- status
       - name: "CASE 3: Sleep"
         run: cargo run -- do sleep
@@ -369,14 +425,24 @@ jobs:
       # Day 1 — Buy 5 seeds (start with 1, total 6)
       - name: Buy Seed 1
         run: cargo run -- do buy seed
+      - name: Status after Buy Seed 1
+        run: cargo run -- status
       - name: Buy Seed 2
         run: cargo run -- do buy seed
+      - name: Status after Buy Seed 2
+        run: cargo run -- status
       - name: Buy Seed 3
         run: cargo run -- do buy seed
+      - name: Status after Buy Seed 3
+        run: cargo run -- status
       - name: Buy Seed 4
         run: cargo run -- do buy seed
+      - name: Status after Buy Seed 4
+        run: cargo run -- status
       - name: Buy Seed 5
         run: cargo run -- do buy seed
+      - name: Status after Buy Seed 5
+        run: cargo run -- status
 
       # Clear and plant at (4,1) through (4,6)
       # Player at (3,3), navigate up to (3,1) then work downward
@@ -386,36 +452,58 @@ jobs:
         run: cargo run -- do move up
       - name: Clear (4,1)
         run: cargo run -- do clear right
+      - name: Status after Clear (4,1)
+        run: cargo run -- status
       - name: Plant (4,1)
         run: cargo run -- do plant right
+      - name: Status after Plant (4,1)
+        run: cargo run -- status
       - name: Navigate to (3,2)
         run: cargo run -- do move down
       - name: Clear (4,2)
         run: cargo run -- do clear right
+      - name: Status after Clear (4,2)
+        run: cargo run -- status
       - name: Plant (4,2)
         run: cargo run -- do plant right
+      - name: Status after Plant (4,2)
+        run: cargo run -- status
       - name: Navigate to (3,3)
         run: cargo run -- do move down
       - name: Clear (4,3)
         run: cargo run -- do clear right
+      - name: Status after Clear (4,3)
+        run: cargo run -- status
       - name: Plant (4,3)
         run: cargo run -- do plant right
+      - name: Status after Plant (4,3)
+        run: cargo run -- status
       - name: Navigate to (3,4)
         run: cargo run -- do move down
       - name: Clear (4,4)
         run: cargo run -- do clear right
+      - name: Status after Clear (4,4)
+        run: cargo run -- status
       - name: Plant (4,4)
         run: cargo run -- do plant right
+      - name: Status after Plant (4,4)
+        run: cargo run -- status
       - name: Navigate to (3,5)
         run: cargo run -- do move down
       - name: Clear (4,5)
         run: cargo run -- do clear right
+      - name: Status after Clear (4,5)
+        run: cargo run -- status
       - name: Plant (4,5)
         run: cargo run -- do plant right
+      - name: Status after Plant (4,5)
+        run: cargo run -- status
       - name: Navigate to (3,6)
         run: cargo run -- do move down
       - name: Clear (4,6)
         run: cargo run -- do clear right
+      - name: Status after Clear (4,6)
+        run: cargo run -- status
       - name: Plant (4,6)
         run: cargo run -- do plant right
       - name: "Grow: Status after planting 6 crops"
@@ -434,18 +522,24 @@ jobs:
         run: cargo run -- do move up
       - name: Water (4,1)
         run: cargo run -- do water right
+      - name: Status after Water (4,1)
+        run: cargo run -- status
       - name: Navigate to (3,2)
         run: cargo run -- do move down
       - name: Navigate to (3,3)
         run: cargo run -- do move down
       - name: Water (4,3)
         run: cargo run -- do water right
+      - name: Status after Water (4,3)
+        run: cargo run -- status
       - name: Navigate to (3,4)
         run: cargo run -- do move down
       - name: Navigate to (3,5)
         run: cargo run -- do move down
       - name: Water (4,5)
         run: cargo run -- do water right
+      - name: Status after Water (4,5)
+        run: cargo run -- status
 
       # Sleep to next day
       - name: "Grow: Sleep to Day 2"
