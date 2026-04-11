@@ -22,6 +22,12 @@ jobs:
       - name: Build
         run: cargo build
 
+      - name: Show Version
+        run: cargo run -- -V
+
+      - name: Show Help
+        run: cargo run -- -h
+
       - name: Initial Status
         run: cargo run -- status
 
