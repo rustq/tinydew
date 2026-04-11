@@ -30,9 +30,12 @@ Implemented.
   1. Checkout (`actions/checkout@v4`).
   2. Install stable Rust toolchain (`dtolnay/rust-toolchain@stable`).
   3. `cargo build` — compile the project.
-  4. Print initial status:
+  4. Show version and help:
+     - `cargo run -- -V` — print version from Cargo.toml.
+     - `cargo run -- -h` — print help information.
+  5. Print initial status:
      - `cargo run -- status`
-  5. Run each action followed by `cargo run -- status` to show the result:
+  6. Run each action followed by `cargo run -- status` to show the result:
      **Basic actions at Farm (start at (3,3)):**
      - `cargo run -- do move down` → `cargo run -- status`
      - `cargo run -- do move left` → `cargo run -- status`
@@ -78,7 +81,7 @@ Implemented.
      - `cargo run -- status` *(back at Farm)*
      **Sleep and day transition:**
      - `cargo run -- do sleep` → `cargo run -- status` *(show day 2 state)*
-  6. Each step uses a descriptive `name` label (e.g., "Move Down", "Status after Move Down", "Navigate to Square", "Status at SouthRiver") for readable CI output.
+  7. Each step uses a descriptive `name` label (e.g., "Move Down", "Status after Move Down", "Navigate to Square", "Status at SouthRiver") for readable CI output.
 
 ### Showcase — Regions (`regions-showcase` job)
 - **Purpose**: Demonstrate region traversal across all four regions in a single run.
