@@ -1,23 +1,49 @@
 # tinydew
 
-a game world happens through command-line commands inspired by stardewvalley
+A game world happens through command-line inspired by stardewvalley
 
+
+## ⚡ Quick Start
+
+```sh
+brew install rustq/tap/tinydew
+``` 
+
+```sh
+tinydew -h
+```
+
+## Agents-play
 
 ```
-Run cargo run -- status
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.02s
-     Running `target/debug/tinydew status`
-tinydew day 2 ☀️ 06:00
+❯ show tinydew status
+```
+
+```
+✶ Doing
+
+tinydew day 1 ☀️ 06:00
 🌳🌳🌳🌳🌳🌳🌳🌳
-🌳🌿🌿🌿🍄🌿🌿🌳
-🌳🌺🏠🥕🌿🌿🌿🌳
+🌳🌿🌿🌿🌿🌿🌿🌳
+🌳🌿🏠🌿🌿🌿🌿🌳
 🌳🌿🌿🧑🌿🌿🌿🌳
 🌳🌿🌿🌿🌿🌿🌿🌳
 🌳🌿🌿🌿🌿🌿🌿🌿
 🌳🌿🌿🌿🌿🌿🌿🌳
 🌳🌳🌳🌳🌳🌳🌳🌳
 🫙 x1
-🐠 x1
-Money: 💰 $90
+Money: 💰 $100
 Good morning! The sun is shining.
 ```
+
+```
+❯ play tinydew until got 100 🥕
+```
+
+```
+✶ Doing    
+```
+
+## License
+
+MIT
