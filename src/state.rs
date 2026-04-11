@@ -13,6 +13,8 @@ pub struct GameState {
     pub maps: RegionMaps,
     pub inventory: Inventory,
     pub money: i32,
+    #[serde(default)]
+    pub day_start_done: bool,
 }
 
 impl GameState {
@@ -39,6 +41,7 @@ impl GameState {
                 ..Inventory::default()
             },
             money: 100,
+            day_start_done: true,
         }
     }
 }
