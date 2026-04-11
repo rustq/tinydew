@@ -18,3 +18,6 @@ Consolidates sleep, auto-sleep, and day-transition behavior.
   4. random spawn steps (on empty grass tiles only),
   5. soil reverts to grass (after spawns, so soil tiles skip this night's spawn),
   6. seasonal wonder/festival checks.
+
+## Known Issues
+- **Day transition requires sleep.** The entire day-start processing pipeline (weather roll, crop growth, spawns, soil revert, festival checks) is only triggered by the `sleep` command. If the player never sleeps, time-of-day advances via the 5-minute tick system but the day counter never increments and no day-transition logic runs. This means crops will not grow, weather will not change, and spawns will not occur until the player explicitly sleeps.
