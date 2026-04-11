@@ -285,3 +285,170 @@ jobs:
         run: cargo run -- do sleep
       - name: "CASE 3: Status — day 3 06:00, next day-start fired, crop grew again"
         run: cargo run -- status
+
+  regions-showcase:
+    runs-on: ubuntu-latest
+    env:
+      TINYDEW_DB_PATH: /tmp/tinydew-regions.sqlite
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build
+
+      # Day 1 — Start at Farm (3,3)
+      - name: "Regions: Status at Farm"
+        run: cargo run -- status
+
+      # Navigate Farm -> EastPath (from (3,3) to PathEast (7,5))
+      - name: Navigate to (3,4)
+        run: cargo run -- do move down
+      - name: Navigate to (3,5)
+        run: cargo run -- do move down
+      - name: Navigate to (4,5)
+        run: cargo run -- do move right
+      - name: Navigate to (5,5)
+        run: cargo run -- do move right
+      - name: Navigate to (6,5)
+        run: cargo run -- do move right
+      - name: Transition Farm to EastPath
+        run: cargo run -- do move right
+      - name: "Regions: Status at EastPath"
+        run: cargo run -- status
+
+      # Navigate EastPath -> Square (from (1,2) to PathSquare (5,0))
+      - name: Navigate to (2,2)
+        run: cargo run -- do move right
+      - name: Navigate to (3,2)
+        run: cargo run -- do move right
+      - name: Navigate to (4,2)
+        run: cargo run -- do move right
+      - name: Navigate to (5,2)
+        run: cargo run -- do move right
+      - name: Navigate to (5,1)
+        run: cargo run -- do move up
+      - name: Transition EastPath to Square
+        run: cargo run -- do move up
+      - name: "Regions: Status at Square"
+        run: cargo run -- status
+
+      # Navigate Square -> EastPath -> SouthRiver
+      - name: Transition Square to EastPath
+        run: cargo run -- do move down
+      - name: Navigate to (4,1)
+        run: cargo run -- do move left
+      - name: Navigate to (3,1)
+        run: cargo run -- do move left
+      - name: Navigate to (2,1)
+        run: cargo run -- do move left
+      - name: Navigate to (2,2)
+        run: cargo run -- do move down
+      - name: Transition EastPath to SouthRiver
+        run: cargo run -- do move down
+      - name: "Regions: Status at SouthRiver"
+        run: cargo run -- status
+
+  grow-showcase:
+    runs-on: ubuntu-latest
+    env:
+      TINYDEW_DB_PATH: /tmp/tinydew-grow.sqlite
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        run: cargo build
+
+      # Day 1 — Buy 5 seeds (start with 1, total 6)
+      - name: Buy Seed 1
+        run: cargo run -- do buy seed
+      - name: Buy Seed 2
+        run: cargo run -- do buy seed
+      - name: Buy Seed 3
+        run: cargo run -- do buy seed
+      - name: Buy Seed 4
+        run: cargo run -- do buy seed
+      - name: Buy Seed 5
+        run: cargo run -- do buy seed
+
+      # Clear and plant at (4,1) through (4,6)
+      # Player at (3,3), navigate up to (3,1) then work downward
+      - name: Navigate to (3,2)
+        run: cargo run -- do move up
+      - name: Navigate to (3,1)
+        run: cargo run -- do move up
+      - name: Clear (4,1)
+        run: cargo run -- do clear right
+      - name: Plant (4,1)
+        run: cargo run -- do plant right
+      - name: Navigate to (3,2)
+        run: cargo run -- do move down
+      - name: Clear (4,2)
+        run: cargo run -- do clear right
+      - name: Plant (4,2)
+        run: cargo run -- do plant right
+      - name: Navigate to (3,3)
+        run: cargo run -- do move down
+      - name: Clear (4,3)
+        run: cargo run -- do clear right
+      - name: Plant (4,3)
+        run: cargo run -- do plant right
+      - name: Navigate to (3,4)
+        run: cargo run -- do move down
+      - name: Clear (4,4)
+        run: cargo run -- do clear right
+      - name: Plant (4,4)
+        run: cargo run -- do plant right
+      - name: Navigate to (3,5)
+        run: cargo run -- do move down
+      - name: Clear (4,5)
+        run: cargo run -- do clear right
+      - name: Plant (4,5)
+        run: cargo run -- do plant right
+      - name: Navigate to (3,6)
+        run: cargo run -- do move down
+      - name: Clear (4,6)
+        run: cargo run -- do clear right
+      - name: Plant (4,6)
+        run: cargo run -- do plant right
+      - name: "Grow: Status after planting 6 crops"
+        run: cargo run -- status
+
+      # Water only (4,1), (4,3), (4,5) — navigate back up
+      - name: Navigate to (3,5)
+        run: cargo run -- do move up
+      - name: Navigate to (3,4)
+        run: cargo run -- do move up
+      - name: Navigate to (3,3)
+        run: cargo run -- do move up
+      - name: Navigate to (3,2)
+        run: cargo run -- do move up
+      - name: Navigate to (3,1)
+        run: cargo run -- do move up
+      - name: Water (4,1)
+        run: cargo run -- do water right
+      - name: Navigate to (3,2)
+        run: cargo run -- do move down
+      - name: Navigate to (3,3)
+        run: cargo run -- do move down
+      - name: Water (4,3)
+        run: cargo run -- do water right
+      - name: Navigate to (3,4)
+        run: cargo run -- do move down
+      - name: Navigate to (3,5)
+        run: cargo run -- do move down
+      - name: Water (4,5)
+        run: cargo run -- do water right
+
+      # Sleep to next day
+      - name: "Grow: Sleep to Day 2"
+        run: cargo run -- do sleep
+      - name: "Grow: Status Day 2 — watered crops (4,1)(4,3)(4,5) matured, unwatered (4,2)(4,4)(4,6) still seedling"
+        run: cargo run -- status

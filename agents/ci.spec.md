@@ -80,6 +80,26 @@ Implemented.
      - `cargo run -- do sleep` → `cargo run -- status` *(show day 2 state)*
   6. Each step uses a descriptive `name` label (e.g., "Move Down", "Status after Move Down", "Navigate to Square", "Status at SouthRiver") for readable CI output.
 
+### Showcase — Regions (`regions-showcase` job)
+- **Purpose**: Demonstrate region traversal across all four regions in a single run.
+- **DB**: `/tmp/tinydew-regions.sqlite` (isolated).
+- **Steps**:
+  1. Build the project.
+  2. **Farm**: Show initial status at Farm (Day 1).
+  3. **Farm → EastPath**: Navigate from (3,3) through (6,5) to PathEast (7,5), transition to EastPath (1,2). Show status.
+  4. **EastPath → Square**: Navigate from (1,2) through (5,2) to PathSquare (5,0), transition to Square (4,3). Show status.
+  5. **Square → EastPath → SouthRiver**: Transition back to EastPath (5,1), navigate to PathSouthRiver (2,3), transition to SouthRiver (2,1). Show status.
+
+### Showcase — Grow (`grow-showcase` job)
+- **Purpose**: Demonstrate selective watering and its effect on crop growth across day transition.
+- **DB**: `/tmp/tinydew-grow.sqlite` (isolated).
+- **Steps**:
+  1. Build the project.
+  2. Buy 5 seeds (start with 1 → total 6).
+  3. Navigate along column x=3 from y=1 to y=6, clearing and planting at (4,1), (4,2), (4,3), (4,4), (4,5), (4,6). Show status.
+  4. Navigate back and water only (4,1), (4,3), (4,5) — skip (4,2), (4,4), (4,6).
+  5. Sleep to Day 2. Show status — watered crops matured, unwatered crops remain seedlings.
+
 ## Notes
 - Tests run single-threaded (`--test-threads=1`) because game state is shared and not thread-safe.
 - The UI workflow captures the initial farm rendering as a visual smoke test.
