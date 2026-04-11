@@ -68,8 +68,8 @@ fn do_move(state: &mut GameState, dir_arg: Option<&str>) -> String {
         return "That is so beautiful. Let's enjoy it together in the game.".to_string();
     }
 
-    if let TileType::Plant { days_grown, .. } = tile {
-        if *days_grown >= 1 {
+    if let TileType::Plant { crop, days_grown, .. } = tile {
+        if *days_grown >= crop.days_to_mature() {
             return "A mature crop is in the way. Try harvesting it first.".to_string();
         }
     }
@@ -125,13 +125,13 @@ fn do_clear(state: &mut GameState, dir: Direction) -> String {
             advance_time(state, 5);
             "Cleared the ground.".to_string()
         }
-        TileType::Plant { days_grown, .. } if *days_grown < 1 => {
+        TileType::Plant { crop, days_grown, .. } if *days_grown < crop.days_to_mature() => {
             state.maps.get_mut(&state.player.region)[ty][tx] = TileType::Soil;
             advance_time(state, 5);
             "Cleared the ground.".to_string()
         }
         TileType::Soil => "The ground is already cleared.".to_string(),
-        TileType::Plant { days_grown, .. } if *days_grown >= 1 => {
+        TileType::Plant { crop, days_grown, .. } if *days_grown >= crop.days_to_mature() => {
             "Can't clear a mature crop. Try harvesting it first.".to_string()
         }
         _ => "Can't clear that.".to_string(),
@@ -204,7 +204,7 @@ fn do_harvest(state: &mut GameState, dir: Direction) -> String {
 
     let tile = map[ty][tx].clone();
     match &tile {
-        TileType::Plant { crop, days_grown, .. } if *days_grown >= 1 => {
+        TileType::Plant { crop, days_grown, .. } if *days_grown >= crop.days_to_mature() => {
             if region != Region::Farm {
                 return "You can't harvest crops here.".to_string();
             }
@@ -356,7 +356,16 @@ fn sell_item(count: &mut u32, money: &mut i32, price: i32, name: &str, emoji: &s
 // --- Sleep & Day Transition ---
 
 fn do_sleep(state: &mut GameState) -> String {
-    state.day += 1;
+    if !state.day_start_done {
+        // Day already incremented at midnight but day-start hasn't run yet
+        run_day_start(state);
+    } else if state.time_minutes < 1440 {
+        // Still same calendar day — advance to next day
+        state.day += 1;
+        run_day_start(state);
+    }
+    // else: crossed midnight and day-start already ran — just reposition
+
     state.time_minutes = 360; // 06:00
 
     state.player.x = 3;
@@ -364,6 +373,10 @@ fn do_sleep(state: &mut GameState) -> String {
     state.player.region = Region::Farm;
     state.player.direction = Direction::Down;
 
+    "You slept through the night. Good morning!".to_string()
+}
+
+fn run_day_start(state: &mut GameState) {
     // 1. Weather roll (with festival override)
     state.weather = roll_weather(state.day);
 
@@ -382,11 +395,23 @@ fn do_sleep(state: &mut GameState) -> String {
     // 6. Festival checks
     check_festival(state);
 
-    "You slept through the night. Good morning!".to_string()
+    state.day_start_done = true;
 }
 
 fn advance_time(state: &mut GameState, minutes: u32) {
     state.time_minutes += minutes;
+
+    // Midnight: increment day, reset clock, but don't run day-start yet
+    while state.time_minutes >= 1440 {
+        state.time_minutes -= 1440;
+        state.day += 1;
+        state.day_start_done = false;
+    }
+
+    // 06:00 (360 min): auto-trigger day-start processing
+    if !state.day_start_done && state.time_minutes >= 360 {
+        run_day_start(state);
+    }
 }
 
 pub fn roll_weather(day: u32) -> Weather {
